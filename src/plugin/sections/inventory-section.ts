@@ -29,10 +29,16 @@ export function createInventorySection(
   deps: InventorySectionDeps
 ) {
   const section = deps.createSectionFrame("Styling Inventory", theme);
-  const narrow = settings.multiColumn || (settings.agentReadyData && settings.aiCompactMode);
-  const widths = narrow
+  const cw = settings.sectionWidth
+    ? settings.sectionWidth - 40
+    : (settings.multiColumn || (settings.agentReadyData && settings.aiCompactMode)) ? 500 : 800;
+  const widths = cw < 420
+    ? { name: 110, as: 60, target: 140 }
+    : cw < 700
     ? { name: 132, as: 74, target: 166 }
-    : { name: 160, as: 96, target: 180 };
+    : cw < 1100
+    ? { name: 160, as: 96, target: 180 }
+    : { name: Math.round(cw * 0.22), as: Math.round(cw * 0.12), target: Math.round(cw * 0.28) };
 
   if (!inventory.hasAny()) {
     section.appendChild(deps.createText("No styles, variables, or tokens detected.", 11, FONT_REGULAR, theme.muted, "muted"));

@@ -41,12 +41,10 @@ export function createAnatomySection(
 ) {
   const section = deps.createSectionFrame(title, theme);
   const compact = settings.agentReadyData && settings.aiCompactMode;
-  const narrow = settings.multiColumn || compact;
   const sectionContentWidth = settings.sectionWidth
     ? settings.sectionWidth - 40
-    : narrow ? 500 : 800;
-  const tight = sectionContentWidth < 420;
-  const tableWidths = tight
+    : (settings.multiColumn || compact) ? 500 : 800;
+  const tableWidths = sectionContentWidth < 420
     ? {
         index: 16,
         element: 88,
@@ -56,7 +54,7 @@ export function createAnatomySection(
         dependsOn: 80,
         props: 140
       }
-    : narrow
+    : sectionContentWidth < 700
     ? {
         index: 18,
         element: 104,
@@ -66,7 +64,8 @@ export function createAnatomySection(
         dependsOn: 94,
         props: 158
       }
-    : {
+    : sectionContentWidth < 1100
+    ? {
         index: 20,
         element: 180,
         type: 70,
@@ -74,7 +73,17 @@ export function createAnatomySection(
         component: 200,
         dependsOn: 180,
         props: 300
+      }
+    : {
+        index: 20,
+        element: Math.round(sectionContentWidth * 0.14),
+        type: 70,
+        details: Math.round(sectionContentWidth * 0.35),
+        component: Math.round(sectionContentWidth * 0.16),
+        dependsOn: Math.round(sectionContentWidth * 0.14),
+        props: Math.round(sectionContentWidth * 0.28)
       };
+  const nameMax = sectionContentWidth < 420 ? 20 : sectionContentWidth < 700 ? 22 : sectionContentWidth < 1100 ? 30 : 50;
   const highlights = pickAnatomyHighlights(target, elements, compact ? 10 : settings.tabularAnatomy ? 14 : 12);
   const instanceHighlights = highlights.filter((element) => element.type === "INSTANCE");
   const detailHighlights = highlights.filter((element) => element.type !== "INSTANCE");
@@ -101,9 +110,8 @@ export function createAnatomySection(
     );
   }
 
-  // Artwork gets full section width — no annotation sidebar, just numbered markers.
-  const artworkMaxWidth = tight ? undefined : sectionContentWidth;
-  const artwork = deps.createArtworkFrame(target, 0, theme, artworkMaxWidth);
+  // Artwork — pass section width so clone is centered and large UIs scale to fit.
+  const artwork = deps.createArtworkFrame(target, 0, theme, sectionContentWidth);
   renderAnatomyMarkers(artwork, highlights, theme, deps);
 
   if (settings.tabularAnatomy) {
@@ -130,8 +138,8 @@ export function createAnatomySection(
         const row = deps.createTableRow(
           [
             { label: String(index + 1), width: tableWidths.index },
-            { label: deps.truncateText(element.name, narrow ? 22 : 34), width: tableWidths.component },
-            { label: deps.truncateText(element.instanceOf ?? "—", narrow ? 22 : 30), width: tableWidths.dependsOn },
+            { label: deps.truncateText(element.name, nameMax), width: tableWidths.component },
+            { label: deps.truncateText(element.instanceOf ?? "—", nameMax), width: tableWidths.dependsOn },
             { label: deps.truncateText(props || "—", 300), width: tableWidths.props, wrap: true }
           ],
           theme,
@@ -162,7 +170,7 @@ export function createAnatomySection(
         const row = deps.createTableRow(
           [
             { label: String(index + 1), width: tableWidths.index },
-            { label: deps.truncateText(element.name, narrow ? 22 : 30), width: tableWidths.element },
+            { label: deps.truncateText(element.name, nameMax), width: tableWidths.element },
             { label: element.type, width: tableWidths.type },
             { label: deps.truncateText(attrs || "—", 300), width: tableWidths.details, wrap: true }
           ],
@@ -193,7 +201,7 @@ export function createAnatomySection(
       const row = deps.createTableRow(
         [
           { label: String(index + 1), width: tableWidths.index },
-          { label: deps.truncateText(element.name, narrow ? 22 : 30), width: tableWidths.element },
+          { label: deps.truncateText(element.name, nameMax), width: tableWidths.element },
           { label: element.type, width: tableWidths.type },
           { label: deps.truncateText(details, 300), width: tableWidths.details, wrap: true }
         ],

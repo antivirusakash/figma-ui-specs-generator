@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Specs Plugin – Side-by-Side Annotation Simulator</title>
+<style>
+  :root {
+    --bg: #eef2f6;
+    --section: #ffffff;
+    --sectionBg: #f5f7fa;
+    --tableHeaderBg: #eaeff4;
+    --tableRowAlt: #f7f9fb;
+    --border: #dce4ee;
+    --text: #142033;
+    --muted: #5e6d82;
+    --accent: #2563eb;
+    --overlayBlue: #3e7bf5;
+    --overlayGreen: #2fa874;
+    --overlayOrange: #f1893f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #e8e8e8; padding: 16px; color: var(--text); }
+
+  /* ── Toolbar ──────────────────────────────────── */
+  .toolbar {
+    position: sticky; top: 0; z-index: 100;
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .toolbar h1 { font-size: 14px; width: 100%; margin-bottom: 2px; }
+  .ctrl { display: flex; flex-direction: column; gap: 2px; }
+  .ctrl label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ctrl .val { font-size: 11px; font-weight: 600; color: var(--accent); }
+  .device-btns { display: flex; gap: 4px; }
+  .device-btns button {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--sectionBg); font-size: 10px; cursor: pointer; color: var(--text);
+  }
+  .device-btns button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .section-toggles { display: flex; gap: 8px; }
+  .section-toggles label { font-size: 11px; }
+
+  /* ── Root Specs Frame ─────────────────────────── */
+  .specs-root {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+    padding: 28px; display: flex; flex-direction: column; gap: 18px;
+  }
+
+  /* ── Side-by-side row ─────────────────────────── */
+  .sbs-row { display: flex; gap: 18px; }
+  .sbs-row > .section-frame { flex: 1; min-width: 0; }
+
+  /* ── Section Frame ────────────────────────────── */
+  .section-frame {
+    background: var(--sectionBg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;
+  }
+  .section-header { display: flex; align-items: center; gap: 8px; }
+  .accent-bar { width: 3px; height: 16px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+  .section-title { font-size: 14px; font-weight: 600; }
+
+  /* ── Content Card ─────────────────────────────── */
+  .content-card {
+    background: var(--section); border: 1px solid rgba(220,228,238,0.6); border-radius: 8px;
+    padding: 12px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .card-title { font-size: 11px; font-weight: 600; }
+
+  /* ── Table ────────────────────────────────────── */
+  .table-row {
+    display: flex; gap: 8px; padding: 5px 8px; border-radius: 4px; align-items: flex-start;
+  }
+  .table-row.header { background: var(--tableHeaderBg); border-radius: 6px; }
+  .table-row.alt { background: var(--tableRowAlt); }
+  .table-cell { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+  .table-cell.header { font-weight: 600; color: var(--text); }
+  .table-cell.body { color: var(--muted); }
+  .layout-table .table-cell { font-size: 8px; }
+  .layout-table .table-row { gap: 2px; }
+
+  /* ── Artwork Frame ────────────────────────────── */
+  .artwork {
+    position: relative; background: var(--section); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; flex-shrink: 0;
+  }
+
+  /* ── Clone (simulated UI) ─────────────────────── */
+  .clone {
+    position: absolute; border-radius: 6px; overflow: hidden;
+    background: #f8f9fa; border: 1px solid #e0e4ea;
+  }
+  .clone-inner { width: 100%; height: 100%; position: relative; }
+  .mock-el {
+    position: absolute; border-radius: 3px; display: flex; align-items: center;
+    padding: 0 6px; font-size: 9px; color: #556; overflow: hidden; white-space: nowrap;
+  }
+
+  /* ── Anatomy markers ──────────────────────────── */
+  .highlight-rect {
+    position: absolute; border: 1px dashed rgba(241,137,63,0.4);
+    background: rgba(241,137,63,0.06); border-radius: 2px; pointer-events: none;
+  }
+  .connector-line {
+    position: absolute; height: 0; border-top: 0.75px dashed rgba(241,137,63,0.35);
+    pointer-events: none; transform-origin: left center;
+  }
+  .badge {
+    position: absolute; width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--section); color: #fff; font-size: 8px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 10;
+  }
+  .badge.anatomy { background: var(--overlayOrange); }
+  .badge.layout { background: var(--overlayBlue); }
+
+  /* ── Layout markers ───────────────────────────── */
+  .container-outline {
+    position: absolute; border: 1px dashed rgba(62,123,245,0.5);
+    background: rgba(62,123,245,0.04); border-radius: 2px; pointer-events: none;
+  }
+  .content-fill {
+    position: absolute; border: 0.5px solid rgba(47,168,116,0.35);
+    background: rgba(47,168,116,0.08); border-radius: 1px; pointer-events: none;
+  }
+  .gap-line {
+    position: absolute; pointer-events: none; transform-origin: left center;
+  }
+  .gap-line-inner { height: 0; border-top: 1.5px solid rgba(241,137,63,0.7); width: 100%; }
+  .gap-label {
+    position: absolute; font-size: 7px; font-weight: 600; color: var(--overlayOrange);
+    white-space: nowrap; pointer-events: none;
+  }
+  .dir-arrow {
+    position: absolute; pointer-events: none; font-size: 10px; color: rgba(62,123,245,0.6);
+  }
+
+  /* ── Metrics pills ────────────────────────────── */
+  .pills-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    background: var(--tableRowAlt); border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 8px; display: flex; gap: 4px; align-items: center;
+  }
+  .pill-label { font-size: 8px; color: var(--muted); }
+  .pill-value { font-size: 9px; font-weight: 600; color: var(--text); }
+
+  /* ── Legend ────────────────────────────────────── */
+  .legend { display: flex; gap: 8px; }
+  .legend-item {
+    display: flex; gap: 5px; align-items: center;
+    background: var(--section); border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 6px;
+  }
+  .legend-swatch { width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0; }
+  .legend-label { font-size: 8px; color: var(--muted); }
+
+  /* ── Info bar ─────────────────────────────────── */
+  .info-bar {
+    margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; font-size: 10px; color: var(--muted);
+  }
+  .info-bar span { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; }
+  .info-bar .ok { background: #e8fde8; color: #27ae60; }
+
+  .text-muted { font-size: 10px; color: var(--muted); }
+  .text-caption { font-size: 9px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="toolbar" id="toolbar">
+  <h1>Specs – Side-by-Side Annotation Simulator</h1>
+  <div class="ctrl">
+    <label>Device preset</label>
+    <div class="device-btns" id="deviceBtns">
+      <button data-w="414" data-h="896" class="active">Mobile 414×896</button>
+      <button data-w="1440" data-h="900">Web 1440×900</button>
+      <button data-w="360" data-h="640">Small 360×640</button>
+      <button data-w="768" data-h="1024">Tablet 768×1024</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label>Target size</label>
+    <span class="val" id="sizeVal">414 × 896</span>
+  </div>
+  <div class="ctrl">
+    <label>Sections</label>
+    <div class="section-toggles">
+      <label><input type="checkbox" id="chkAnatomy" checked> Anatomy</label>
+      <label><input type="checkbox" id="chkLayout" checked> Layout</label>
+      <label><input type="checkbox" id="chkProps" checked> Properties</label>
+    </div>
+  </div>
+</div>
+
+<div id="output"></div>
+<div class="info-bar" id="info"></div>
+
+<script>
+const THEME = {
+  bg:'#eef2f6', section:'#ffffff', sectionBg:'#f5f7fa',
+  tableHeaderBg:'#eaeff4', tableRowAlt:'#f7f9fb', border:'#dce4ee',
+  text:'#142033', muted:'#5e6d82', accent:'#2563eb',
+  overlayBlue:'#3e7bf5', overlayGreen:'#2fa874', overlayOrange:'#f1893f',
+};
+
+let currentW = 414, currentH = 896;
+
+// ── Mock UI Elements (relative to target) ──────────
+function getMockMobileElements(tw, th) {
+  return [
+    { name:'Status Bar',     type:'FRAME',     x:0,  y:0,   w:tw,     h:44,  bg:'#e3e8f0' },
+    { name:'Header',         type:'FRAME',     x:0,  y:44,  w:tw,     h:56,  bg:'#dce4f0' },
+    { name:'Back Button',    type:'INSTANCE',  x:12, y:54,  w:32,     h:32,  bg:'#c8d4e4' },
+    { name:'Title',          type:'TEXT',       x:56, y:60,  w:Math.min(160,tw-112), h:20, bg:'#d5dce8' },
+    { name:'Action Icon',    type:'INSTANCE',  x:tw-44, y:54, w:32,  h:32,  bg:'#c8d4e4' },
+    { name:'Content Area',   type:'FRAME',     x:0,  y:100, w:tw,     h:Math.max(100,th-200), bg:'#f0f2f6' },
+    { name:'Card 1',         type:'INSTANCE',  x:16, y:116, w:tw-32,  h:80,  bg:'#e8ecf2' },
+    { name:'Card 2',         type:'INSTANCE',  x:16, y:204, w:tw-32,  h:80,  bg:'#e8ecf2' },
+    { name:'Card 3',         type:'INSTANCE',  x:16, y:292, w:tw-32,  h:80,  bg:'#e8ecf2' },
+    { name:'Tab Bar',        type:'FRAME',     x:0,  y:th-84, w:tw,   h:84,  bg:'#e3e8f0' },
+    { name:'Tab Home',       type:'INSTANCE',  x:Math.round(tw*0.1),  y:th-76, w:48, h:48, bg:'#c8d4e4' },
+    { name:'Tab Search',     type:'INSTANCE',  x:Math.round(tw*0.35), y:th-76, w:48, h:48, bg:'#c8d4e4' },
+    { name:'Tab Profile',    type:'INSTANCE',  x:Math.round(tw*0.6),  y:th-76, w:48, h:48, bg:'#c8d4e4' },
+  ];
+}
+
+function getMockWebElements(tw, th) {
+  return [
+    { name:'Top Nav',        type:'FRAME',     x:0,   y:0,   w:tw,     h:64,  bg:'#e3e8f0' },
+    { name:'Logo',           type:'INSTANCE',  x:32,  y:16,  w:120,    h:32,  bg:'#c8d4e4' },
+    { name:'Nav Links',      type:'FRAME',     x:200, y:20,  w:400,    h:24,  bg:'#dce4f0' },
+    { name:'User Avatar',    type:'INSTANCE',  x:tw-72, y:16, w:32,   h:32,  bg:'#c8d4e4' },
+    { name:'Sidebar',        type:'FRAME',     x:0,   y:64,  w:240,    h:th-64, bg:'#f0f2f6' },
+    { name:'Sidebar Item 1', type:'INSTANCE',  x:12,  y:80,  w:216,    h:36,  bg:'#dce4f0' },
+    { name:'Sidebar Item 2', type:'INSTANCE',  x:12,  y:120, w:216,    h:36,  bg:'#dce4f0' },
+    { name:'Sidebar Item 3', type:'INSTANCE',  x:12,  y:160, w:216,    h:36,  bg:'#dce4f0' },
+    { name:'Main Content',   type:'FRAME',     x:240, y:64,  w:tw-240, h:th-64, bg:'#f8f9fa' },
+    { name:'Hero Card',      type:'INSTANCE',  x:272, y:96,  w:tw-304, h:200, bg:'#e8ecf2' },
+    { name:'Data Table',     type:'FRAME',     x:272, y:320, w:tw-304, h:Math.max(100,th-420), bg:'#e8ecf2' },
+  ];
+}
+
+function getMockElements(tw, th) {
+  return tw >= 768 ? getMockWebElements(tw, th) : getMockMobileElements(tw, th);
+}
+
+// ── Mock Layout Specs ──────────────────────────────
+function getMockMobileLayoutSpecs(tw, th) {
+  return [
+    { name:'Root', layoutMode:'VERTICAL', itemSpacing:0,
+      bounds:{x:0,y:0,w:tw,h:th}, padding:{top:0,right:0,bottom:0,left:0},
+      primaryAxisSizingMode:'FIXED', counterAxisSizingMode:'FIXED',
+      gapLine:null },
+    { name:'Header', layoutMode:'HORIZONTAL', itemSpacing:12,
+      bounds:{x:0,y:44,w:tw,h:56}, padding:{top:12,right:12,bottom:12,left:12},
+      primaryAxisSizingMode:'FIXED', counterAxisSizingMode:'AUTO',
+      gapLine:{x1:44,y1:72,x2:56,y2:72} },
+    { name:'Content Area', layoutMode:'VERTICAL', itemSpacing:8,
+      bounds:{x:0,y:100,w:tw,h:Math.max(100,th-200)}, padding:{top:16,right:16,bottom:16,left:16},
+      primaryAxisSizingMode:'AUTO', counterAxisSizingMode:'FIXED',
+      gapLine:{x1:tw/2,y1:196,x2:tw/2,y2:204} },
+    { name:'Tab Bar', layoutMode:'HORIZONTAL', itemSpacing:0,
+      bounds:{x:0,y:th-84,w:tw,h:84}, padding:{top:8,right:24,bottom:28,left:24},
+      primaryAxisSizingMode:'FIXED', counterAxisSizingMode:'AUTO',
+      gapLine:null },
+  ];
+}
+
+function getMockWebLayoutSpecs(tw, th) {
+  return [
+    { name:'Root', layoutMode:'VERTICAL', itemSpacing:0,
+      bounds:{x:0,y:0,w:tw,h:th}, padding:{top:0,right:0,bottom:0,left:0},
+      primaryAxisSizingMode:'FIXED', counterAxisSizingMode:'FIXED',
+      gapLine:null },
+    { name:'Top Nav', layoutMode:'HORIZONTAL', itemSpacing:16,
+      bounds:{x:0,y:0,w:tw,h:64}, padding:{top:16,right:32,bottom:16,left:32},
+      primaryAxisSizingMode:'FIXED', counterAxisSizingMode:'AUTO',
+      gapLine:{x1:152,y1:32,x2:200,y2:32} },
+    { name:'Sidebar', layoutMode:'VERTICAL', itemSpacing:4,
+      bounds:{x:0,y:64,w:240,h:th-64}, padding:{top:16,right:12,bottom:16,left:12},
+      primaryAxisSizingMode:'AUTO', counterAxisSizingMode:'FIXED',
+      gapLine:{x1:120,y1:116,x2:120,y2:120} },
+    { name:'Main Content', layoutMode:'VERTICAL', itemSpacing:24,
+      bounds:{x:240,y:64,w:tw-240,h:th-64}, padding:{top:32,right:32,bottom:32,left:32},
+      primaryAxisSizingMode:'AUTO', counterAxisSizingMode:'FIXED',
+      gapLine:{x1:tw/2+120,y1:296,x2:tw/2+120,y2:320} },
+  ];
+}
+
+function getMockLayoutSpecs(tw, th) {
+  return tw >= 768 ? getMockWebLayoutSpecs(tw, th) : getMockMobileLayoutSpecs(tw, th);
+}
+
+function getMockProperties(tw) {
+  if (tw >= 768) return [
+    { name:'variant',    value:'default',      type:'VARIANT' },
+    { name:'theme',      value:'light',        type:'VARIANT' },
+    { name:'showSidebar',value:'true',         type:'BOOLEAN' },
+    { name:'title',      value:'"Dashboard"',  type:'TEXT' },
+    { name:'avatar',     value:'<UserAvatar>', type:'INSTANCE_SWAP' },
+  ];
+  return [
+    { name:'variant',    value:'default',      type:'VARIANT' },
+    { name:'size',       value:'compact',      type:'VARIANT' },
+    { name:'showTabBar', value:'true',         type:'BOOLEAN' },
+    { name:'title',      value:'"Home"',       type:'TEXT' },
+    { name:'icon',       value:'<BackIcon>',   type:'INSTANCE_SWAP' },
+  ];
+}
+
+// ── createArtworkFrame logic ───────────────────────
+function computeArtwork(targetW, targetH, maxContentWidth) {
+  const padding = 16;
+  const hasWidthCap = maxContentWidth != null && maxContentWidth > 80;
+  const availableWidth = hasWidthCap ? maxContentWidth - padding * 2 : targetW;
+  const scale = Math.min(1, availableWidth / targetW);
+  const cloneW = Math.round(targetW * scale);
+  const cloneH = Math.round(targetH * scale);
+  const naturalWidth = cloneW + padding * 2;
+  const frameWidth = hasWidthCap ? maxContentWidth : naturalWidth;
+  const frameHeight = cloneH + padding * 2;
+  const cloneX = Math.round((frameWidth - cloneW) / 2);
+  const cloneY = padding;
+  return { frameWidth, frameHeight, cloneX, cloneY, cloneW, cloneH, scale, padding };
+}
+
+// ── Section width: matches computeColumnWidth in code.ts ──
+const COLUMN_WIDTH = 540;
+function computeSectionWidth(targetW) {
+  // Column adapts to target: max(540, targetW + 72)
+  return Math.max(COLUMN_WIDTH, Math.round(targetW + 72));
+}
+function contentWidth(sectionW) { return sectionW - 40; }
+
+// ── Render helpers ─────────────────────────────────
+function renderSectionFrame(title, innerHtml) {
+  return `<div class="section-frame">
+    <div class="section-header"><div class="accent-bar"></div><div class="section-title">${title}</div></div>
+    ${innerHtml}
+  </div>`;
+}
+
+function renderTableRow(cells, widths, isHeader, rowIndex) {
+  const cls = isHeader ? 'table-row header' : (rowIndex % 2 === 1 ? 'table-row alt' : 'table-row');
+  return `<div class="${cls}">${cells.map((c,i) =>
+    `<div class="table-cell ${isHeader?'header':'body'}" style="width:${widths[i]}px">${c}</div>`
+  ).join('')}</div>`;
+}
+
+function renderContentCard(title, tableHtml) {
+  return `<div class="content-card"><div class="card-title">${title}</div>${tableHtml}</div>`;
+}
+
+// ── Anatomy Artwork + Markers ──────────────────────
+function renderAnatomyArtwork(targetW, targetH, cw) {
+  const art = computeArtwork(targetW, targetH, cw);
+  const elements = getMockElements(targetW, targetH);
+  let html = '';
+
+  html += `<div class="clone" style="left:${art.cloneX}px;top:${art.cloneY}px;width:${art.cloneW}px;height:${art.cloneH}px;">`;
+  html += '<div class="clone-inner">';
+  elements.forEach(el => {
+    html += `<div class="mock-el" style="left:${el.x*art.scale}px;top:${el.y*art.scale}px;width:${el.w*art.scale}px;height:${el.h*art.scale}px;background:${el.bg}">${el.name}</div>`;
+  });
+  html += '</div></div>';
+
+  const BADGE = 16;
+  elements.forEach((el, i) => {
+    const elX = art.cloneX + el.x * art.scale;
+    const elY = art.cloneY + el.y * art.scale;
+    const elW = Math.max(4, el.w * art.scale);
+    const elH = Math.max(4, el.h * art.scale);
+    html += `<div class="highlight-rect" style="left:${elX}px;top:${elY}px;width:${elW}px;height:${elH}px"></div>`;
+    const bx = Math.max(0, elX - BADGE/2), by = Math.max(0, elY - BADGE/2);
+    html += `<div class="badge anatomy" style="left:${bx}px;top:${by}px">${i+1}</div>`;
+    const cx = elX+elW/2, cy = elY+elH/2, bcx = bx+BADGE/2, bcy = by+BADGE/2;
+    const dx = cx-bcx, dy = cy-bcy, len = Math.sqrt(dx*dx+dy*dy);
+    if (len > BADGE) {
+      html += `<div class="connector-line" style="left:${bcx}px;top:${bcy}px;width:${len}px;transform:rotate(${-(Math.atan2(dy,dx)*180/Math.PI)}deg)"></div>`;
+    }
+  });
+
+  return { html, art, elements };
+}
+
+// ── Layout Artwork + Markers ───────────────────────
+function renderLayoutArtwork(targetW, targetH, cw) {
+  const art = computeArtwork(targetW, targetH, cw);
+  const elements = getMockElements(targetW, targetH);
+  const specs = getMockLayoutSpecs(targetW, targetH);
+  let html = '';
+
+  html += `<div class="clone" style="left:${art.cloneX}px;top:${art.cloneY}px;width:${art.cloneW}px;height:${art.cloneH}px;">`;
+  html += '<div class="clone-inner">';
+  elements.forEach(el => {
+    html += `<div class="mock-el" style="left:${el.x*art.scale}px;top:${el.y*art.scale}px;width:${el.w*art.scale}px;height:${el.h*art.scale}px;background:${el.bg}">${el.name}</div>`;
+  });
+  html += '</div></div>';
+
+  const BADGE = 16;
+  specs.forEach((spec, i) => {
+    const bx = art.cloneX + spec.bounds.x * art.scale;
+    const by = art.cloneY + spec.bounds.y * art.scale;
+    const bw = spec.bounds.w * art.scale;
+    const bh = spec.bounds.h * art.scale;
+
+    html += `<div class="container-outline" style="left:${bx}px;top:${by}px;width:${Math.max(4,bw)}px;height:${Math.max(4,bh)}px"></div>`;
+
+    const pl = spec.padding.left*art.scale, pr = spec.padding.right*art.scale;
+    const pt = spec.padding.top*art.scale, pb = spec.padding.bottom*art.scale;
+    const cW = Math.max(2, bw-pl-pr), cH = Math.max(2, bh-pt-pb);
+    if (cW > 4 && cH > 4)
+      html += `<div class="content-fill" style="left:${bx+pl}px;top:${by+pt}px;width:${cW}px;height:${cH}px"></div>`;
+
+    if (spec.gapLine && spec.itemSpacing > 0) {
+      const gx1=art.cloneX+spec.gapLine.x1*art.scale, gy1=art.cloneY+spec.gapLine.y1*art.scale;
+      const gx2=art.cloneX+spec.gapLine.x2*art.scale, gy2=art.cloneY+spec.gapLine.y2*art.scale;
+      const dx=gx2-gx1, dy=gy2-gy1, len=Math.sqrt(dx*dx+dy*dy);
+      if (len > 2) {
+        html += `<div class="gap-line" style="left:${gx1}px;top:${gy1}px;width:${len}px;transform:rotate(${-(Math.atan2(dy,dx)*180/Math.PI)}deg)"><div class="gap-line-inner"></div></div>`;
+        html += `<div class="gap-label" style="left:${gx1+dx/2-6}px;top:${gy1+dy/2-12}px">${spec.itemSpacing}px</div>`;
+      }
+    }
+
+    const isH = spec.layoutMode === 'HORIZONTAL';
+    const arrowLen = Math.min(20, (isH ? bw : bh) * 0.3);
+    if (arrowLen > 6) {
+      const ax = isH ? bx+pl+2 : bx+bw/2;
+      const ay = isH ? by+bh/2 : by+pt+2;
+      html += `<div class="dir-arrow" style="left:${ax}px;top:${ay-6}px">${isH?'→':'↓'}</div>`;
+    }
+
+    html += `<div class="badge layout" style="left:${Math.max(0,bx-BADGE/2)}px;top:${Math.max(0,by-BADGE/2)}px">${i+1}</div>`;
+  });
+
+  return { html, art, specs };
+}
+
+// ── Anatomy Section ────────────────────────────────
+function renderAnatomySection(targetW, targetH, cw) {
+  const { html: artHtml, art, elements } = renderAnatomyArtwork(targetW, targetH, cw);
+  const tw = cw < 420
+    ? { idx:16, el:88, type:46, detail:155 }
+    : cw < 700
+    ? { idx:18, el:104, type:54, detail:188 }
+    : { idx:20, el:180, type:70, detail:340 };
+  const widths = [tw.idx, tw.el, tw.type, tw.detail];
+  let tableHtml = renderTableRow(['#','Element','Type','Details'], widths, true, 0);
+  elements.forEach((el,i) => {
+    const detail = el.type==='INSTANCE' ? `depends on ${el.name}` : `Fill: ${el.bg}`;
+    tableHtml += renderTableRow([String(i+1), el.name, el.type, detail], widths, false, i);
+  });
+  const artworkFrame = `<div class="artwork" style="width:${art.frameWidth}px;height:${art.frameHeight}px">${artHtml}</div>`;
+  return renderSectionFrame('Anatomy', `
+    <div class="text-muted">${elements.length} highlighted elements from ${elements.length} detected.</div>
+    ${renderContentCard('Highlighted layers', tableHtml)}
+    <div class="text-caption">Numbers on the artwork map to rows in the table above.</div>
+    ${artworkFrame}
+  `);
+}
+
+// ── Layout Section ─────────────────────────────────
+function renderLayoutSection(targetW, targetH, cw) {
+  const { html: artHtml, art, specs } = renderLayoutArtwork(targetW, targetH, cw);
+  const pillsHtml = `<div class="pills-row">
+    <div class="pill"><span class="pill-label">Nodes</span><span class="pill-value">${specs.length}</span></div>
+    <div class="pill"><span class="pill-label">Rows</span><span class="pill-value">${specs.filter(s=>s.layoutMode==='HORIZONTAL').length}</span></div>
+    <div class="pill"><span class="pill-label">Columns</span><span class="pill-value">${specs.filter(s=>s.layoutMode==='VERTICAL').length}</span></div>
+    <div class="pill"><span class="pill-label">Avg gap</span><span class="pill-value">${Math.round(specs.reduce((s,sp)=>s+sp.itemSpacing,0)/Math.max(1,specs.length))}px</span></div>
+  </div>`;
+  const rw = cw < 420 ? [16,80,28,38,64,44] : cw < 700 ? [18,96,32,44,76,50] : [18,150,34,80,100,56];
+  let tableHtml = renderTableRow(['#','Node','Dir','Gap','Pad','Size'], rw, true, 0);
+  specs.forEach((sp,i) => {
+    const dir = sp.layoutMode==='HORIZONTAL' ? 'Row' : 'Col';
+    const pad = `${sp.padding.top}/${sp.padding.right}/${sp.padding.bottom}/${sp.padding.left}`;
+    const sizing = `${sp.primaryAxisSizingMode==='AUTO'?'Auto':'Fix'}/${sp.counterAxisSizingMode==='AUTO'?'Auto':'Fix'}`;
+    tableHtml += renderTableRow([String(i+1), sp.name, dir, sp.itemSpacing+'px', pad, sizing], rw, false, i);
+  });
+  const legendHtml = `<div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--overlayBlue)"></div><span class="legend-label">Container</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--overlayGreen)"></div><span class="legend-label">Content</span></div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--overlayOrange)"></div><span class="legend-label">Gap</span></div>
+  </div>`;
+  const artworkFrame = `<div class="artwork" style="width:${art.frameWidth}px;height:${art.frameHeight}px">${artHtml}</div>`;
+  return renderSectionFrame('Layout & Spacing', `
+    <div class="text-muted">Auto-layout map with spacing, padding, alignment, and sizing behavior.</div>
+    <div class="content-card">${pillsHtml}<div class="layout-table">${tableHtml}</div></div>
+    ${legendHtml}
+    ${artworkFrame}
+  `);
+}
+
+// ── Properties Section ─────────────────────────────
+function renderPropertiesSection(targetW, cw) {
+  const props = getMockProperties(targetW);
+  const tw = cw < 420 ? [60,100,60] : cw < 700 ? [80,140,80] : [100,200,100];
+  let tableHtml = renderTableRow(['Property','Value','Type'], tw, true, 0);
+  props.forEach((p,i) => tableHtml += renderTableRow([p.name, p.value, p.type], tw, false, i));
+  return renderSectionFrame('Properties', `
+    <div class="text-muted">${props.length} properties detected on the selected component.</div>
+    ${renderContentCard('Component properties', tableHtml)}
+  `);
+}
+
+// ── Main render ────────────────────────────────────
+function render() {
+  const targetW = currentW, targetH = currentH;
+  document.getElementById('sizeVal').textContent = `${targetW} × ${targetH}`;
+
+  const showAnatomy = document.getElementById('chkAnatomy').checked;
+  const showLayout = document.getElementById('chkLayout').checked;
+  const showProps = document.getElementById('chkProps').checked;
+
+  const sectionW = computeSectionWidth(targetW);
+  const cw = contentWidth(sectionW);
+
+  // Root width: 2 sections + gap + root padding
+  const rootPad = 56;
+  const rootW = (showAnatomy && showLayout) ? sectionW * 2 + 18 + rootPad : sectionW + rootPad;
+
+  let sectionsHtml = '';
+
+  if (showAnatomy && showLayout) {
+    // Side-by-side: Anatomy left, Layout right
+    sectionsHtml += `<div class="sbs-row">
+      ${renderAnatomySection(targetW, targetH, cw)}
+      ${renderLayoutSection(targetW, targetH, cw)}
+    </div>`;
+  } else {
+    if (showAnatomy) sectionsHtml += renderAnatomySection(targetW, targetH, cw);
+    if (showLayout) sectionsHtml += renderLayoutSection(targetW, targetH, cw);
+  }
+
+  if (showProps) sectionsHtml += renderPropertiesSection(targetW, cw);
+
+  document.getElementById('output').innerHTML = `
+    <div class="specs-root" style="width:${rootW}px">${sectionsHtml}</div>
+  `;
+
+  document.getElementById('info').innerHTML = `
+    <span>target: ${targetW}×${targetH}</span>
+    <span>sectionW: ${sectionW}px</span>
+    <span>contentW: ${cw}px</span>
+    <span>rootW: ${rootW}px</span>
+    <span>scale: ${computeArtwork(targetW,targetH,cw).scale.toFixed(3)}</span>
+    <span class="ok">artworkW = contentW (INHERIT, no STRETCH)</span>
+  `;
+}
+
+// ── Device preset buttons ──────────────────────────
+document.querySelectorAll('.device-btns button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.device-btns button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentW = parseInt(btn.dataset.w);
+    currentH = parseInt(btn.dataset.h);
+    render();
+  });
+});
+document.getElementById('chkAnatomy').addEventListener('change', render);
+document.getElementById('chkLayout').addEventListener('change', render);
+document.getElementById('chkProps').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>

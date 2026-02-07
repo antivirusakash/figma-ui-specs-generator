@@ -117,7 +117,6 @@ export function createLayoutSection(
 ) {
   const section = deps.createSectionFrame(title, theme);
   const compact = settings.agentReadyData && settings.aiCompactMode;
-  const narrow = settings.multiColumn || compact;
 
   if (specs.length === 0) {
     section.appendChild(deps.createText("No auto-layout nodes detected.", 11, FONT_REGULAR, theme.muted, "muted"));
@@ -206,13 +205,16 @@ export function createLayoutSection(
   cards.fills = [];
   const layoutSectionContentWidth = settings.sectionWidth
     ? settings.sectionWidth - 40
-    : narrow ? 500 : 800;
-  const layoutTight = layoutSectionContentWidth < 420;
-  const rowWidths = layoutTight
+    : (settings.multiColumn || compact) ? 500 : 800;
+  const rowWidths = layoutSectionContentWidth < 420
     ? [16, 80, 28, 38, 64, 44]
-    : settings.multiColumn
+    : layoutSectionContentWidth < 700
     ? [18, 96, 32, 44, 76, 50]
-    : [18, 150, 34, 80, 100, 56];
+    : layoutSectionContentWidth < 1100
+    ? [18, 150, 34, 80, 100, 56]
+    : [20, Math.round(layoutSectionContentWidth * 0.20), 36,
+       Math.round(layoutSectionContentWidth * 0.12),
+       Math.round(layoutSectionContentWidth * 0.14), 60];
   cards.appendChild(createLayoutTableHeader(theme, rowWidths, deps));
   displaySpecs.forEach((spec, index) => {
     cards.appendChild(createLayoutSpecRow(spec, index, settings, theme, rowWidths, deps));
@@ -230,12 +232,7 @@ export function createLayoutSection(
   artworkPanel.fills = [];
   artworkPanel.appendChild(createLayoutLegend(theme, deps));
 
-  const artwork = deps.createArtworkFrame(
-    target,
-    0,
-    theme,
-    layoutTight ? undefined : layoutSectionContentWidth
-  );
+  const artwork = deps.createArtworkFrame(target, 0, theme, layoutSectionContentWidth);
   renderLayoutMarkers(artwork, specsForArtwork, showOuter, theme, deps, settings);
   artworkPanel.appendChild(artwork);
   body.appendChild(artworkPanel);
@@ -278,12 +275,16 @@ function createLayoutSpecRow(
   const gap = deps.formatSpacing(spec.itemSpacing, settings);
   const padding = formatPaddingShort(spec.padding, settings, deps);
   const sizing = `${shortSizing(spec.primaryAxisSizingMode)}/${shortSizing(spec.counterAxisSizingMode)}`;
+  const cw = settings.sectionWidth
+    ? settings.sectionWidth - 40
+    : settings.multiColumn ? 500 : 800;
+  const nameMax = cw < 420 ? 18 : cw < 700 ? 22 : cw < 1100 ? 28 : 45;
 
   const wrapCols = new Set([4]);
   return createLayoutRowCells(
     [
       String(index + 1),
-      deps.truncateText(spec.name, settings.multiColumn ? 22 : 28),
+      deps.truncateText(spec.name, nameMax),
       direction,
       gap,
       deps.truncateText(padding, 60),

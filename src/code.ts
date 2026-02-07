@@ -170,10 +170,22 @@ async function generateSpecs(settings: Settings) {
 
     specsFrame = createSpecsRootFrame(target.name, target, settings, theme);
     const columnCount = settings.multiColumn ? Math.min(4, Math.max(2, settings.columnCount || 2)) : 1;
+    const dynamicColumnWidth = settings.multiColumn ? computeColumnWidth(target) : SPECS_COLUMN_WIDTH;
     const columns = settings.multiColumn
-      ? createColumnFrames(specsFrame, columnCount, SPECS_COLUMN_WIDTH)
+      ? createColumnFrames(specsFrame, columnCount, dynamicColumnWidth)
       : [specsFrame];
     const columnHeights = columns.map(() => 0);
+
+    // Derive actual section width so artwork frames size correctly
+    if (!settings.sectionWidth) {
+      if (settings.multiColumn) {
+        settings = { ...settings, sectionWidth: dynamicColumnWidth };
+      } else {
+        const rootPad = (specsFrame.paddingLeft ?? 0) + (specsFrame.paddingRight ?? 0);
+        settings = { ...settings, sectionWidth: Math.max(280, Math.round(specsFrame.width - rootPad)) };
+      }
+    }
+
     let sectionCount = 0;
     const appendSection = (section: FrameNode) => {
       let targetColumnIndex = 0;
@@ -282,7 +294,7 @@ async function generateSpecs(settings: Settings) {
     }
 
     // Side-by-side row when both Anatomy and Layout exist (single-column mode only)
-    if (anatomySection && layoutSection) {
+    if (sideBySideAnatomy && anatomySection && layoutSection) {
       const row = figma.createFrame();
       row.name = "Anatomy + Layout";
       row.layoutMode = "HORIZONTAL";
@@ -443,6 +455,12 @@ async function getVariantPropertyNames(target?: SceneNode) {
   return Object.keys(context.componentSet.variantGroupProperties ?? {});
 }
 
+function computeColumnWidth(target: SceneNode) {
+  const targetWidth = target.absoluteBoundingBox?.width ?? 320;
+  // Column must be wide enough for the UI clone + artwork padding (32) + section padding (40)
+  return Math.max(SPECS_COLUMN_WIDTH, Math.round(targetWidth + 72));
+}
+
 function createSpecsRootFrame(name: string, target: SceneNode, settings: Settings, theme: Theme) {
   const frame = figma.createFrame();
   frame.name = `Specs · ${name}`;
@@ -461,7 +479,7 @@ function createSpecsRootFrame(name: string, target: SceneNode, settings: Setting
 
   const targetWidth = target.absoluteBoundingBox?.width ?? 320;
   const columnCount = settings.multiColumn ? Math.min(4, Math.max(2, settings.columnCount || 2)) : 1;
-  const columnWidth = SPECS_COLUMN_WIDTH;
+  const columnWidth = settings.multiColumn ? computeColumnWidth(target) : SPECS_COLUMN_WIDTH;
   const singleColumnWidth = Math.round(targetWidth + 520);
   const multiColumnWidth =
     columnCount * columnWidth + (columnCount - 1) * SPECS_COLUMN_GAP + frame.paddingLeft + frame.paddingRight;
@@ -673,8 +691,17 @@ async function createNestedComponentSections(
   const nestedInstances = collectNestedInstances(target);
   if (nestedInstances.length === 0) return [];
 
-  const sections: FrameNode[] = [];
+  // Deduplicate: only one spec per unique main component
+  const seen = new Map<string, InstanceNode>();
   for (const instance of nestedInstances) {
+    const main = await getMainComponentSafe(instance);
+    const key = main?.id ?? instance.name;
+    if (!seen.has(key)) seen.set(key, instance);
+  }
+  const uniqueInstances = [...seen.values()].slice(0, 8);
+
+  const sections: FrameNode[] = [];
+  for (const instance of uniqueInstances) {
     const container = figma.createFrame();
     container.name = `Nested Component · ${instance.name}`;
     container.layoutMode = "VERTICAL";

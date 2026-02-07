@@ -13,11 +13,11 @@ export async function collectAnatomyElements(
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
-  const walk = async (node: SceneNode, path: string) => {
+  const walk = async (node: SceneNode, path: string, depth: number) => {
     if (!node.visible) return;
 
     const shouldStop = node.type === "INSTANCE" && node !== root;
-    const isElement = isRelevantNode(node);
+    const isElement = isRelevantNode(node, depth);
 
     if (isElement) {
       const baseKey = `${path}/${node.type}:${node.name}`;
@@ -53,12 +53,12 @@ export async function collectAnatomyElements(
 
     if ("children" in node && !shouldStop) {
       for (const child of node.children) {
-        await walk(child, `${path}/${node.name}`);
+        await walk(child, `${path}/${node.name}`, depth + 1);
       }
     }
   };
 
-  await walk(root, "root");
+  await walk(root, "root", 0);
   return elements;
 }
 
@@ -107,18 +107,50 @@ export async function resolveComponentSet(target?: SceneNode): Promise<Component
   return null;
 }
 
-export function isRelevantNode(node: SceneNode) {
-  if (node.type === "TEXT") return true;
-  if (node.type === "LINE") return true;
-  if (node.type === "POLYGON") return true;
-  if (node.type === "STAR") return true;
-  if (node.type === "RECTANGLE") return true;
-  if (node.type === "ELLIPSE") return true;
-  if (node.type === "VECTOR") return true;
-  if (node.type === "BOOLEAN_OPERATION") return true;
+export function isRelevantNode(node: SceneNode, depth = 0) {
+  // Always include instances, text, components, boolean ops
   if (node.type === "INSTANCE") return true;
-  if (node.type === "FRAME") return true;
+  if (node.type === "TEXT") return true;
   if (node.type === "COMPONENT") return true;
-  if (node.type === "GROUP") return true;
+  if (node.type === "BOOLEAN_OPERATION") return true;
+
+  // Skip purely structural frames/groups at depth > 3
+  if (depth > 3 && (node.type === "FRAME" || node.type === "GROUP")) {
+    if (!hasVisualProperties(node)) return false;
+  }
+
+  // Skip deep vectors/shapes at depth > 4 (usually icon internals)
+  if (depth > 4 && (node.type === "VECTOR" || node.type === "RECTANGLE"
+      || node.type === "ELLIPSE" || node.type === "LINE"
+      || node.type === "POLYGON" || node.type === "STAR")) {
+    return false;
+  }
+
+  if (node.type === "FRAME" || node.type === "GROUP"
+      || node.type === "RECTANGLE" || node.type === "ELLIPSE"
+      || node.type === "VECTOR" || node.type === "LINE"
+      || node.type === "POLYGON" || node.type === "STAR") return true;
+
+  return false;
+}
+
+function hasVisualProperties(node: SceneNode): boolean {
+  if (!("fills" in node)) return false;
+  const fills = node.fills;
+  if (fills && fills !== figma.mixed && fills.length > 0) {
+    const hasVisibleFill = (fills as readonly Paint[]).some(f => f.visible !== false);
+    if (hasVisibleFill) return true;
+  }
+  if ("strokes" in node) {
+    const strokes = node.strokes;
+    if (strokes && strokes.length > 0) return true;
+  }
+  if ("effects" in node) {
+    const effects = node.effects;
+    if (effects && effects.length > 0) {
+      const hasVisibleEffect = (effects as readonly Effect[]).some(e => e.visible !== false);
+      if (hasVisibleEffect) return true;
+    }
+  }
   return false;
 }

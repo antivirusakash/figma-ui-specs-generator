@@ -153,7 +153,7 @@ export function createArtworkFrame(
   const frame = figma.createFrame();
   frame.name = "Artwork";
   frame.layoutMode = "NONE";
-  frame.layoutAlign = "STRETCH";
+  frame.layoutAlign = "INHERIT";
   frame.clipsContent = true;
   frame.fills = [solidFill(theme.section)];
   frame.strokes = [solidFill(theme.border)];
