@@ -232,7 +232,7 @@ export function createLayoutSection(
   artworkPanel.fills = [];
   artworkPanel.appendChild(createLayoutLegend(theme, deps));
 
-  const artwork = deps.createArtworkFrame(target, 0, theme, layoutSectionContentWidth);
+  const artwork = deps.createArtworkFrame(target, 0, theme);
   renderLayoutMarkers(artwork, specsForArtwork, showOuter, theme, deps, settings);
   artworkPanel.appendChild(artwork);
   body.appendChild(artworkPanel);

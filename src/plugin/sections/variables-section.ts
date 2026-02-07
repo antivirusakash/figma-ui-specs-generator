@@ -151,13 +151,7 @@ export async function createModesSection(
       deps.fitTextToWidth(linesNode, settings.multiColumn ? 448 : 688);
       modeFrame.appendChild(linesNode);
 
-      const artwork = deps.createArtworkFrame(
-        target,
-        0,
-        theme,
-        settings.multiColumn ? 460 : 520,
-        settings.multiColumn ? 200 : 260
-      );
+      const artwork = deps.createArtworkFrame(target, 0, theme);
       try {
         artwork.setExplicitVariableModeForCollection(collection, mode.modeId);
       } catch (error) {

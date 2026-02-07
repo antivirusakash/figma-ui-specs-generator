@@ -146,9 +146,7 @@ export function createContentCard(theme: Theme) {
 export function createArtworkFrame(
   target: SceneNode,
   markerGutter = 0,
-  theme: Theme,
-  maxContentWidth?: number,
-  maxContentHeight?: number
+  theme: Theme
 ) {
   const frame = figma.createFrame();
   frame.name = "Artwork";
@@ -163,30 +161,17 @@ export function createArtworkFrame(
   const clone = target.clone();
   const padding = 16;
 
-  // Scale clone to fit within available content width when it would overflow
-  const hasWidthCap = maxContentWidth != null && maxContentWidth > 80;
-  const availableWidth = hasWidthCap ? maxContentWidth - padding * 2 - markerGutter : clone.width;
-  const scale = Math.min(1, availableWidth / clone.width);
-  if (scale < 1) {
-    clone.resize(Math.round(clone.width * scale), Math.round(clone.height * scale));
-  }
-
-  const naturalWidth = clone.width + padding * 2 + markerGutter;
-  const frameWidth = hasWidthCap ? maxContentWidth : naturalWidth;
-
-  const naturalHeight = clone.height + padding * 2;
-  const hasHeightCap = maxContentHeight != null && maxContentHeight > 80;
-  const frameHeight = hasHeightCap ? Math.min(naturalHeight, maxContentHeight) : naturalHeight;
+  const frameWidth = clone.width + padding * 2 + markerGutter;
+  const frameHeight = clone.height + padding * 2;
   frame.resizeWithoutConstraints(frameWidth, frameHeight);
 
   frame.appendChild(clone);
-  const cloneX = Math.round((frameWidth - clone.width) / 2);
-  clone.x = cloneX;
+  clone.x = padding;
   clone.y = padding;
 
-  frame.setPluginData("cloneOffsetX", String(cloneX));
+  frame.setPluginData("cloneOffsetX", String(padding));
   frame.setPluginData("cloneOffsetY", String(padding));
-  frame.setPluginData("cloneScale", String(scale));
+  frame.setPluginData("cloneScale", "1");
 
   return frame;
 }

@@ -110,8 +110,7 @@ export function createAnatomySection(
     );
   }
 
-  // Artwork — pass section width so clone is centered and large UIs scale to fit.
-  const artwork = deps.createArtworkFrame(target, 0, theme, sectionContentWidth);
+  const artwork = deps.createArtworkFrame(target, 0, theme);
   renderAnatomyMarkers(artwork, highlights, theme, deps);
 
   if (settings.tabularAnatomy) {

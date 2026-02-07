@@ -357,16 +357,42 @@ export function createDataSection(
     chunks: chunks.length,
     renderedChunks: textChunks.length
   });
-  textChunks.forEach((chunk, index) => {
-    const card = deps.createContentCard(theme);
-    if (textChunks.length > 1) {
+  // Lay out chunk cards in sub-columns (side by side) when multiple chunks exist
+  const sectionContentWidth = deps.getSectionContentWidth(settings);
+  if (textChunks.length > 1) {
+    const columnsRow = figma.createFrame();
+    columnsRow.name = "Data Chunks";
+    columnsRow.layoutMode = "HORIZONTAL";
+    columnsRow.layoutAlign = "STRETCH";
+    columnsRow.primaryAxisSizingMode = "FIXED";
+    columnsRow.counterAxisSizingMode = "AUTO";
+    columnsRow.itemSpacing = 8;
+    columnsRow.fills = [];
+    columnsRow.resizeWithoutConstraints(sectionContentWidth, 1);
+
+    const chunkColWidth = Math.max(200, Math.floor((sectionContentWidth - 8 * (textChunks.length - 1)) / textChunks.length));
+
+    textChunks.forEach((chunk, index) => {
+      const card = deps.createContentCard(theme);
+      card.layoutGrow = 1;
+      card.resizeWithoutConstraints(chunkColWidth, 1);
       card.appendChild(deps.createText(`Chunk ${index + 1}/${textChunks.length}`, 9, FONT_MEDIUM, theme.text, "label"));
-    }
-    const chunkNode = deps.createText(chunk, 9, FONT_REGULAR, theme.text, "body");
-    deps.fitTextToWidth(chunkNode, deps.getSectionContentWidth(settings) - 24);
-    card.appendChild(chunkNode);
-    section.appendChild(card);
-  });
+      const chunkNode = deps.createText(chunk, 9, FONT_REGULAR, theme.text, "body");
+      deps.fitTextToWidth(chunkNode, chunkColWidth - 24);
+      card.appendChild(chunkNode);
+      columnsRow.appendChild(card);
+    });
+
+    section.appendChild(columnsRow);
+  } else {
+    textChunks.forEach((chunk) => {
+      const card = deps.createContentCard(theme);
+      const chunkNode = deps.createText(chunk, 9, FONT_REGULAR, theme.text, "body");
+      deps.fitTextToWidth(chunkNode, sectionContentWidth - 24);
+      card.appendChild(chunkNode);
+      section.appendChild(card);
+    });
+  }
   if (chunks.length > textChunks.length) {
     section.appendChild(
       deps.createText(
