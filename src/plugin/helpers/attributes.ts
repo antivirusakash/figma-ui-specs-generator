@@ -1,8 +1,8 @@
 import { FONT_REGULAR } from "../constants";
 import { log, logError } from "../logger";
 import type { Inventory } from "../inventory";
-import type { Attribute, BoundVariablesMap, Settings, TokenValueMap } from "../types";
-import { formatColor, formatNumber, formatSpacing, getFirstSolidPaint, isMixed } from "./format";
+import type { Attribute, AttributeFormat, BoundVariablesMap, Settings, TokenValueMap } from "../types";
+import { formatColor, formatNumber, formatSpacing, getFirstSolidPaint, isMixed, extractIconColor } from "./format";
 import { extractTokensStudioMap, findTokenValue, getSafeSharedPluginDataKeys, SHARED_PLUGIN_NAMESPACES } from "./tokens";
 
 export async function collectAttributes(node: SceneNode, inventory: Inventory, settings: Settings): Promise<Attribute[]> {
@@ -53,10 +53,18 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
 
   if ("fills" in node && node.type !== "TEXT") {
     const paint = getFirstSolidPaint(node.fills as readonly Paint[] | typeof figma.mixed | null | undefined);
-    if (paint) {
-      const value = formatColor(paint, settings);
+    // For icon-sized instances/components, prefer the child vector stroke/fill color
+    // over the container frame fill (which is often just a white background)
+    const isIconLike = (node.type === "INSTANCE" || node.type === "COMPONENT")
+      && Math.max(node.width, node.height) <= 48;
+    const iconPaint = isIconLike ? extractIconColor(node) : undefined;
+    const effectivePaint = iconPaint ?? paint;
+    if (effectivePaint) {
+      const value = formatColor(effectivePaint, settings);
       const tokenValue = findTokenValue(tokens, ["fill", "fillcolor", "background", "backgroundcolor", "color"]);
-      const attr = await resolveStyleOrVariable(node, "fills", value, value, inventory, settings, tokenValue);
+      const attr = iconPaint
+        ? { value, format: "HARDCODED" as AttributeFormat, rawValue: value }
+        : await resolveStyleOrVariable(node, "fills", value, value, inventory, settings, tokenValue);
       attributes.push({
         key: "Fill",
         ...attr
@@ -90,6 +98,22 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
         settings,
         findTokenValue(tokens, ["strokewidth", "borderwidth", "borderweight"])
       ))
+    });
+  }
+
+  if ("strokeAlign" in node && typeof node.strokeAlign === "string" && node.strokeAlign !== "CENTER") {
+    attributes.push({
+      key: "Stroke align",
+      value: node.strokeAlign.toLowerCase(),
+      format: "HARDCODED" as AttributeFormat,
+    });
+  }
+
+  if ("layoutPositioning" in node && (node as any).layoutPositioning === "ABSOLUTE") {
+    attributes.push({
+      key: "Position",
+      value: "absolute",
+      format: "HARDCODED" as AttributeFormat,
     });
   }
 

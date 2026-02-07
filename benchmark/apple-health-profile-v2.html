@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=414, initial-scale=1.0">
+<title>Apple Health v2 — NutriScan Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" rel="stylesheet">
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0C0C0C;
+    color: #FFFFFF;
+    width: 414px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Status Bar (Frame 408) ── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 0;
+    height: 44px;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; color: #FFFFFF; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 12px; fill: #fff; }
+
+  /* ── Nav Title (Frame 19455) ── */
+  .nav-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px 8px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #FFFFFF;
+  }
+
+  /* ── Profile Header — column, gap:24, padding:20 20 12 20 ── */
+  .profile-header {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 20px 12px;
+    width: 414px;
+  }
+  /* Frame 19642 — row, gap:16, space-between / center */
+  .profile-row {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: center;
+    width: 374px;
+    height: 59px;
+  }
+  /* Frame 19514 — row, gap:16, min / center */
+  .profile-info {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+  }
+  /* Avatar — 59x59, fill:#FFFFFF */
+  .avatar {
+    width: 59px;
+    height: 59px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* Card Checkbox/Header/person — 34x34 inside avatar */
+  .avatar i { font-size: 34px; color: #bbb; }
+  /* Frame 13297 — column, gap:4 */
+  .name-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  /* H5/Bold — 24px Inter Bold, fill:#FFFFFF */
+  .user-name { font-size: 24px; font-weight: 700; color: #FFFFFF; line-height: 29px; }
+  /* B2/Medium — 14px Inter Medium, fill:#75757D */
+  .user-phone { font-size: 14px; font-weight: 500; color: #75757D; line-height: 22px; }
+  /* PencilSimple — 32x32 container, stroke:#0A84FF (Default/Primary/primary) */
+  .edit-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .edit-icon i { font-size: 24px; color: #0A84FF; }
+
+  /* ── Frame 19643 — Tags row, gap:7, space-between / center ── */
+  .tags-row {
+    display: flex;
+    flex-direction: row;
+    gap: 7px;
+    justify-content: space-between;
+    align-items: center;
+    width: 374px;
+    height: 26px;
+  }
+  /* Frame 19560/19561 — row, gap:12, 187x26, icon 20x20 fill:#FFFFFF */
+  .tag {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    width: 187px;
+    height: 26px;
+  }
+  .tag i { font-size: 20px; color: #FFFFFF; width: 20px; text-align: center; flex-shrink: 0; }
+  /* B0/Medium — 18px Inter Medium, fill:#FFFFFF */
+  .tag span { font-size: 18px; font-weight: 500; color: #FFFFFF; line-height: 26px; }
+
+  /* ── Frame 19645 — Sections container, column, gap:24 ── */
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 414px;
+  }
+  /* Section groups — column, gap:0 */
+  .section-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  /* Section header — row, gap:8, padding:0 20, 26px */
+  .section-header {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    padding: 0 20px;
+    height: 26px;
+    width: 414px;
+  }
+  /* B0/Semibold — 18px Inter Semi Bold, fill:#75757D */
+  .section-header span { font-size: 18px; font-weight: 600; color: #75757D; line-height: 26px; }
+
+  /* ── List Item — row, gap:8, padding:16 20, stroke:#1C1C1E inside ── */
+  .list-item {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    padding: 16px 20px;
+    width: 414px;
+    border-bottom: 1px solid #1C1C1E;
+  }
+  /* Frame 19560 — row, gap:12, min / center */
+  .list-item-content {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  /* Icon — 20x20, fill:#FFFFFF */
+  .list-item-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .list-item-icon i { font-size: 20px; color: #FFFFFF; }
+  /* B0/Medium — 18px Inter Medium, fill:#FFFFFF */
+  .list-item-text { font-size: 18px; font-weight: 500; color: #FFFFFF; line-height: 26px; flex: 1; }
+  /* CaretRight — 20x20, fill:#FFFFFF */
+  .list-item .chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .list-item .chevron i { font-size: 20px; color: #FFFFFF; }
+
+  /* ── Sync Apple Health — Profile Option List Item[2], 414x84, row, gap:8, padding:16 20 ── */
+  .sync-item {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 16px 20px;
+    width: 414px;
+    border-bottom: 1px solid #1C1C1E;
+  }
+  /* Frame 19560 — row, gap:12, min / min */
+  .sync-left {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-start;
+    flex: 1;
+  }
+  /* Frame 314026 — padding:3 0 (vertically center 20px icon with 26px text) */
+  .sync-icon-wrap {
+    padding: 3px 0;
+    flex-shrink: 0;
+    width: 20px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Apple-health — custom SVG, not Phosphor */
+  .sync-icon-wrap svg { width: 20px; height: 20px; display: block; }
+  /* Frame 314027 — column, gap:4 */
+  .sync-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  /* Frame 314058 — row, gap:8, center / center */
+  .sync-title-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+  }
+  /* B0/Medium — 18px Inter Medium, fill:#FFFFFF */
+  .sync-title-row span { font-size: 18px; font-weight: 500; color: #FFFFFF; line-height: 26px; }
+  /* CheckCircle — Weight=Fill, 20x20 */
+  .sync-title-row .check {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sync-title-row .check i { font-size: 20px; color: #34C759; }
+  /* B2/Medium — 14px Inter Medium, fill:#75757D */
+  .sync-subtitle { font-size: 14px; font-weight: 500; color: #75757D; line-height: 22px; }
+  /* Frame 314059 — padding:3 0 */
+  .sync-refresh {
+    padding: 3px 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* ArrowsClockwise — 24x24, fill:#FFFFFF */
+  .sync-refresh i { font-size: 24px; color: #FFFFFF; }
+
+  /* ── App Version ── */
+  .app-version {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+    width: 414px;
+  }
+  .app-version span { font-size: 14px; font-weight: 400; color: #75757D; }
+
+  /* ── Bottom Nav — row, space-around, border-top stroke:#1C1C1E ── */
+  .bottom-nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0 0;
+    width: 414px;
+    border-top: 1px solid #1C1C1E;
+    background: #0C0C0C;
+    margin-top: auto;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 0 8px;
+    flex: 1;
+  }
+  .nav-item i { font-size: 24px; color: #75757D; }
+  .nav-item span { font-size: 10px; font-weight: 500; color: #75757D; }
+  .nav-item.active i { color: #FFFFFF; }
+  .nav-item.active span { color: #FFFFFF; }
+
+  /* ── Home Indicator ── */
+  .home-indicator { display: flex; justify-content: center; padding: 8px 0 6px; }
+  .home-indicator div { width: 134px; height: 5px; border-radius: 100px; background: #FFFFFF; }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span class="time">9:41</span>
+  <div class="status-icons">
+    <svg viewBox="0 0 18 12"><rect x="0" y="7" width="3.5" height="5" rx="1" fill="#fff"/><rect x="4.5" y="4.5" width="3.5" height="7.5" rx="1" fill="#fff"/><rect x="9" y="2" width="3.5" height="10" rx="1" fill="#fff"/><rect x="13.5" y="0" width="3.5" height="12" rx="1" fill="#fff"/></svg>
+    <svg viewBox="0 0 16 12"><path d="M8 10.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-3.5-3a5.5 5.5 0 017 0 .75.75 0 01-1 1.12 4 4 0 00-5 0 .75.75 0 01-1-1.12zm-3-3a9 9 0 0113 0 .75.75 0 01-1 1.06 7.5 7.5 0 00-11 0A.75.75 0 011.5 4.5z" fill="#fff"/></svg>
+    <svg viewBox="0 0 27 12"><rect x="0" y="0" width="22" height="12" rx="2" stroke="#fff" stroke-width="1" fill="none"/><rect x="1.5" y="1.5" width="19" height="9" rx="1" fill="#fff"/><path d="M23.5 4v4a2 2 0 000-4z" fill="#fff" opacity="0.5"/></svg>
+  </div>
+</div>
+
+<!-- Nav Title -->
+<div class="nav-title">Profile</div>
+
+<!-- Profile Header -->
+<div class="profile-header">
+  <div class="profile-row">
+    <div class="profile-info">
+      <div class="avatar">
+        <i class="ph ph-user"></i>
+      </div>
+      <div class="name-block">
+        <span class="user-name">Akash Solanki</span>
+        <span class="user-phone">+91-85xxxxxx53</span>
+      </div>
+    </div>
+    <!-- PencilSimple — stroke:#0A84FF (Default/Primary/primary) -->
+    <div class="edit-icon">
+      <i class="ph ph-pencil-simple"></i>
+    </div>
+  </div>
+  <div class="tags-row">
+    <div class="tag">
+      <!-- ForkKnife — 20x20, fill:#FFFFFF -->
+      <i class="ph ph-fork-knife"></i>
+      <span>Vegetarian</span>
+    </div>
+    <div class="tag">
+      <!-- Target — 20x20, fill:#FFFFFF -->
+      <i class="ph ph-target"></i>
+      <span>Weight Loss</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sections -->
+<div class="sections">
+
+  <!-- General — Frame 313906 -->
+  <div class="section-group">
+    <div class="section-header"><span>General</span></div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-bowl-food"></i></div>
+        <span class="list-item-text">All Meals</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-calendar"></i></div>
+        <span class="list-item-text">Modify Meal Plan</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-chart-pie-slice"></i></div>
+        <span class="list-item-text">Modify Macros</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-share-network"></i></div>
+        <span class="list-item-text">Share Food Timeline</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-repeat"></i></div>
+        <span class="list-item-text">Manage Repeat Meals</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-gift"></i></div>
+        <span class="list-item-text">Refer a Friend</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+  </div>
+
+  <!-- Health & Devices — Frame 313910 -->
+  <div class="section-group">
+    <div class="section-header"><span>Health &amp; Devices</span></div>
+    <div class="sync-item">
+      <div class="sync-left">
+        <div class="sync-icon-wrap">
+          <!-- Apple-health — custom icon (not Phosphor), fill:#FF2D55 -->
+          <svg viewBox="0 0 24 24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09A5.99 5.99 0 007.5 3C4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z" fill="#FF2D55"/></svg>
+        </div>
+        <div class="sync-info">
+          <div class="sync-title-row">
+            <span>Sync Apple Health</span>
+            <!-- CheckCircle — Weight=Fill, color:#34C759 -->
+            <div class="check"><i class="ph-fill ph-check-circle"></i></div>
+          </div>
+          <span class="sync-subtitle">Last sync: Sept 25, 2025 11:34PM</span>
+        </div>
+      </div>
+      <!-- ArrowsClockwise — 24x24, fill:#FFFFFF -->
+      <div class="sync-refresh">
+        <i class="ph ph-arrows-clockwise"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support — Frame 313908 -->
+  <div class="section-group">
+    <div class="section-header"><span>Support</span></div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-currency-circle-dollar"></i></div>
+        <span class="list-item-text">Manage Subscription</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-translate"></i></div>
+        <span class="list-item-text">Change Langauge</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-star"></i></div>
+        <span class="list-item-text">Leave a Review</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-question"></i></div>
+        <span class="list-item-text">Contact Us</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+  </div>
+
+  <!-- About — Frame 313907 -->
+  <div class="section-group">
+    <div class="section-header"><span>About</span></div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-users-three"></i></div>
+        <span class="list-item-text">App Contributors</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-device-mobile"></i></div>
+        <span class="list-item-text">About NutriScan</span>
+      </div>
+      <div class="chevron"><i class="ph ph-caret-right"></i></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <div class="list-item-icon"><i class="ph ph-sign-out"></i></div>
+        <span class="list-item-text">Logout</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow Us — Frame 313909 -->
+  <div class="section-group">
+    <div class="section-header"><span>Follow Us</span></div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <span class="list-item-text">X (Twitter)</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <span class="list-item-text">Instagram</span>
+      </div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content">
+        <span class="list-item-text">Website</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Version -->
+  <div class="app-version"><span>App Version 1.2.1 (40)</span></div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item">
+    <i class="ph ph-cooking-pot"></i>
+    <span>Meals</span>
+  </div>
+  <div class="nav-item">
+    <i class="ph ph-calendar"></i>
+    <span>Diet Plan</span>
+  </div>
+  <div class="nav-item">
+    <i class="ph ph-cookie"></i>
+    <span>NutriBites</span>
+  </div>
+  <div class="nav-item active">
+    <i class="ph ph-user"></i>
+    <span>Profile</span>
+  </div>
+</div>
+
+<!-- Home Indicator -->
+<div class="home-indicator"><div></div></div>
+
+</body>
+</html>

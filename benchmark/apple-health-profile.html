@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=414, initial-scale=1.0">
+<title>Apple Health — NutriScan Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0C0C0C;
+    color: #FFFFFF;
+    width: 414px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Status Bar ── */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px 0;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .status-bar .time { font-size: 15px; font-weight: 600; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 12px; fill: #fff; }
+
+  /* ── Nav Title ── */
+  .nav-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px 8px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  /* ── Profile Header ── */
+  .profile-header {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 20px 12px;
+    width: 414px;
+  }
+  .profile-row {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .profile-info {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+  }
+  .avatar {
+    width: 59px;
+    height: 59px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .avatar svg { width: 32px; height: 32px; fill: #999; }
+  .name-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .user-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #FFFFFF;
+    line-height: 29px;
+  }
+  .user-phone {
+    font-size: 14px;
+    font-weight: 500;
+    color: #75757D;
+    line-height: 22px;
+  }
+  .edit-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .edit-icon svg { width: 20px; height: 20px; fill: #FFFFFF; }
+
+  /* ── Tags Row ── */
+  .tags-row {
+    display: flex;
+    flex-direction: row;
+    gap: 7px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tag {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    width: 187px;
+    height: 26px;
+  }
+  .tag svg { width: 20px; height: 20px; fill: #FFFFFF; flex-shrink: 0; }
+  .tag span {
+    font-size: 18px;
+    font-weight: 500;
+    color: #FFFFFF;
+    line-height: 26px;
+  }
+
+  /* ── Sections Container ── */
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 414px;
+  }
+
+  /* ── Section Group ── */
+  .section-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .section-header {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    padding: 0 20px;
+    height: 26px;
+  }
+  .section-header span {
+    font-size: 18px;
+    font-weight: 600;
+    color: #75757D;
+    line-height: 26px;
+  }
+
+  /* ── List Item ── */
+  .list-item {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    padding: 16px 20px;
+    width: 414px;
+    border-bottom: 1px solid #1C1C1E;
+  }
+  .list-item-content {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .list-item-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .list-item-icon svg { width: 24px; height: 24px; fill: #FFFFFF; }
+  .list-item-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #FFFFFF;
+    flex: 1;
+  }
+  .list-item .chevron {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .list-item .chevron svg { width: 20px; height: 20px; fill: #75757D; }
+
+  /* ── Special: Sync Apple Health ── */
+  .sync-item {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    padding: 16px 20px;
+    width: 414px;
+    border-bottom: 1px solid #1C1C1E;
+  }
+  .sync-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  .sync-title-row {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+  .sync-title-row .apple-health-icon {
+    width: 24px; height: 24px; flex-shrink: 0;
+  }
+  .sync-title-row span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #FFFFFF;
+  }
+  .sync-title-row .check {
+    width: 20px; height: 20px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sync-title-row .check svg { width: 20px; height: 20px; fill: #34C759; }
+  .sync-subtitle {
+    font-size: 12px;
+    font-weight: 400;
+    color: #75757D;
+    padding-left: 36px;
+  }
+  .sync-refresh {
+    width: 24px; height: 24px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sync-refresh svg { width: 24px; height: 24px; fill: #FFFFFF; }
+
+  /* ── App Version ── */
+  .app-version {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+  }
+  .app-version span {
+    font-size: 14px;
+    font-weight: 400;
+    color: #75757D;
+  }
+
+  /* ── Bottom Nav ── */
+  .bottom-nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 10px 0 0;
+    width: 414px;
+    border-top: 1px solid #1C1C1E;
+    background: #0C0C0C;
+    margin-top: auto;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 0 8px;
+    flex: 1;
+  }
+  .nav-item svg { width: 24px; height: 24px; fill: #75757D; }
+  .nav-item span { font-size: 10px; font-weight: 500; color: #75757D; }
+  .nav-item.active svg { fill: #FFFFFF; }
+  .nav-item.active span { color: #FFFFFF; }
+
+  /* ── Home Indicator ── */
+  .home-indicator {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 6px;
+  }
+  .home-indicator div {
+    width: 134px;
+    height: 5px;
+    border-radius: 100px;
+    background: #FFFFFF;
+  }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span class="time">9:41</span>
+  <div class="status-icons">
+    <!-- signal -->
+    <svg viewBox="0 0 18 12"><rect x="0" y="7" width="3.5" height="5" rx="1" fill="#fff"/><rect x="4.5" y="4.5" width="3.5" height="7.5" rx="1" fill="#fff"/><rect x="9" y="2" width="3.5" height="10" rx="1" fill="#fff"/><rect x="13.5" y="0" width="3.5" height="12" rx="1" fill="#fff"/></svg>
+    <!-- wifi -->
+    <svg viewBox="0 0 16 12"><path d="M8 10.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm-3.5-3a5.5 5.5 0 017 0 .75.75 0 01-1 1.12 4 4 0 00-5 0 .75.75 0 01-1-1.12zm-3-3a9 9 0 0113 0 .75.75 0 01-1 1.06 7.5 7.5 0 00-11 0A.75.75 0 011.5 4.5z" fill="#fff"/></svg>
+    <!-- battery -->
+    <svg viewBox="0 0 27 12"><rect x="0" y="0" width="22" height="12" rx="2" stroke="#fff" stroke-width="1" fill="none"/><rect x="1.5" y="1.5" width="19" height="9" rx="1" fill="#fff"/><path d="M23.5 4v4a2 2 0 000-4z" fill="#fff" opacity="0.5"/></svg>
+  </div>
+</div>
+
+<!-- Nav Title -->
+<div class="nav-title">Profile</div>
+
+<!-- Profile Header -->
+<div class="profile-header">
+  <div class="profile-row">
+    <div class="profile-info">
+      <div class="avatar">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="12" r="6" fill="#ccc"/><path d="M4 28c0-6 5.4-10 12-10s12 4 12 10" fill="#ccc"/></svg>
+      </div>
+      <div class="name-block">
+        <span class="user-name">Akash Solanki</span>
+        <span class="user-phone">+91-85xxxxxx53</span>
+      </div>
+    </div>
+    <div class="edit-icon">
+      <svg viewBox="0 0 256 256"><path d="M227.31 73.37l-44.68-44.69a16 16 0 00-22.63 0L36.69 152A15.86 15.86 0 0032 163.31V208a16 16 0 0016 16h44.69a15.86 15.86 0 0011.31-4.69L227.31 96a16 16 0 000-22.63zM92.69 208H48v-44.69l88-88L180.69 120zM192 108.68L147.31 64l24-24L216 84.68z"/></svg>
+    </div>
+  </div>
+  <div class="tags-row">
+    <div class="tag">
+      <!-- ForkKnife -->
+      <svg viewBox="0 0 256 256"><path d="M72 88V40a8 8 0 0116 0v48a8 8 0 01-16 0zm24-48v40a8 8 0 0016 0V40a8 8 0 00-16 0zm72 0v56.29A40 40 0 00136 128v88a8 8 0 0016 0v-88a40 40 0 00-32-39.19V40a8 8 0 0116 0v56h16V40a8 8 0 0116 0zM80 120a24 24 0 01-24-24V40a8 8 0 00-16 0v56a40.07 40.07 0 0032 39.19V216a8 8 0 0016 0v-80.81A40.07 40.07 0 00104 96V40a8 8 0 00-16 0v56a24 24 0 01-8 0z"/></svg>
+      <span>Vegetarian</span>
+    </div>
+    <div class="tag">
+      <!-- Target -->
+      <svg viewBox="0 0 256 256"><circle cx="128" cy="128" r="32" stroke="#fff" stroke-width="16" fill="none"/><circle cx="128" cy="128" r="72" stroke="#fff" stroke-width="16" fill="none"/><line x1="128" y1="16" x2="128" y2="56" stroke="#fff" stroke-width="16" stroke-linecap="round"/><line x1="128" y1="200" x2="128" y2="240" stroke="#fff" stroke-width="16" stroke-linecap="round"/><line x1="16" y1="128" x2="56" y2="128" stroke="#fff" stroke-width="16" stroke-linecap="round"/><line x1="200" y1="128" x2="240" y2="128" stroke="#fff" stroke-width="16" stroke-linecap="round"/></svg>
+      <span>Weight Loss</span>
+    </div>
+  </div>
+</div>
+
+<!-- Content Sections -->
+<div class="sections">
+
+  <!-- General -->
+  <div class="section-group">
+    <div class="section-header"><span>General</span></div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">All Meals</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Modify Meal Plan</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Modify Macros</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Share Food Timeline</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Manage Repeat Meals</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Refer a Friend</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- Health & Devices -->
+  <div class="section-group">
+    <div class="section-header"><span>Health &amp; Devices</span></div>
+    <div class="sync-item">
+      <div class="sync-left">
+        <div class="sync-title-row">
+          <div class="apple-health-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09A5.99 5.99 0 007.5 3C4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z" fill="#FF2D55"/></svg>
+          </div>
+          <span>Sync Apple Health</span>
+          <div class="check">
+            <svg viewBox="0 0 256 256"><path d="M128 24a104 104 0 10104 104A104.11 104.11 0 00128 24zm45.66 85.66l-56 56a8 8 0 01-11.32 0l-24-24a8 8 0 0111.32-11.32L112 148.69l50.34-50.35a8 8 0 0111.32 11.32z" fill="#34C759"/></svg>
+          </div>
+        </div>
+        <span class="sync-subtitle">Last sync: Sept 25, 2025 11:34PM</span>
+      </div>
+      <div class="sync-refresh">
+        <svg viewBox="0 0 256 256"><path d="M197.67 186.37a8 8 0 010 11.29C196.58 198.73 170.82 224 128 224c-37.39 0-64-20.45-80-40v24a8 8 0 01-16 0v-64a8 8 0 018-8h64a8 8 0 010 16H60.43C72.55 173.8 97.07 208 128 208c35.73 0 58.07-21.24 58.34-21.51a8.06 8.06 0 0111.33-.12zM224 40a8 8 0 00-8 8v24c-16-19.55-42.61-40-80-40-42.82 0-68.58 25.27-69.67 26.34a8 8 0 0011.32 11.32C77.93 69.24 100.27 48 136 48c30.93 0 55.45 34.2 67.57 56H152a8 8 0 000 16h64a8 8 0 008-8V48a8 8 0 00-8-8z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support -->
+  <div class="section-group">
+    <div class="section-header"><span>Support</span></div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Manage Subscription</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Change Langauge</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Leave a Review</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Contact Us</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- About -->
+  <div class="section-group">
+    <div class="section-header"><span>About</span></div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">App Contributors</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">About NutriScan</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Logout</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- Follow Us -->
+  <div class="section-group">
+    <div class="section-header"><span>Follow Us</span></div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">X (Twitter)</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Instagram</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+    <div class="list-item">
+      <div class="list-item-content"><span class="list-item-text">Website</span></div>
+      <div class="chevron"><svg viewBox="0 0 256 256"><path d="M181.66 133.66l-80 80a8 8 0 01-11.32-11.32L164.69 128 90.34 53.66a8 8 0 0111.32-11.32l80 80a8 8 0 010 11.32z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- App Version -->
+  <div class="app-version">
+    <span>App Version 1.2.1 (40)</span>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+  <div class="nav-item">
+    <svg viewBox="0 0 256 256"><path d="M224 112v96a16 16 0 01-16 16H160a16 16 0 01-16-16v-40a8 8 0 00-8-8h-16a8 8 0 00-8 8v40a16 16 0 01-16 16H48a16 16 0 01-16-16v-96a8 8 0 0116 0v96h48v-40a24 24 0 0124-24h16a24 24 0 0124 24v40h48V112a8 8 0 0116 0z"/><path d="M229.66 109.66l-96-96a8 8 0 00-11.32 0l-96 96a8 8 0 0011.32 11.32L128 30.63l90.34 90.35a8 8 0 0011.32-11.32z"/></svg>
+    <span>Meals</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 256 256"><path d="M200 40H56a16 16 0 00-16 16v144a16 16 0 0016 16h144a16 16 0 0016-16V56a16 16 0 00-16-16zm0 160H56V56h144z"/><path d="M176 88h-96a8 8 0 000 16h96a8 8 0 000-16zm0 32h-96a8 8 0 000 16h96a8 8 0 000-16zm0 32h-96a8 8 0 000 16h96a8 8 0 000-16z"/></svg>
+    <span>Diet Plan</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 256 256"><path d="M128 24a104 104 0 10104 104A104.12 104.12 0 00128 24zm0 192a88 88 0 1188-88 88.1 88.1 0 01-88 88z"/><path d="M128 72a8 8 0 00-8 8v48a8 8 0 004 6.93l40 23.08a8 8 0 108-13.86L136 121.47V80a8 8 0 00-8-8z"/></svg>
+    <span>NutriBites</span>
+  </div>
+  <div class="nav-item active">
+    <svg viewBox="0 0 256 256"><path d="M128 24a104 104 0 10104 104A104.11 104.11 0 00128 24zm0 192a88 88 0 1188-88 88.1 88.1 0 01-88 88zm0-144a56 56 0 00-39.6 95.6A72 72 0 01128 136a72 72 0 0139.6 31.6A56 56 0 00128 72zm0 48a24 24 0 1124-24 24 24 0 01-24 24z"/></svg>
+    <span>Profile</span>
+  </div>
+</div>
+
+<!-- Home Indicator -->
+<div class="home-indicator"><div></div></div>
+
+</body>
+</html>

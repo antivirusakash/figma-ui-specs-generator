@@ -21,7 +21,6 @@ export async function collectAnatomyElements(
     if (elements.length >= MAX_ANATOMY_ELEMENTS) return;
     if (depth > MAX_WALK_DEPTH) return;
 
-    const shouldStop = node.type === "INSTANCE" && node !== root;
     const isElement = isRelevantNode(node, depth);
 
     if (isElement) {
@@ -66,7 +65,7 @@ export async function collectAnatomyElements(
       });
     }
 
-    if ("children" in node && !shouldStop) {
+    if ("children" in node) {
       for (const child of node.children) {
         await walk(child, `${path}/${node.name}`, depth + 1);
       }

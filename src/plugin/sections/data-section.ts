@@ -126,8 +126,8 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const maxAnatomy = compact ? 20 : 64;
-  const maxLayout = compact ? 16 : 48;
+  const maxAnatomy = 64;
+  const maxLayout = 48;
   const maxProperties = compact ? 12 : 48;
   const resolvedTokens = new Map<string, string>();
 
@@ -149,7 +149,7 @@ export function toAgentReadyDataPayload(
     if (element.childrenText?.length) {
       record.children_text = element.childrenText.map(t =>
         deps.truncateText(t, compact ? 60 : 120)
-      ).slice(0, compact ? 4 : 8);
+      ).slice(0, compact ? 6 : 8);
     }
     if (element.bounds) {
       record.w = Math.round(element.bounds.width);
@@ -195,6 +195,10 @@ export function toAgentReadyDataPayload(
         if (stroke.rawValue) resolvedTokens.set(stroke.value, String(stroke.rawValue));
       }
     }
+    const strokeAlign = findAttr("Stroke align");
+    if (strokeAlign) record.stroke_align = strokeAlign.value;
+    const position = findAttr("Position");
+    if (position) record.position = position.value;
     const textStyle = findAttr("Text style");
     if (textStyle) {
       record.text_style = deps.truncateText(textStyle.value, compact ? 40 : 64);
@@ -271,7 +275,7 @@ export function toAgentReadyDataPayload(
   });
   const limitedPropertyRecords = propertyRecords.slice(0, maxProperties);
 
-  const anatomyChunks = chunkArray(anatomyRecords, compact ? 10 : 16).map((items, index) => ({
+  const anatomyChunks = chunkArray(anatomyRecords, compact ? 12 : 16).map((items, index) => ({
     chunk_id: `anatomy_${index + 1}`,
     kind: "anatomy",
     item_count: items.length,
@@ -279,7 +283,7 @@ export function toAgentReadyDataPayload(
     items
   }));
 
-  const layoutChunks = chunkArray(layoutRecords, compact ? 8 : 16).map((items, index) => ({
+  const layoutChunks = chunkArray(layoutRecords, compact ? 12 : 16).map((items, index) => ({
     chunk_id: `layout_${index + 1}`,
     kind: "layout",
     item_count: items.length,
@@ -299,14 +303,14 @@ export function toAgentReadyDataPayload(
 
   const textIndex = dataModel.anatomy
     .filter(el => el.textContent || el.childrenText?.length)
-    .slice(0, compact ? 40 : 100)
+    .slice(0, compact ? 80 : 100)
     .map(el => {
       const entry: any = { id: el.nodeId, path: el.pathKey };
       if (el.textContent) entry.text = deps.truncateText(el.textContent, compact ? 80 : 200);
       if (el.childrenText?.length) {
         entry.children_text = el.childrenText
           .map(t => deps.truncateText(t, compact ? 60 : 120))
-          .slice(0, compact ? 4 : 8);
+          .slice(0, compact ? 6 : 8);
       }
       return entry;
     });

@@ -102,3 +102,62 @@ export function getFirstSolidPaint(paints: readonly Paint[] | typeof figma.mixed
   if (!paints || paints === figma.mixed) return undefined;
   return paints.find((paint) => paint.type === "SOLID") as SolidPaint | undefined;
 }
+
+/**
+ * For icon instances (small INSTANCE/COMPONENT nodes, typically ≤48px),
+ * walk child vectors to find the dominant stroke or fill color.
+ * Phosphor-style icons use strokes on VECTOR children; the INSTANCE
+ * frame's own `fills` is just a container background, not the icon color.
+ * Returns the first visible non-white solid paint found on a child vector,
+ * preferring strokes over fills (since icon libraries are stroke-based).
+ */
+export function extractIconColor(node: SceneNode, maxDepth = 3): SolidPaint | undefined {
+  if (!("children" in node)) return undefined;
+  // Only scan small nodes that look like icons
+  const size = Math.max(node.width, node.height);
+  if (size > 48) return undefined;
+
+  let found: SolidPaint | undefined;
+
+  const walk = (n: SceneNode, depth: number) => {
+    if (found || depth > maxDepth || !n.visible) return;
+
+    // Check strokes first (Phosphor icons are stroke-based)
+    if ("strokes" in n) {
+      const strokePaint = getFirstSolidPaint(n.strokes as readonly Paint[] | typeof figma.mixed | null | undefined);
+      if (strokePaint && !isWhitePaint(strokePaint)) {
+        found = strokePaint;
+        return;
+      }
+    }
+    // Then check fills on vector/shape nodes (not frames — those are containers)
+    const isShape = n.type === "VECTOR" || n.type === "RECTANGLE" || n.type === "ELLIPSE"
+      || n.type === "LINE" || n.type === "POLYGON" || n.type === "STAR"
+      || n.type === "BOOLEAN_OPERATION";
+    if (isShape && "fills" in n) {
+      const fillPaint = getFirstSolidPaint(n.fills as readonly Paint[] | typeof figma.mixed | null | undefined);
+      if (fillPaint && !isWhitePaint(fillPaint)) {
+        found = fillPaint;
+        return;
+      }
+    }
+
+    if ("children" in n) {
+      for (const child of (n as FrameNode).children) {
+        walk(child, depth + 1);
+        if (found) return;
+      }
+    }
+  };
+
+  for (const child of (node as FrameNode).children) {
+    walk(child, 0);
+    if (found) return found;
+  }
+  return found;
+}
+
+function isWhitePaint(paint: SolidPaint): boolean {
+  const { r, g, b } = paint.color;
+  return r > 0.95 && g > 0.95 && b > 0.95;
+}
