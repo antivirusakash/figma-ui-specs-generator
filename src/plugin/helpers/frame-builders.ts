@@ -200,6 +200,7 @@ export async function createArtworkFrame(
   frame.setPluginData("cloneOffsetX", String(padding));
   frame.setPluginData("cloneOffsetY", String(padding));
   frame.setPluginData("cloneScale", "1");
+  frame.setPluginData("ai-skip", "true");
 
   return frame;
 }

@@ -110,8 +110,12 @@ export async function createAnatomySection(
     );
   }
 
-  const artwork = await deps.createArtworkFrame(target, 0, theme);
-  renderAnatomyMarkers(artwork, highlights, theme, deps);
+  const skipArtwork = settings.agentReadyData && settings.aiCompactMode;
+  let artwork: FrameNode | undefined;
+  if (!skipArtwork) {
+    artwork = await deps.createArtworkFrame(target, 0, theme);
+    renderAnatomyMarkers(artwork, highlights, theme, deps);
+  }
 
   if (settings.tabularAnatomy) {
     if (instanceHighlights.length > 0) {
@@ -212,9 +216,13 @@ export async function createAnatomySection(
     });
     section.appendChild(card);
 
-    section.appendChild(deps.createText("Numbers on the artwork map to rows in the table above.", 9, FONT_REGULAR, theme.muted, "caption"));
+    if (!skipArtwork) {
+      section.appendChild(deps.createText("Numbers on the artwork map to rows in the table above.", 9, FONT_REGULAR, theme.muted, "caption"));
+    }
   }
-  section.appendChild(artwork);
+  if (artwork) {
+    section.appendChild(artwork);
+  }
 
   log("Anatomy section composition", {
     title,

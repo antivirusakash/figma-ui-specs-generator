@@ -222,20 +222,23 @@ export async function createLayoutSection(
   metricsPanel.appendChild(cards);
   body.appendChild(metricsPanel);
 
-  const artworkPanel = figma.createFrame();
-  artworkPanel.name = "Layout Artwork";
-  artworkPanel.layoutMode = "VERTICAL";
-  artworkPanel.primaryAxisSizingMode = "AUTO";
-  artworkPanel.counterAxisSizingMode = "AUTO";
-  artworkPanel.itemSpacing = 8;
-  artworkPanel.layoutAlign = "STRETCH";
-  artworkPanel.fills = [];
-  artworkPanel.appendChild(createLayoutLegend(theme, deps));
+  const skipArtwork = settings.agentReadyData && settings.aiCompactMode;
+  if (!skipArtwork) {
+    const artworkPanel = figma.createFrame();
+    artworkPanel.name = "Layout Artwork";
+    artworkPanel.layoutMode = "VERTICAL";
+    artworkPanel.primaryAxisSizingMode = "AUTO";
+    artworkPanel.counterAxisSizingMode = "AUTO";
+    artworkPanel.itemSpacing = 8;
+    artworkPanel.layoutAlign = "STRETCH";
+    artworkPanel.fills = [];
+    artworkPanel.appendChild(createLayoutLegend(theme, deps));
 
-  const artwork = await deps.createArtworkFrame(target, 0, theme);
-  renderLayoutMarkers(artwork, specsForArtwork, showOuter, theme, deps, settings);
-  artworkPanel.appendChild(artwork);
-  body.appendChild(artworkPanel);
+    const artwork = await deps.createArtworkFrame(target, 0, theme);
+    renderLayoutMarkers(artwork, specsForArtwork, showOuter, theme, deps, settings);
+    artworkPanel.appendChild(artwork);
+    body.appendChild(artworkPanel);
+  }
 
   return section;
 }

@@ -141,10 +141,10 @@ function toAgentReadyDataPayload(
       record.instance_of = deps.truncateText(element.instanceOf, compact ? 32 : 64);
     }
     if (includeAttributes) {
-      record.attributes = element.attributes.slice(0, compact ? 2 : 8).map((attribute) => {
+      record.attributes = element.attributes.slice(0, compact ? 5 : 8).map((attribute) => {
         const attr: any = {
           key: attribute.key ?? attribute.propertyName,
-          value: deps.truncateText(attribute.value, compact ? 24 : 80),
+          value: deps.truncateText(attribute.value, compact ? 50 : 80),
           format: attribute.format
         };
         if (attribute.systemId) attr.system_id = attribute.systemId;
@@ -285,7 +285,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
   }
 
   const compact = Boolean(payload.compact_mode ?? payload.schema?.includes("compact"));
-  const sampleSize = compact ? 3 : 4;
+  const sampleSize = compact ? 6 : 8;
   const chunks = Array.isArray(payload.chunks) ? payload.chunks : [];
   return stripNulls({
     schema: payload.schema,
