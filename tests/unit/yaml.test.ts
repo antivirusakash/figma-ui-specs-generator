@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toYaml, yamlNeedsQuoting } from "../../src/plugin/sections/data-section";
+import { toYaml, yamlNeedsQuoting, stripNulls } from "../../src/plugin/sections/data-section";
 
 describe("yamlNeedsQuoting", () => {
   it("quotes empty string", () => expect(yamlNeedsQuoting("")).toBe(true));
@@ -102,5 +102,60 @@ describe("toYaml", () => {
   it("handles null and undefined gracefully", () => {
     expect(toYaml(null)).toBe("null");
     expect(toYaml(undefined)).toBe("null");
+  });
+});
+
+describe("resolved_tokens in YAML output", () => {
+  it("serializes resolved_tokens map correctly", () => {
+    const data = {
+      schema: "specs-plugin.agent_pack.v5.yaml",
+      resolved_tokens: {
+        "Default/Grey/grey-90": "#2B3345",
+        "H5/Bold": "Inter Bold",
+        "Default/White/white": "#FFFFFF"
+      }
+    };
+    const yaml = toYaml(data);
+    expect(yaml).toContain("resolved_tokens:");
+    expect(yaml).toContain('Default/Grey/grey-90: "#2B3345"');
+    expect(yaml).toContain("H5/Bold: Inter Bold");
+    expect(yaml).toContain('Default/White/white: "#FFFFFF"');
+  });
+
+  it("omits resolved_tokens when undefined (via stripNulls)", () => {
+    const data = {
+      schema: "test",
+      resolved_tokens: undefined,
+      chunks: []
+    };
+    const cleaned = stripNulls(data);
+    expect(cleaned).not.toHaveProperty("resolved_tokens");
+    const yaml = toYaml(cleaned);
+    expect(yaml).not.toContain("resolved_tokens");
+  });
+
+  it("includes resolved_tokens in a full payload structure", () => {
+    const data = {
+      schema: "specs-plugin.agent_pack.v5.yaml.compact",
+      selection: { node_id: "1:2", name: "Button", type: "COMPONENT" },
+      resolved_tokens: {
+        "Primary/Blue/500": "#3B82F6"
+      },
+      chunks: []
+    };
+    const yaml = toYaml(stripNulls(data));
+    expect(yaml).toContain("resolved_tokens:");
+    expect(yaml).toContain('Primary/Blue/500: "#3B82F6"');
+    expect(yaml).toContain("schema: specs-plugin.agent_pack.v5.yaml.compact");
+  });
+
+  it("handles empty resolved_tokens (stripped as undefined)", () => {
+    const data = {
+      schema: "test",
+      resolved_tokens: undefined
+    };
+    const cleaned = stripNulls(data);
+    const yaml = toYaml(cleaned);
+    expect(yaml).not.toContain("resolved_tokens");
   });
 });

@@ -10,7 +10,12 @@ import {
 import { Inventory } from "./plugin/inventory";
 import { log, logError } from "./plugin/logger";
 import { createAnatomySection as createAnatomySectionModule } from "./plugin/sections/anatomy-section";
-import { createDataSection as createDataSectionModule } from "./plugin/sections/data-section";
+import {
+  createDataSection as createDataSectionModule,
+  toAgentReadyDataPayload,
+  stripNulls,
+  toYaml
+} from "./plugin/sections/data-section";
 import {
   collectLayoutData as collectLayoutDataModule,
   createLayoutSection as createLayoutSectionModule
@@ -41,6 +46,7 @@ import type {
 
 // Helpers
 import { formatColor, formatSpacing, solidFill, truncateText } from "./plugin/helpers/format";
+import { collectAttributes } from "./plugin/helpers/attributes";
 import {
   collectAnatomyElements,
   getMainComponentSafe,
@@ -67,6 +73,9 @@ log("Runtime configured", {
   skipInvisibleInstanceChildren: figma.skipInvisibleInstanceChildren
 });
 
+// Persist fileKey early so Copy AI Specs can use it even before first generate
+try { if (figma.fileKey) figma.root.setPluginData("fileKey", figma.fileKey); } catch (_) { /* ignore */ }
+
 figma.on("selectionchange", () => {
   log("Selection changed", figma.currentPage.selection.map((node) => `${node.type}:${node.name}`));
   void sendVariantPropsToUi();
@@ -85,6 +94,9 @@ figma.ui.onmessage = async (msg) => {
     }
     if (msg.type === "generate") {
       await generateSpecs(msg.settings as Settings);
+    }
+    if (msg.type === "copy-ai-specs") {
+      await handleCopyAiSpecs(msg.settings as Settings);
     }
   } catch (error) {
     logError("UI message handler failed", error);
@@ -141,6 +153,128 @@ const deps = {
   logError
 };
 
+function buildAnatomyTree(elements: AnatomyElement[]): string {
+  const lines: string[] = [];
+  for (const el of elements) {
+    const depth = el.pathKey ? el.pathKey.split(" / ").length - 1 : 0;
+    const indent = "  ".repeat(depth);
+    let line = `${indent}- ${el.name} (${el.type})`;
+    const details: string[] = [];
+    if (el.instanceOf) details.push(`instance of ${el.instanceOf}`);
+    if (el.textContent) details.push(`"${truncateText(el.textContent, 40)}"`);
+    if (details.length > 0) line += ` — ${details.join(", ")}`;
+    lines.push(line);
+  }
+  return lines.join("\n");
+}
+
+function buildCopyBlock(name: string, figmaUrl: string, anatomyTree: string, yamlData: string): string {
+  return `## Figma Component: ${name}
+
+### Implementation Instructions
+1. Use get_screenshot on the Figma URL below to see what this component looks like.
+2. Read the anatomy tree below to understand the component structure.
+3. Read the YAML specs — it has every layer, color, font, spacing, and token value you need.
+4. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
+5. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
+6. Keep it minimal — only implement what the specs describe, nothing more.
+
+### Figma URL
+${figmaUrl}
+
+### Component Anatomy
+\`\`\`
+${anatomyTree}
+\`\`\`
+
+### Specs Data (YAML)
+\`\`\`yaml
+${yamlData}
+\`\`\``;
+}
+
+async function handleCopyAiSpecs(settings: Settings) {
+  const selection = figma.currentPage.selection;
+  if (selection.length === 0) {
+    figma.notify("Select a component to copy AI specs.");
+    return;
+  }
+  const first = selection[0];
+  if (!first) return;
+  let target: SceneNode = first;
+
+  // If user selected a specs frame, resolve to the original component
+  const sourceNodeId = target.getPluginData("sourceNodeId");
+  if (sourceNodeId) {
+    const originalNode = await figma.getNodeByIdAsync(sourceNodeId);
+    if (originalNode && originalNode.type !== "DOCUMENT" && originalNode.type !== "PAGE") {
+      target = originalNode as SceneNode;
+    } else {
+      figma.notify("Original component not found. Select the original component.");
+      return;
+    }
+  }
+
+  try {
+    await loadFonts();
+
+    const inventory = new Inventory();
+    const copySettings: Settings = {
+      ...settings,
+      agentReadyData: true,
+      data: true,
+      aiCompactMode: settings.aiCompactMode ?? true
+    };
+
+    const anatomyElements = await collectAnatomyElements(target, inventory, copySettings);
+    const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
+    const layoutData = collectLayoutData(target);
+
+    const dataModel: DataModel = {
+      anatomy: anatomyElements,
+      properties: propertySpecs,
+      layout: layoutData
+    };
+
+    const dataDeps = {
+      createSectionFrame,
+      createText,
+      createContentCard,
+      fitTextToWidth,
+      getSectionContentWidth,
+      truncateText,
+      log
+    };
+
+    const payload = toAgentReadyDataPayload(dataModel, copySettings.includeDataAttributes, target, copySettings, inventory, dataDeps);
+    const yamlData = toYaml(stripNulls(payload));
+
+    const nodeId = target.id.replace(":", "-");
+    let fileKey = "";
+    try { fileKey = figma.fileKey ?? figma.root.getPluginData("fileKey") ?? ""; } catch (_) {
+      try { fileKey = figma.root.getPluginData("fileKey") ?? ""; } catch (_2) { /* ignore */ }
+    }
+
+    const buildNodeUrl = (nid: string) => fileKey
+      ? `https://www.figma.com/design/${fileKey}?node-id=${nid}`
+      : null;
+
+    const figmaUrl = buildNodeUrl(nodeId) ?? "[Paste Figma frame URL here]";
+
+    const anatomyTree = buildAnatomyTree(anatomyElements);
+    const text = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData);
+
+    figma.ui.postMessage({ type: "copy-ai-specs-result", text });
+    figma.notify("AI specs copied to clipboard.");
+    log("Copy AI specs", { name: target.name, chars: text.length });
+  } catch (error) {
+    logError("Copy AI specs failed", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    figma.notify(`Failed to copy AI specs: ${errMsg}`);
+    figma.ui.postMessage({ type: "error", message: `Copy failed: ${errMsg}` });
+  }
+}
+
 async function generateSpecs(settings: Settings) {
   const selection = figma.currentPage.selection;
   log("Generate specs invoked", {
@@ -159,6 +293,9 @@ async function generateSpecs(settings: Settings) {
 
   const target = selection[0];
   if (!target) return;
+
+  // Persist fileKey for later use (e.g. Copy AI Specs) since figma.fileKey can be undefined or throw
+  try { if (figma.fileKey) figma.root.setPluginData("fileKey", figma.fileKey); } catch (_) { /* ignore */ }
 
   let specsFrame: FrameNode | null = null;
   try {
@@ -359,9 +496,13 @@ async function generateSpecs(settings: Settings) {
       appendSection(emptySection);
     }
 
+    // Store specs frame ID on the target so Copy AI Specs can link to it
+    target.setPluginData("specsFrameId", specsFrame.id);
+
     figma.currentPage.selection = [specsFrame];
     figma.viewport.scrollAndZoomIntoView([specsFrame]);
     figma.notify("Specs generated.");
+    figma.ui.postMessage({ type: "generate-success" });
     log("Specs generation complete", { sectionCount });
   } catch (error) {
     logError("Specs generation failed", error);
@@ -485,6 +626,9 @@ function createSpecsRootFrame(name: string, target: SceneNode, settings: Setting
     columnCount * columnWidth + (columnCount - 1) * SPECS_COLUMN_GAP + frame.paddingLeft + frame.paddingRight;
   const frameWidth = settings.multiColumn ? multiColumnWidth : singleColumnWidth;
   frame.resizeWithoutConstraints(frameWidth, frame.height);
+
+  // Store original node ID so Copy AI Specs can resolve specs frame → original component
+  frame.setPluginData("sourceNodeId", target.id);
 
   const box = target.absoluteBoundingBox;
   if (box) {

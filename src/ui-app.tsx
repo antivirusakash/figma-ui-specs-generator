@@ -1,14 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  BracketsCurly,
-  CheckCircle,
-  Cube,
-  FadersHorizontal,
-  FlowArrow,
-  Info,
-  Rows,
-  Sparkle
+  ArrowsOutCardinalIcon,
+  BracketsCurlyIcon,
+  CheckCircleIcon,
+  CopyIcon,
+  CubeIcon,
+  FadersHorizontalIcon,
+  FlowArrowIcon,
+  GridFourIcon,
+  InfoIcon,
+  RowsIcon,
+  SparkleIcon,
+  StackIcon,
+  SwatchesIcon,
 } from '@phosphor-icons/react';
 import { Button } from './ui/components/button';
 import { Checkbox } from './ui/components/checkbox';
@@ -57,7 +62,9 @@ type PluginMessage =
   | { type: 'variant-props'; props: string[] }
   | { type: 'generate'; settings: Settings }
   | { type: 'close' }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'copy-ai-specs-result'; text: string }
+  | { type: 'generate-success' };
 
 type Preset = 'handoff' | 'agent' | 'compact';
 type AppTab = 'generate' | 'learn';
@@ -67,21 +74,21 @@ const AUTO_VALUE = '__auto__';
 const DEFAULT_SETTINGS: Settings = {
   anatomy: true,
   tabularAnatomy: false,
-  completeAnatomy: true,
+  completeAnatomy: false,
   includeNestedComponents: false,
-  properties: true,
-  twoWay: true,
+  properties: false,
+  twoWay: false,
   twoWayPropA: '',
   twoWayPropB: '',
-  layout: true,
-  inventory: true,
+  layout: false,
+  inventory: false,
   data: true,
-  variables: true,
-  modes: true,
-  includeDataAttributes: true,
+  variables: false,
+  modes: false,
+  includeDataAttributes: false,
   agentReadyData: true,
   aiCompactMode: true,
-  showOuterLayout: true,
+  showOuterLayout: false,
   multiColumn: false,
   columnCount: 2,
   colorFormat: 'hex',
@@ -131,7 +138,10 @@ const App = () => {
   const [variantProps, setVariantProps] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [generateSuccess, setGenerateSuccess] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<Preset | null>('agent');
 
   useEffect(() => {
     console.log('[SpecsPlugin UI] mounted');
@@ -142,9 +152,31 @@ const App = () => {
       if (message.type === 'variant-props') {
         setVariantProps(message.props || []);
       }
+      if (message.type === 'generate-success') {
+        setIsGenerating(false);
+        setGenerateSuccess(true);
+      }
       if (message.type === 'error') {
         setIsGenerating(false);
+        setGenerateSuccess(false);
         setErrorMessage(message.message || 'Something went wrong.');
+      }
+      if (message.type === 'copy-ai-specs-result') {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = message.text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          setCopySuccess(true);
+          setIsCopying(false);
+          setTimeout(() => setCopySuccess(false), 2000);
+        } catch {
+          setIsCopying(false);
+        }
       }
     };
     window.addEventListener('message', handler);
@@ -260,6 +292,7 @@ const App = () => {
   const send = useCallback(() => {
     setErrorMessage(null);
     setIsGenerating(true);
+    setGenerateSuccess(false);
     const normalizedSettings = {
       ...settings,
       multiColumn: settings.agentReadyData && settings.aiCompactMode ? false : settings.multiColumn
@@ -278,22 +311,34 @@ const App = () => {
       },
       '*'
     );
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 2500);
   }, [settings]);
 
-  const close = useCallback(() => {
-    console.log('[SpecsPlugin UI] close clicked');
-    parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
-  }, []);
+  const copyAiSpecs = useCallback(() => {
+    setIsCopying(true);
+    setCopySuccess(false);
+    console.log('[SpecsPlugin UI] copy-ai-specs clicked');
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: 'copy-ai-specs',
+          settings: {
+            ...settings,
+            agentReadyData: true,
+            data: true
+          }
+        }
+      },
+      '*'
+    );
+    setTimeout(() => setIsCopying(false), 5000);
+  }, [settings]);
 
   return (
     <div className="min-h-dvh pb-20">
       {/* Compact Header */}
       <header className="space-y-1 p-4 pb-2">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground">
-          <Sparkle size={14} />
+          <SparkleIcon size={14} />
           Specs Plugin
         </div>
         <p className="text-sm text-muted-foreground">
@@ -340,96 +385,76 @@ const App = () => {
       {/* Learn Tab */}
       {activeTab === 'learn' ? (
         <div id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" className="space-y-4 px-4">
-          {/* Section A: How to use */}
+          {/* How to use — timeline steps */}
           <section className={panelClass}>
-            <h2 className="mb-3 text-sm font-semibold text-foreground">How to use this plugin</h2>
-            <div className="grid gap-2">
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">1</div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">Select a component</p>
-                  <p className="text-xs text-muted-foreground">Click any component, instance, or frame on your canvas.</p>
+            <h2 className="mb-3 text-sm font-semibold text-foreground">How to use</h2>
+            <div className="relative ml-2.5 border-l-2 border-border pl-5">
+              {[
+                { n: '1', title: 'Select a component', hint: 'Click any component, instance, or frame on your canvas.' },
+                { n: '2', title: 'Choose a preset', hint: 'Pick Full handoff, AI agent, or Quick check. Fine-tune settings below.' },
+                { n: '3', title: 'Generate', hint: 'Hit Generate. The button turns green when your spec is ready.' },
+                { n: '4', title: 'Copy for AI', hint: 'Tap Copy AI Specs to grab structured YAML for your coding tool.' }
+              ].map((step, i) => (
+                <div key={step.n} className={`relative ${i < 3 ? 'pb-4' : ''}`}>
+                  <div className="absolute -left-[1.625rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {step.n}
+                  </div>
+                  <p className="text-sm font-medium leading-5 text-foreground">{step.title}</p>
+                  <p className="text-xs text-muted-foreground">{step.hint}</p>
                 </div>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">2</div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">Pick a starting point</p>
-                  <p className="text-xs text-muted-foreground">Choose Full handoff, AI agent, or Quick check.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">3</div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">Adjust if needed</p>
-                  <p className="text-xs text-muted-foreground">Toggle sections, expand advanced options to fine-tune.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">4</div>
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-foreground">Hit Generate</p>
-                  <p className="text-xs text-muted-foreground">A specs frame appears right next to your selection.</p>
-                </div>
-              </div>
+              ))}
             </div>
           </section>
 
-          {/* Section B: What each section produces */}
-          <CollapsibleSection title="What each section produces" defaultOpen>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Layer breakdown</p>
-                <p className="text-xs text-muted-foreground">Every layer with its key visual details.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Variant properties</p>
-                <p className="text-xs text-muted-foreground">How each variant option changes the component.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Layout & spacing</p>
-                <p className="text-xs text-muted-foreground">Auto-layout direction, gaps, padding, and sizing.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Data export</p>
-                <p className="text-xs text-muted-foreground">Structured JSON for dev tools and AI agents.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Style inventory</p>
-                <p className="text-xs text-muted-foreground">Colors, text styles, variables, and tokens used.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Variables</p>
-                <p className="text-xs text-muted-foreground">Resolved value of each Figma variable.</p>
-              </div>
-              <div className="rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-sm font-medium text-foreground">Modes</p>
-                <p className="text-xs text-muted-foreground">Compare the component across variable modes (e.g. light/dark).</p>
-              </div>
+          {/* What each section does — compact icon rows */}
+          <section className={panelClass}>
+            <h2 className="mb-3 text-sm font-semibold text-foreground">What each section does</h2>
+            <div className="grid gap-1.5">
+              {[
+                { icon: <RowsIcon size={14} />, title: 'Layer breakdown', hint: 'Every layer with its key visual details.' },
+                { icon: <FlowArrowIcon size={14} />, title: 'Variant properties', hint: 'How each variant option changes the component.' },
+                { icon: <ArrowsOutCardinalIcon size={14} />, title: 'Layout & spacing', hint: 'Auto-layout direction, gaps, padding, and sizing.' },
+                { icon: <BracketsCurlyIcon size={14} />, title: 'Data export', hint: 'Structured YAML for dev tools and AI agents.' },
+                { icon: <SwatchesIcon size={14} />, title: 'Style inventory', hint: 'Colors, text styles, variables, and tokens used.' },
+                { icon: <GridFourIcon size={14} />, title: 'Variables', hint: 'Resolved value of each Figma variable.' },
+                { icon: <StackIcon size={14} />, title: 'Modes', hint: 'Compare across variable modes (e.g. light/dark).' }
+              ].map((item) => (
+                <div key={item.title} className="flex items-start gap-2.5 rounded-md px-1 py-1.5">
+                  <span className="mt-0.5 shrink-0 text-muted-foreground">{item.icon}</span>
+                  <span className="text-xs">
+                    <span className="font-medium text-foreground">{item.title}</span>
+                    <span className="text-muted-foreground"> — {item.hint}</span>
+                  </span>
+                </div>
+              ))}
             </div>
-          </CollapsibleSection>
+          </section>
 
-          {/* Section C: Tips for AI workflows */}
-          <CollapsibleSection title="Tips for AI workflows">
-            <div className="space-y-2 text-xs text-muted-foreground">
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <Info size={14} className="mt-0.5 shrink-0 text-primary" />
-                <p>Use the AI / code agent preset for smallest output.</p>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <Info size={14} className="mt-0.5 shrink-0 text-primary" />
-                <p>Compact mode cuts output length by ~60%.</p>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <Info size={14} className="mt-0.5 shrink-0 text-primary" />
-                <p>Only include sections your AI tool needs.</p>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-border bg-background/60 p-3">
-                <Info size={14} className="mt-0.5 shrink-0 text-primary" />
-                <p>Generate from focused frames, not entire pages.</p>
-              </div>
-            </div>
-          </CollapsibleSection>
+          {/* AI workflow tips — single callout */}
+          <section className={`${panelClass} bg-primary/5`}>
+            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <SparkleIcon size={14} className="text-primary" />
+              Tips for AI workflows
+            </h2>
+            <ul className="grid gap-1.5 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                Use the AI / code agent preset for the smallest output.
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                Compact mode cuts output length by ~60%.
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                After generating, use Copy AI Specs for structured YAML.
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                Generate from focused frames, not entire pages.
+              </li>
+            </ul>
+          </section>
         </div>
       ) : null}
 
@@ -534,7 +559,7 @@ const App = () => {
           {/* Collapsible: Layer breakdown details */}
           <CollapsibleSection
             title="Layer breakdown details"
-            icon={<Rows size={16} />}
+            icon={<RowsIcon size={16} />}
             hidden={!settings.anatomy}
           >
             <div className="grid gap-2">
@@ -565,7 +590,7 @@ const App = () => {
           {/* Collapsible: Variant comparison */}
           <CollapsibleSection
             title="Variant comparison"
-            icon={<FlowArrow size={16} />}
+            icon={<FlowArrowIcon size={16} />}
             hidden={!settings.properties}
           >
             <div className="space-y-3">
@@ -631,7 +656,7 @@ const App = () => {
           {/* Collapsible: Output & AI options */}
           <CollapsibleSection
             title="Output & AI options"
-            icon={<BracketsCurly size={16} />}
+            icon={<BracketsCurlyIcon size={16} />}
           >
             <div className="grid gap-2">
               <ToggleField
@@ -669,7 +694,7 @@ const App = () => {
           {/* Collapsible: Number & color formatting */}
           <CollapsibleSection
             title="Number & color formatting"
-            icon={<FadersHorizontal size={16} />}
+            icon={<FadersHorizontalIcon size={16} />}
           >
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -807,13 +832,39 @@ const App = () => {
             id="generate"
             onClick={send}
             disabled={isGenerating}
-            className="h-11 flex-1 active:bg-primary/80"
+            className={`h-11 flex-1 active:bg-primary/80 ${generateSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
           >
-            {isGenerating ? 'Generating specs...' : 'Generate specs'}
+            {isGenerating ? (
+              'Generating...'
+            ) : generateSuccess ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <CheckCircleIcon size={16} weight="bold" />
+                Generated
+              </span>
+            ) : (
+              'Generate specs'
+            )}
           </Button>
-          <Button id="close" variant="secondary" onClick={close} className="h-11 active:bg-secondary/70">
-            Close
-          </Button>
+          {generateSuccess && (
+            <Button
+              id="copy-ai-specs"
+              onClick={copyAiSpecs}
+              disabled={isCopying}
+              className={`h-11 shrink-0 ${copySuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+            >
+              {copySuccess ? (
+                <span className="flex items-center gap-1.5">
+                  <CheckCircleIcon size={16} weight="bold" />
+                  Copied!
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <CopyIcon size={16} />
+                  Copy AI Specs
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </footer>
     </div>

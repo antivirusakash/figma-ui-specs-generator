@@ -32,7 +32,7 @@ type PropertiesSectionDeps = {
     theme: Theme,
     maxContentWidth?: number,
     maxContentHeight?: number
-  ) => FrameNode;
+  ) => Promise<FrameNode>;
   solidFill: (hex: string, opacity?: number) => SolidPaint;
   truncateText: (value: string, maxLength: number) => string;
   collectAnatomyElements: (target: SceneNode, inventory: Inventory, settings: Settings) => Promise<AnatomyElement[]>;

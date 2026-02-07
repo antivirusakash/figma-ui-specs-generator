@@ -117,7 +117,7 @@ function toLegacyDataPayload(dataModel: DataModel, includeAttributes: boolean) {
   };
 }
 
-function toAgentReadyDataPayload(
+export function toAgentReadyDataPayload(
   dataModel: DataModel,
   includeAttributes: boolean,
   target: SceneNode,
@@ -129,6 +129,7 @@ function toAgentReadyDataPayload(
   const maxAnatomy = compact ? 20 : 64;
   const maxLayout = compact ? 16 : 48;
   const maxProperties = compact ? 12 : 48;
+  const resolvedTokens = new Map<string, string>();
 
   const anatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
     const record: any = {
@@ -163,6 +164,7 @@ function toAgentReadyDataPayload(
       record.fill = fill.rawValue ?? fill.value;
       if (fill.format !== "HARDCODED") {
         record.fill_ref = deps.truncateText(fill.value, compact ? 50 : 80);
+        if (fill.rawValue) resolvedTokens.set(fill.value, String(fill.rawValue));
       }
     }
     const fontSize = findAttr("Font size");
@@ -190,11 +192,15 @@ function toAgentReadyDataPayload(
       record.stroke = stroke.rawValue ?? stroke.value;
       if (stroke.format !== "HARDCODED") {
         record.stroke_ref = deps.truncateText(stroke.value, compact ? 50 : 80);
+        if (stroke.rawValue) resolvedTokens.set(stroke.value, String(stroke.rawValue));
       }
     }
     const textStyle = findAttr("Text style");
     if (textStyle) {
       record.text_style = deps.truncateText(textStyle.value, compact ? 40 : 64);
+      if (textStyle.format !== "HARDCODED" && textStyle.rawValue) {
+        resolvedTokens.set(textStyle.value, String(textStyle.rawValue));
+      }
     }
 
     if (includeAttributes) {
@@ -335,12 +341,15 @@ function toAgentReadyDataPayload(
       }
     },
     mcp_playbook: mcpPlaybook,
+    resolved_tokens: resolvedTokens.size > 0
+      ? (() => { const obj: Record<string, string> = {}; resolvedTokens.forEach((v, k) => { obj[k] = v; }); return obj; })()
+      : undefined,
     text_index: textIndex,
     chunks
   };
 }
 
-function stripNulls(obj: any): any {
+export function stripNulls(obj: any): any {
   if (Array.isArray(obj)) return obj.map(stripNulls);
   if (obj && typeof obj === "object") {
     const out: any = {};
@@ -446,6 +455,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
     selection: payload.selection,
     summary: payload.summary,
     mcp_playbook: payload.mcp_playbook,
+    resolved_tokens: payload.resolved_tokens,
     text_index: payload.text_index,
     chunks: chunks.map((chunk: any) => {
       const items = Array.isArray(chunk.items) ? chunk.items : [];
