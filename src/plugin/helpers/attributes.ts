@@ -240,6 +240,12 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
       const style = await figma.getStyleByIdAsync(textNode.textStyleId as string);
       if (style) {
         inventory.add("text-style", style.name, "Typography", node.name);
+        attributes.push({
+          key: "Text style",
+          value: style.name,
+          format: "STYLE",
+          systemId: textNode.textStyleId as string
+        });
       }
     }
   }

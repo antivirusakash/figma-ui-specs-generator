@@ -27,12 +27,15 @@ type LayoutSectionDeps = {
   truncateText: (value: string, maxLength: number) => string;
 };
 
+const MAX_LAYOUT_SPECS = 50;
+
 export function collectLayoutData(root: SceneNode): LayoutSpec[] {
   const data: LayoutSpec[] = [];
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
   const walk = (node: SceneNode, path: string) => {
+    if (data.length >= MAX_LAYOUT_SPECS) return;
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
       const bounds = node.absoluteBoundingBox;
       const relativeBounds =
@@ -56,6 +59,7 @@ export function collectLayoutData(root: SceneNode): LayoutSpec[] {
         nodeId: node.id,
         name: node.name,
         type: node.type,
+        clipsContent: "clipsContent" in node ? node.clipsContent : undefined,
         layoutMode: node.layoutMode,
         primaryAxisAlignItems: node.primaryAxisAlignItems,
         counterAxisAlignItems: node.counterAxisAlignItems,
@@ -74,7 +78,7 @@ export function collectLayoutData(root: SceneNode): LayoutSpec[] {
       });
     }
 
-    if ("children" in node) {
+    if ("children" in node && data.length < MAX_LAYOUT_SPECS) {
       node.children.forEach((child) => walk(child, `${path}/${node.name}`));
     }
   };

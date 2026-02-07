@@ -624,9 +624,10 @@ async function createCompleteVariantSections(
   baseInstance.remove();
 
   const sections: FrameNode[] = [];
-  const variants = componentSet.children.filter(
+  const allVariants = componentSet.children.filter(
     (child): child is ComponentNode => child.type === "COMPONENT"
   );
+  const variants = allVariants.slice(0, 12);
 
   for (const variant of variants) {
     if (variant.id === baseComponent.id) continue;

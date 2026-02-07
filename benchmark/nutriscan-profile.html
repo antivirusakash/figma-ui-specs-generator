@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=414, initial-scale=1.0">
+<title>NutriScan – Profile</title>
+<style>
+  /* ── Design Tokens (from specs variable_defs) ── */
+  :root {
+    --grey-100: #0c0c0c;
+    --grey-90: #1c1c1e;
+    --grey-80: #2f2f33;
+    --grey-50: #75757d;
+    --grey-40: #929299;
+    --white: #ffffff;
+    --primary: #0a84ff;
+    --green-60: #41D9B3;
+
+    /* Typography tokens */
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: #000;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── Root frame: 414×1615, fill #0C0C0C ── */
+  .screen {
+    width: 414px;
+    min-height: 100vh;
+    background: var(--grey-100);
+    color: var(--white);
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* ── Status Bar: padding 12px 22px 12px 24px, h=44 ── */
+  .status-bar {
+    height: 44px;
+    padding: 12px 24px 12px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .status-bar__time { font-weight: 600; }
+  .status-bar__icons { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+
+  /* ── Title bar: h=69, padding left 20, vertically centered ── */
+  .title-bar {
+    height: 69px;
+    padding: 24px 20px 16px;
+  }
+  /* H5/Bold: Inter Bold 24, lineHeight 1.2 */
+  .title-bar h1 {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+  }
+
+  /* ── Profile Header: 414×141, column, padding 20px (top20 bottom12), gap 24 ── */
+  .profile-header {
+    padding: 20px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Row: Frame 19642 — row, gap 16, space-between / center ── */
+  .profile-header__row {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Frame 19514: row, gap 16, min/center */
+  .profile-header__info {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+  }
+
+  /* Avatar: 59×59, fill #FFFFFF, circular */
+  .avatar {
+    width: 59px;
+    height: 59px;
+    border-radius: 50%;
+    background: var(--grey-80);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  /* Frame 13297: column, gap 4 */
+  .profile-header__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* "Akash Solanki": TEXT, Inter Bold 24, #FFFFFF */
+  .profile-header__name {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+  }
+
+  /* Phone number: B3 style — Inter Medium 14, grey-50 */
+  .profile-header__phone {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+    color: var(--grey-50);
+  }
+
+  /* PencilSimple edit icon: 32×32 */
+  .edit-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Tags row: Frame 19643 — row, gap 7(?), space-between / center */
+  .profile-header__tags {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+  }
+
+  /* Tag item: Frame 19560 — row, gap 12, 187×26, min/center */
+  .tag {
+    width: 187px;
+    height: 26px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+  /* Tag icon: 20×20, fill #FFFFFF */
+  .tag__icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--white);
+  }
+  /* Tag text: Inter Medium 18, #FFFFFF, 155×26 */
+  .tag__label {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 26px;
+    color: var(--white);
+  }
+
+  /* ── Menu sections container: Frame 19645, column, gap 24 ── */
+  .menu-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-top: 24px;
+  }
+
+  /* Section group: Frame 313906 etc — column, gap 0 */
+  .menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Section header: Profile Option List Item (header variant)
+     padding: 0 20px, h=26, no top/bottom padding for header */
+  .menu-group__title {
+    padding: 0 20px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 26px;
+    color: var(--primary);
+  }
+
+  /* List item: Profile Option List Item INSTANCE
+     row, gap 8, padding 16px 20px, min/center, 414×58
+     stroke: grey-90 (top border) */
+  .menu-item {
+    width: 414px;
+    height: 58px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    border-top: 1px solid var(--grey-90);
+    cursor: pointer;
+  }
+  .menu-item:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  /* Inner content: Frame 19560 — row, gap 12, fill-width, center */
+  .menu-item__content {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Menu item icon: ~20×20 */
+  .menu-item__icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--white);
+    flex-shrink: 0;
+  }
+
+  /* Menu item text: B1/Regular — Inter Regular 16, lineHeight 24, white */
+  .menu-item__label {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: var(--white);
+    flex: 1;
+  }
+
+  /* Chevron right */
+  .menu-item__chevron {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--grey-50);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ── Apple Health special item: 414×84 ── */
+  .menu-item--health {
+    height: 84px;
+  }
+  .menu-item--health .menu-item__content {
+    align-items: flex-start;
+  }
+  .health-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .health-icon__img {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #ff2d55, #ff6482);
+  }
+  .health-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  .health-text__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .health-text__name {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 26px;
+    color: var(--white);
+  }
+  .health-text__check {
+    width: 20px;
+    height: 20px;
+    color: var(--green-60);
+    font-size: 16px;
+  }
+  .health-text__sync {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    color: var(--grey-50);
+  }
+  .health-refresh {
+    width: 24px;
+    height: 24px;
+    color: var(--grey-50);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Follow Us row: 3 items side by side ── */
+  .follow-row {
+    display: flex;
+    flex-direction: row;
+  }
+  .follow-row .menu-item {
+    width: 138px;
+    flex: 1;
+  }
+  .follow-row .menu-item__label {
+    font-size: 14px;
+  }
+
+  /* ── Logout item (no chevron, no icon) ── */
+  .menu-item--logout .menu-item__label {
+    color: var(--white);
+  }
+
+  /* ── App version ── */
+  .app-version {
+    padding: 0 20px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    color: var(--grey-40);
+  }
+
+  /* ── Bottom Nav: 414×96 ── */
+  .bottom-nav {
+    margin-top: auto;
+    width: 414px;
+    height: 96px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding-top: 8px;
+    border-top: 1px solid var(--grey-90);
+    background: var(--grey-100);
+    position: sticky;
+    bottom: 0;
+  }
+  .bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    cursor: pointer;
+  }
+  .bottom-nav__icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--grey-50);
+  }
+  .bottom-nav__label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--grey-50);
+  }
+  .bottom-nav__item--active .bottom-nav__icon {
+    color: var(--primary);
+  }
+  .bottom-nav__item--active .bottom-nav__label {
+    color: var(--primary);
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    height: 34px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8px;
+  }
+  .home-indicator__bar {
+    width: 134px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--white);
+    opacity: 0.3;
+  }
+
+  /* ── Utility: Using Unicode symbols as icon placeholders ── */
+  .icon-placeholder {
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="status-bar__time">9:41</span>
+    <span class="status-bar__icons">
+      <span>&#x25CF;&#x25CF;&#x25CF;&#x25CF;</span>
+      <span>&#x25B2;</span>
+      <span>&#x1F50B;</span>
+    </span>
+  </div>
+
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <h1>Profile</h1>
+  </div>
+
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="profile-header__row">
+      <div class="profile-header__info">
+        <div class="avatar">AS</div>
+        <div class="profile-header__text">
+          <div class="profile-header__name">Akash Solanki</div>
+          <div class="profile-header__phone">+91-85xxxxxx53</div>
+        </div>
+      </div>
+      <div class="edit-icon">&#x270E;</div>
+    </div>
+    <div class="profile-header__tags">
+      <div class="tag">
+        <span class="tag__icon">&#x1F374;</span>
+        <span class="tag__label">Vegetarian</span>
+      </div>
+      <div class="tag">
+        <span class="tag__icon">&#x1F3AF;</span>
+        <span class="tag__label">Weight Loss</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu Sections -->
+  <div class="menu-sections">
+
+    <!-- General -->
+    <div class="menu-group">
+      <div class="menu-group__title">General</div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F4CB;</span>
+          <span class="menu-item__label">All Meals</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F4DD;</span>
+          <span class="menu-item__label">Modify Meal Plan</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x2699;</span>
+          <span class="menu-item__label">Modify Macros</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F4E4;</span>
+          <span class="menu-item__label">Share Food Timeline</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F504;</span>
+          <span class="menu-item__label">Manage Repeat Meals</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F381;</span>
+          <span class="menu-item__label">Refer a Friend</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+    </div>
+
+    <!-- Health & Devices -->
+    <div class="menu-group">
+      <div class="menu-group__title">Health &amp; Devices</div>
+      <div class="menu-item menu-item--health">
+        <div class="menu-item__content">
+          <div class="health-icon"><div class="health-icon__img"></div></div>
+          <div class="health-text">
+            <div class="health-text__title">
+              <span class="health-text__name">Sync Apple Health</span>
+              <span class="health-text__check">&#x2705;</span>
+            </div>
+            <span class="health-text__sync">Last sync: Sept 25, 2025 11:34PM</span>
+          </div>
+        </div>
+        <span class="health-refresh">&#x21BB;</span>
+      </div>
+    </div>
+
+    <!-- Support -->
+    <div class="menu-group">
+      <div class="menu-group__title">Support</div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x2699;</span>
+          <span class="menu-item__label">Manage Subscription</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F310;</span>
+          <span class="menu-item__label">Change Language</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x2B50;</span>
+          <span class="menu-item__label">Leave a Review</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F4E9;</span>
+          <span class="menu-item__label">Contact Us</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="menu-group">
+      <div class="menu-group__title">About</div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F465;</span>
+          <span class="menu-item__label">App Contributors</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F4F1;</span>
+          <span class="menu-item__label">About NutriScan</span>
+        </div>
+        <span class="menu-item__chevron">&#x203A;</span>
+      </div>
+      <div class="menu-item menu-item--logout">
+        <div class="menu-item__content">
+          <span class="menu-item__icon">&#x1F6AA;</span>
+          <span class="menu-item__label">Logout</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow Us -->
+    <div class="menu-group">
+      <div class="menu-group__title">Follow Us</div>
+      <div class="follow-row">
+        <div class="menu-item">
+          <div class="menu-item__content">
+            <span class="menu-item__icon">&#x1D54F;</span>
+            <span class="menu-item__label">X (Twitter)</span>
+          </div>
+        </div>
+        <div class="menu-item">
+          <div class="menu-item__content">
+            <span class="menu-item__icon">&#x1F4F7;</span>
+            <span class="menu-item__label">Instagram</span>
+          </div>
+        </div>
+        <div class="menu-item">
+          <div class="menu-item__content">
+            <span class="menu-item__icon">&#x1F310;</span>
+            <span class="menu-item__label">Website</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Version -->
+    <div class="app-version">App Version 1.2.1 (40)</div>
+
+  </div><!-- /menu-sections -->
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <div class="bottom-nav__item">
+      <span class="bottom-nav__icon">&#x1F37D;</span>
+      <span class="bottom-nav__label">Meals</span>
+    </div>
+    <div class="bottom-nav__item">
+      <span class="bottom-nav__icon">&#x1F4CB;</span>
+      <span class="bottom-nav__label">Diet Plan</span>
+    </div>
+    <div class="bottom-nav__item">
+      <span class="bottom-nav__icon">&#x1F4A1;</span>
+      <span class="bottom-nav__label">NutriBites</span>
+    </div>
+    <div class="bottom-nav__item bottom-nav__item--active">
+      <span class="bottom-nav__icon">&#x1F464;</span>
+      <span class="bottom-nav__label">Profile</span>
+    </div>
+  </div>
+
+  <div class="home-indicator"><div class="home-indicator__bar"></div></div>
+
+</div><!-- /screen -->
+
+</body>
+</html>

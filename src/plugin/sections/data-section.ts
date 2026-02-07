@@ -43,7 +43,7 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
-function splitJsonText(value: string, maxChars = 8000) {
+function splitText(value: string, maxChars = 8000) {
   const lines = value.split("\n");
   const chunks: string[] = [];
   let current = "";
@@ -140,6 +140,63 @@ function toAgentReadyDataPayload(
     if (element.instanceOf) {
       record.instance_of = deps.truncateText(element.instanceOf, compact ? 32 : 64);
     }
+
+    // Promoted top-level fields for AI code generation
+    if (element.textContent) {
+      record.text = deps.truncateText(element.textContent, compact ? 80 : 200);
+    }
+    if (element.childrenText?.length) {
+      record.children_text = element.childrenText.map(t =>
+        deps.truncateText(t, compact ? 60 : 120)
+      ).slice(0, compact ? 4 : 8);
+    }
+    if (element.bounds) {
+      record.w = Math.round(element.bounds.width);
+      record.h = Math.round(element.bounds.height);
+    }
+
+    const findAttr = (key: string) =>
+      element.attributes.find(a => a.key === key);
+
+    const fill = findAttr("Fill") ?? findAttr("Text fill");
+    if (fill) {
+      record.fill = fill.rawValue ?? fill.value;
+      if (fill.format !== "HARDCODED") {
+        record.fill_ref = deps.truncateText(fill.value, compact ? 50 : 80);
+      }
+    }
+    const fontSize = findAttr("Font size");
+    if (fontSize) {
+      record.font_size = fontSize.rawValue ?? fontSize.value;
+    }
+    const font = findAttr("Font");
+    if (font) {
+      record.font = deps.truncateText(font.value, compact ? 40 : 64);
+    }
+    const radius = findAttr("Corner radius");
+    if (radius && radius.rawValue !== 0) {
+      record.radius = radius.rawValue ?? radius.value;
+    }
+    const padding = findAttr("Padding");
+    if (padding) {
+      record.padding = padding.rawValue ?? padding.value;
+    }
+    const gap = findAttr("Item spacing");
+    if (gap && gap.rawValue !== 0) {
+      record.gap = gap.rawValue ?? gap.value;
+    }
+    const stroke = findAttr("Stroke");
+    if (stroke) {
+      record.stroke = stroke.rawValue ?? stroke.value;
+      if (stroke.format !== "HARDCODED") {
+        record.stroke_ref = deps.truncateText(stroke.value, compact ? 50 : 80);
+      }
+    }
+    const textStyle = findAttr("Text style");
+    if (textStyle) {
+      record.text_style = deps.truncateText(textStyle.value, compact ? 40 : 64);
+    }
+
     if (includeAttributes) {
       record.attributes = element.attributes.slice(0, compact ? 5 : 8).map((attribute) => {
         const attr: any = {
@@ -168,6 +225,7 @@ function toAgentReadyDataPayload(
       sizing: `${spec.primaryAxisSizingMode} / ${spec.counterAxisSizingMode}`
     };
     if (hasNonZeroPad) record.padding = pad;
+    if (spec.clipsContent) record.clips = true;
     return record;
   });
 
@@ -233,6 +291,20 @@ function toAgentReadyDataPayload(
 
   const chunks = [...anatomyChunks, ...layoutChunks, ...propertyChunks];
 
+  const textIndex = dataModel.anatomy
+    .filter(el => el.textContent || el.childrenText?.length)
+    .slice(0, compact ? 40 : 100)
+    .map(el => {
+      const entry: any = { id: el.nodeId, path: el.pathKey };
+      if (el.textContent) entry.text = deps.truncateText(el.textContent, compact ? 80 : 200);
+      if (el.childrenText?.length) {
+        entry.children_text = el.childrenText
+          .map(t => deps.truncateText(t, compact ? 60 : 120))
+          .slice(0, compact ? 4 : 8);
+      }
+      return entry;
+    });
+
   const mcpPlaybook = {
     tools: compact
       ? ["get_metadata", "get_design_context", "get_screenshot", "get_variable_defs"]
@@ -242,7 +314,7 @@ function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v2.compact" : "specs-plugin.agent_pack.v1",
+    schema: compact ? "specs-plugin.agent_pack.v5.yaml.compact" : "specs-plugin.agent_pack.v5.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
@@ -263,6 +335,7 @@ function toAgentReadyDataPayload(
       }
     },
     mcp_playbook: mcpPlaybook,
+    text_index: textIndex,
     chunks
   };
 }
@@ -279,6 +352,86 @@ function stripNulls(obj: any): any {
   return obj;
 }
 
+export function yamlNeedsQuoting(value: string): boolean {
+  if (value.length === 0) return true;
+  if (value !== value.trim()) return true;
+  if (/^[\d.]+$/.test(value) || /^0x[\da-fA-F]+$/.test(value)) return true;
+  if (value === "true" || value === "false" || value === "null" || value === "yes" || value === "no") return true;
+  if (/[:#{\[]/.test(value)) return true;
+  return false;
+}
+
+function yamlScalar(value: unknown): string {
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  const str = String(value);
+  return yamlNeedsQuoting(str) ? `"${str.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : str;
+}
+
+export function toYaml(data: unknown, indent = 0): string {
+  const pad = " ".repeat(indent);
+
+  if (data === null || data === undefined) return `${pad}null`;
+  if (typeof data === "number" || typeof data === "boolean") return `${pad}${data}`;
+  if (typeof data === "string") return `${pad}${yamlScalar(data)}`;
+
+  if (Array.isArray(data)) {
+    if (data.length === 0) return `${pad}[]`;
+    // Short primitive arrays → inline
+    const allPrimitive = data.every(
+      (item) => typeof item === "string" || typeof item === "number" || typeof item === "boolean"
+    );
+    if (allPrimitive) {
+      const inline = `[${data.map((item) => yamlScalar(item)).join(", ")}]`;
+      if (indent + inline.length < 80) return `${pad}${inline}`;
+    }
+    // Block array
+    const lines: string[] = [];
+    for (const item of data) {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        const entries = Object.entries(item);
+        if (entries.length === 0) {
+          lines.push(`${pad}- {}`);
+          continue;
+        }
+        const [firstKey, firstVal] = entries[0];
+        const firstValStr = firstVal && typeof firstVal === "object"
+          ? `\n${toYaml(firstVal, indent + 4)}`
+          : ` ${yamlScalar(firstVal)}`;
+        lines.push(`${pad}- ${firstKey}:${firstValStr}`);
+        for (let i = 1; i < entries.length; i++) {
+          const [key, val] = entries[i];
+          if (val && typeof val === "object") {
+            lines.push(`${pad}  ${key}:`);
+            lines.push(toYaml(val, indent + 4));
+          } else {
+            lines.push(`${pad}  ${key}: ${yamlScalar(val)}`);
+          }
+        }
+      } else {
+        lines.push(`${pad}- ${toYaml(item, 0).trim()}`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  if (typeof data === "object") {
+    const entries = Object.entries(data as Record<string, unknown>);
+    if (entries.length === 0) return `${pad}{}`;
+    const lines: string[] = [];
+    for (const [key, val] of entries) {
+      if (val && typeof val === "object") {
+        lines.push(`${pad}${key}:`);
+        lines.push(toYaml(val, indent + 2));
+      } else {
+        lines.push(`${pad}${key}: ${yamlScalar(val)}`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  return `${pad}${String(data)}`;
+}
+
 function toDataSectionPreview(payload: any, agentReadyData: boolean) {
   if (!agentReadyData) {
     return payload;
@@ -293,6 +446,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
     selection: payload.selection,
     summary: payload.summary,
     mcp_playbook: payload.mcp_playbook,
+    text_index: payload.text_index,
     chunks: chunks.map((chunk: any) => {
       const items = Array.isArray(chunk.items) ? chunk.items : [];
       const sampled = items.slice(0, sampleSize);
@@ -317,7 +471,10 @@ export function createDataSection(
   inventory: Inventory,
   deps: DataSectionDeps
 ) {
-  const section = deps.createSectionFrame("Data (JSON)", theme);
+  const section = deps.createSectionFrame(
+    settings.agentReadyData ? "Data (YAML)" : "Data (JSON)",
+    theme
+  );
   const payload = settings.agentReadyData
     ? toAgentReadyDataPayload(dataModel, includeAttributes, target, settings, inventory, deps)
     : toLegacyDataPayload(dataModel, includeAttributes);
@@ -327,8 +484,8 @@ export function createDataSection(
     deps.createText(
       settings.agentReadyData
         ? settings.aiCompactMode
-          ? "AI compact schema with chunk manifest and reduced-token records."
-          : "Agent-ready schema with chunk manifest, node IDs, and MCP playbook."
+          ? "AI compact YAML schema with chunk manifest and reduced-token records."
+          : "Agent-ready YAML schema with chunk manifest, node IDs, and MCP playbook."
         : "Legacy raw JSON payload.",
       9,
       FONT_REGULAR,
@@ -348,12 +505,14 @@ export function createDataSection(
     );
   }
 
-  const json = JSON.stringify(previewPayload, null, 2);
-  const chunks = splitJsonText(json, 4000);
+  const serialized = settings.agentReadyData
+    ? toYaml(stripNulls(previewPayload))
+    : JSON.stringify(previewPayload, null, 2);
+  const chunks = splitText(serialized, 4000);
   const textChunks = chunks.slice(0, 3);
   deps.log("Data section payload", {
     mode: settings.agentReadyData ? "agent-pack-preview" : "legacy",
-    jsonChars: json.length,
+    chars: serialized.length,
     chunks: chunks.length,
     renderedChunks: textChunks.length
   });

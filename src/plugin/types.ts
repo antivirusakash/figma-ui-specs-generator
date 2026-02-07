@@ -71,6 +71,8 @@ export type AnatomyElement = {
   bounds?: Rect;
   nodeId?: string;
   pathKey?: string;
+  textContent?: string;
+  childrenText?: string[];
 };
 
 export type ComponentSetContext = {
@@ -115,6 +117,7 @@ export type LayoutSpec = {
     bottom: number;
   };
   bounds?: Rect;
+  clipsContent?: boolean;
   gapLine?: {
     x1: number;
     y1: number;

@@ -4,6 +4,9 @@ import type { AnatomyElement, ComponentSetContext, Settings } from "../types";
 import { collectAttributes } from "./attributes";
 import { detectTokensStudio } from "./attributes";
 
+const MAX_ANATOMY_ELEMENTS = 150;
+const MAX_WALK_DEPTH = 12;
+
 export async function collectAnatomyElements(
   root: SceneNode,
   inventory: Inventory,
@@ -15,6 +18,8 @@ export async function collectAnatomyElements(
 
   const walk = async (node: SceneNode, path: string, depth: number) => {
     if (!node.visible) return;
+    if (elements.length >= MAX_ANATOMY_ELEMENTS) return;
+    if (depth > MAX_WALK_DEPTH) return;
 
     const shouldStop = node.type === "INSTANCE" && node !== root;
     const isElement = isRelevantNode(node, depth);
@@ -40,6 +45,14 @@ export async function collectAnatomyElements(
       const instanceOf =
         node.type === "INSTANCE" ? (await getMainComponentSafe(node as InstanceNode))?.name : undefined;
 
+      const textContent = node.type === "TEXT"
+        ? (node as TextNode).characters
+        : undefined;
+
+      const childrenText = node.type === "INSTANCE"
+        ? collectInstanceText(node as InstanceNode)
+        : undefined;
+
       elements.push({
         name: node.name,
         type: node.type,
@@ -47,7 +60,9 @@ export async function collectAnatomyElements(
         attributes: await collectAttributes(node, inventory, settings),
         bounds: relativeBounds,
         nodeId: node.id,
-        pathKey: key
+        pathKey: key,
+        textContent,
+        childrenText: childrenText?.length ? childrenText : undefined
       });
     }
 
@@ -132,6 +147,22 @@ export function isRelevantNode(node: SceneNode, depth = 0) {
       || node.type === "POLYGON" || node.type === "STAR") return true;
 
   return false;
+}
+
+function collectInstanceText(instance: InstanceNode, maxDepth = 3): string[] {
+  const texts: string[] = [];
+  const walk = (n: SceneNode, depth: number) => {
+    if (depth > maxDepth || !n.visible) return;
+    if (n.type === "TEXT") {
+      const chars = (n as TextNode).characters;
+      if (chars) texts.push(chars);
+    }
+    if ("children" in n) {
+      for (const child of (n as FrameNode).children) walk(child, depth + 1);
+    }
+  };
+  for (const child of instance.children) walk(child, 0);
+  return texts;
 }
 
 function hasVisualProperties(node: SceneNode): boolean {
