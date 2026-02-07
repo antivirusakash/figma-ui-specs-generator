@@ -21,7 +21,7 @@ type LayoutSectionDeps = {
     theme: Theme,
     maxContentWidth?: number,
     maxContentHeight?: number
-  ) => FrameNode;
+  ) => Promise<FrameNode>;
   fitTextSingleLine: (node: TextNode, width: number) => void;
   fitTextToWidth: (node: TextNode, width: number) => void;
   truncateText: (value: string, maxLength: number) => string;
@@ -106,7 +106,7 @@ function computeGapLine(node: SceneNode, rootBounds: Rect | null | undefined) {
   return { x1: x, y1, x2: x, y2 };
 }
 
-export function createLayoutSection(
+export async function createLayoutSection(
   target: SceneNode,
   specs: LayoutSpec[],
   showOuter: boolean,
@@ -232,7 +232,7 @@ export function createLayoutSection(
   artworkPanel.fills = [];
   artworkPanel.appendChild(createLayoutLegend(theme, deps));
 
-  const artwork = deps.createArtworkFrame(target, 0, theme);
+  const artwork = await deps.createArtworkFrame(target, 0, theme);
   renderLayoutMarkers(artwork, specsForArtwork, showOuter, theme, deps, settings);
   artworkPanel.appendChild(artwork);
   body.appendChild(artworkPanel);

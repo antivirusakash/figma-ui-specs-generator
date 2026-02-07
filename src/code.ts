@@ -248,7 +248,7 @@ async function generateSpecs(settings: Settings) {
       if (settings.anatomy) {
         const sideBySide = settings.layout && !settings.multiColumn;
         const sectionSettings = sideBySide ? { ...settings, multiColumn: true, sectionWidth: artworkSectionWidth } : settings;
-        anatomySection = createAnatomySection(target, anatomyElements, sectionSettings, theme);
+        anatomySection = await createAnatomySection(target, anatomyElements, sectionSettings, theme);
       }
     }
 
@@ -290,7 +290,7 @@ async function generateSpecs(settings: Settings) {
     if (settings.layout) {
       const sideBySide = settings.anatomy && !settings.multiColumn;
       const sectionSettings = sideBySide ? { ...settings, multiColumn: true, sectionWidth: artworkSectionWidth } : settings;
-      layoutSection = createLayoutSection(target, layoutData, settings.showOuterLayout, theme, sectionSettings);
+      layoutSection = await createLayoutSection(target, layoutData, settings.showOuterLayout, theme, sectionSettings);
     }
 
     // Side-by-side row when both Anatomy and Layout exist (single-column mode only)
@@ -515,7 +515,7 @@ function createColumnFrames(parent: FrameNode, count: number, width: number) {
 }
 
 // Section delegate wrappers
-function createAnatomySection(
+async function createAnatomySection(
   target: SceneNode,
   elements: AnatomyElement[],
   settings: Settings,
@@ -567,7 +567,7 @@ function collectLayoutData(root: SceneNode): LayoutSpec[] {
   return collectLayoutDataModule(root);
 }
 
-function createLayoutSection(
+async function createLayoutSection(
   target: SceneNode,
   specs: LayoutSpec[],
   showOuter: boolean,
@@ -634,7 +634,7 @@ async function createCompleteVariantSections(
     const elements = await collectAnatomyElements(instance, inventory, settings);
     const newElements = elements.filter((element) => !baseElementKeys.has(buildElementKey(element)));
     if (newElements.length > 0) {
-      const anatomySection = createAnatomySection(
+      const anatomySection = await createAnatomySection(
         instance,
         newElements,
         settings,
@@ -648,7 +648,7 @@ async function createCompleteVariantSections(
       const layoutSpecs = collectLayoutData(instance);
       const newLayouts = layoutSpecs.filter((spec) => !baseLayoutKeys.has(buildLayoutKey(spec)));
       if (newLayouts.length > 0) {
-        const layoutSection = createLayoutSection(
+        const layoutSection = await createLayoutSection(
           instance,
           newLayouts,
           settings.showOuterLayout,
@@ -720,7 +720,7 @@ async function createNestedComponentSections(
       : [];
 
     if (settings.anatomy) {
-      const anatomy = createAnatomySection(
+      const anatomy = await createAnatomySection(
         instance,
         anatomyElements,
         settings,
@@ -738,7 +738,7 @@ async function createNestedComponentSections(
     const layoutData = settings.layout || settings.data ? collectLayoutData(instance) : [];
 
     if (settings.layout) {
-      const layout = createLayoutSection(instance, layoutData, settings.showOuterLayout, theme, settings, `Layout · ${instance.name}`);
+      const layout = await createLayoutSection(instance, layoutData, settings.showOuterLayout, theme, settings, `Layout · ${instance.name}`);
       container.appendChild(layout);
     }
 

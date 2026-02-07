@@ -21,7 +21,7 @@ type VariablesSectionDeps = {
     theme: Theme,
     maxContentWidth?: number,
     maxContentHeight?: number
-  ) => FrameNode;
+  ) => Promise<FrameNode>;
   formatSpacing: (value: number, settings: Settings) => string;
   formatColor: (paint: Paint | undefined, settings: Settings) => string;
   log: (...args: any[]) => void;
@@ -131,7 +131,7 @@ export async function createModesSection(
     const card = deps.createContentCard(theme);
     card.appendChild(deps.createText(collection.name, 12, FONT_MEDIUM, theme.text, "heading"));
 
-    collection.modes.forEach((mode) => {
+    for (const mode of collection.modes) {
       const modeFrame = figma.createFrame();
       modeFrame.name = `Mode · ${mode.name}`;
       modeFrame.layoutMode = "VERTICAL";
@@ -151,15 +151,20 @@ export async function createModesSection(
       deps.fitTextToWidth(linesNode, settings.multiColumn ? 448 : 688);
       modeFrame.appendChild(linesNode);
 
-      const artwork = deps.createArtworkFrame(target, 0, theme);
+      // Clone target temporarily to set variable mode before exporting as image.
+      // The clone is removed immediately — visual bugs from .clone() don't matter
+      // since exportAsync captures a pixel-perfect snapshot.
+      const tempClone = target.clone();
       try {
-        artwork.setExplicitVariableModeForCollection(collection, mode.modeId);
+        tempClone.setExplicitVariableModeForCollection(collection, mode.modeId);
       } catch (error) {
-        deps.logError("Failed to set mode on artwork", error);
+        deps.logError("Failed to set mode on temp clone", error);
       }
+      const artwork = await deps.createArtworkFrame(tempClone, 0, theme);
+      tempClone.remove();
       modeFrame.appendChild(artwork);
       card.appendChild(modeFrame);
-    });
+    }
 
     section.appendChild(card);
   }

@@ -26,12 +26,12 @@ type AnatomySectionDeps = {
     theme: Theme,
     maxContentWidth?: number,
     maxContentHeight?: number
-  ) => FrameNode;
+  ) => Promise<FrameNode>;
   truncateText: (value: string, maxLength: number) => string;
   solidFill: (hex: string, opacity?: number) => SolidPaint;
 };
 
-export function createAnatomySection(
+export async function createAnatomySection(
   target: SceneNode,
   elements: AnatomyElement[],
   settings: Settings,
@@ -110,7 +110,7 @@ export function createAnatomySection(
     );
   }
 
-  const artwork = deps.createArtworkFrame(target, 0, theme);
+  const artwork = await deps.createArtworkFrame(target, 0, theme);
   renderAnatomyMarkers(artwork, highlights, theme, deps);
 
   if (settings.tabularAnatomy) {

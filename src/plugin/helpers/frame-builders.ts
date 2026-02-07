@@ -143,7 +143,7 @@ export function createContentCard(theme: Theme) {
   return card;
 }
 
-export function createArtworkFrame(
+export async function createArtworkFrame(
   target: SceneNode,
   markerGutter = 0,
   theme: Theme
@@ -158,16 +158,44 @@ export function createArtworkFrame(
   frame.strokeWeight = 1;
   frame.cornerRadius = 8;
 
-  const clone = target.clone();
   const padding = 16;
+  const targetWidth = target.absoluteBoundingBox?.width ?? (target as any).width ?? 100;
+  const targetHeight = target.absoluteBoundingBox?.height ?? (target as any).height ?? 100;
 
-  const frameWidth = clone.width + padding * 2 + markerGutter;
-  const frameHeight = clone.height + padding * 2;
+  // Export target as PNG instead of .clone() to avoid Figma bugs where
+  // cloned component instances lose their connection, reset widths, and
+  // break text wrapping. Try 2x first for retina, fall back to 1x for
+  // large targets that exceed Figma's image size limit.
+  let image: Image;
+  for (const scale of [2, 1]) {
+    const pngBytes = await (target as ExportMixin).exportAsync({
+      format: 'PNG',
+      constraint: { type: 'SCALE', value: scale }
+    });
+    try {
+      image = figma.createImage(pngBytes);
+      break;
+    } catch {
+      if (scale === 1) throw new Error("Target is too large to export as an image");
+    }
+  }
+  image = image!;
+
+  const rect = figma.createRectangle();
+  rect.resize(targetWidth, targetHeight);
+  rect.fills = [{
+    type: 'IMAGE',
+    imageHash: image.hash,
+    scaleMode: 'FILL'
+  }];
+
+  const frameWidth = targetWidth + padding * 2 + markerGutter;
+  const frameHeight = targetHeight + padding * 2;
   frame.resizeWithoutConstraints(frameWidth, frameHeight);
 
-  frame.appendChild(clone);
-  clone.x = padding;
-  clone.y = padding;
+  frame.appendChild(rect);
+  rect.x = padding;
+  rect.y = padding;
 
   frame.setPluginData("cloneOffsetX", String(padding));
   frame.setPluginData("cloneOffsetY", String(padding));
