@@ -29,6 +29,8 @@ import {
 import { CollapsibleSection } from './ui/components/collapsible-section';
 import { PresetCard } from './ui/components/preset-card';
 
+type Framework = 'auto' | 'react' | 'nextjs' | 'flutter' | 'html' | 'vue' | 'svelte' | 'react-native';
+
 type Settings = {
   anatomy: boolean;
   tabularAnatomy: boolean;
@@ -56,6 +58,7 @@ type Settings = {
   valuePrecision: number;
   showRawValues: boolean;
   valuePreference: 'variable' | 'token';
+  framework: Framework;
 };
 
 type PluginMessage =
@@ -67,7 +70,7 @@ type PluginMessage =
   | { type: 'generate-success' };
 
 type Preset = 'handoff' | 'agent' | 'compact';
-type AppTab = 'generate' | 'learn';
+type AppTab = 'generate' | 'learn' | 'agents';
 
 const AUTO_VALUE = '__auto__';
 
@@ -97,7 +100,8 @@ const DEFAULT_SETTINGS: Settings = {
   remBase: 16,
   valuePrecision: 2,
   showRawValues: false,
-  valuePreference: 'variable'
+  valuePreference: 'variable',
+  framework: 'auto'
 };
 
 const panelClass = 'rounded-xl border border-border bg-card/95 p-4 shadow-sm';
@@ -141,6 +145,7 @@ const App = () => {
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [generateSuccess, setGenerateSuccess] = useState(false);
+  const [snippetCopied, setSnippetCopied] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>('agent');
 
   useEffect(() => {
@@ -184,6 +189,48 @@ const App = () => {
   }, []);
 
   const twoWayOptions = useMemo(() => [AUTO_VALUE].concat(variantProps), [variantProps]);
+
+  const agentSnippet = useMemo(() => {
+    const fw = settings.framework;
+    const fwLine = fw === 'react' || fw === 'nextjs'
+      ? '- For React/Next.js: Build as functional components with Tailwind or CSS modules. Use semantic HTML.'
+      : fw === 'flutter'
+      ? '- For Flutter: Build as StatelessWidget using the Material/Cupertino theme. Map layout specs to Column/Row/Padding.'
+      : fw === 'vue'
+      ? '- For Vue: Build as Vue 3 SFC (`<script setup>`). Use scoped CSS or Tailwind.'
+      : fw === 'svelte'
+      ? '- For Svelte: Build as a Svelte component. Use scoped styles or Tailwind.'
+      : fw === 'react-native'
+      ? '- For React Native: Build with View/Text/Image components. Map layout specs to flexbox StyleSheet.'
+      : fw === 'html'
+      ? '- For HTML/CSS: Build with semantic HTML and vanilla CSS. Use CSS flexbox for layout.'
+      : '- Detect the framework from `package.json` and build accordingly.';
+    return `## Figma-to-Code Workflow
+
+- When given a Figma spec (YAML from Specs plugin), follow the implementation instructions in the spec header exactly.
+- Use \`get_screenshot\` from the Figma MCP server to capture the design. Save to \`.figma/\` and reference it — don't re-fetch.
+- Read the YAML \`chunks\` for anatomy (structure), layout (flex/grid), and repeats (deduplicated instances).
+- Use \`resolved_tokens\` to map design token names to actual values (hex, font names).
+- Match \`instance_of\` names to your icon library (Phosphor, Lucide, etc.) — check \`package.json\`.
+${fwLine}
+- After building, screenshot your output and compare with the \`.figma/*.png\` reference. Fix differences.
+- Keep implementations minimal — only build what the spec describes.`;
+  }, [settings.framework]);
+
+  const copySnippet = useCallback(() => {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = agentSnippet;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setSnippetCopied(true);
+      setTimeout(() => setSnippetCopied(false), 2000);
+    } catch { /* ignore */ }
+  }, [agentSnippet]);
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -379,6 +426,19 @@ const App = () => {
           >
             Learn
           </Button>
+          <Button
+            id="tab-agents"
+            type="button"
+            role="tab"
+            aria-controls="panel-agents"
+            aria-selected={activeTab === 'agents'}
+            tabIndex={activeTab === 'agents' ? 0 : -1}
+            className="h-10 flex-1"
+            variant={activeTab === 'agents' ? 'default' : 'secondary'}
+            onClick={() => setActiveTab('agents')}
+          >
+            AGENTS.md
+          </Button>
         </div>
       </div>
 
@@ -452,6 +512,129 @@ const App = () => {
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
                 Generate from focused frames, not entire pages.
+              </li>
+            </ul>
+          </section>
+
+        </div>
+      ) : null}
+
+      {/* Agents Tab */}
+      {activeTab === 'agents' ? (
+        <div id="panel-agents" role="tabpanel" aria-labelledby="tab-agents" className="space-y-4 px-4">
+
+          {/* Intro */}
+          <section className={panelClass}>
+            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <CubeIcon size={14} className="text-primary" />
+              CLAUDE.md / AGENTS.md
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Add this snippet to your project's <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">CLAUDE.md</code> or <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">AGENTS.md</code> so
+              your AI coding agent knows how to consume Specs plugin output.
+            </p>
+          </section>
+
+          {/* Framework selector (mirrors Generate tab) */}
+          <section className={panelClass}>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground" htmlFor="agents-framework">
+                Target framework
+              </Label>
+              <Select value={settings.framework} onValueChange={onSelect('framework')}>
+                <SelectTrigger id="agents-framework" className={inputTriggerClass}>
+                  <SelectValue placeholder="Auto-detect" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto-detect</SelectItem>
+                  <SelectItem value="react">React</SelectItem>
+                  <SelectItem value="nextjs">Next.js</SelectItem>
+                  <SelectItem value="vue">Vue</SelectItem>
+                  <SelectItem value="svelte">Svelte</SelectItem>
+                  <SelectItem value="flutter">Flutter</SelectItem>
+                  <SelectItem value="html">HTML / CSS</SelectItem>
+                  <SelectItem value="react-native">React Native</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The snippet adapts its framework-specific line based on this selection.
+              </p>
+            </div>
+          </section>
+
+          {/* Snippet preview + copy */}
+          <section className={panelClass}>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Snippet</h2>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1.5 text-xs"
+                onClick={copySnippet}
+              >
+                {snippetCopied ? (
+                  <span className="flex items-center gap-1">
+                    <CheckCircleIcon size={12} weight="bold" />
+                    Copied!
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <CopyIcon size={12} />
+                    Copy snippet
+                  </span>
+                )}
+              </Button>
+            </div>
+            <pre className="overflow-auto rounded-md border border-border bg-muted/40 p-3 text-[10px] leading-relaxed text-foreground">
+              {agentSnippet}
+            </pre>
+          </section>
+
+          {/* How to use it */}
+          <section className={panelClass}>
+            <h2 className="mb-2 text-sm font-semibold text-foreground">How to use</h2>
+            <div className="grid gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+                <span>Copy the snippet above.</span>
+              </div>
+              <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">2</span>
+                <span>Paste it into <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">CLAUDE.md</code> (Claude Code) or <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">AGENTS.md</code> (Codex / other agents) at your project root.</span>
+              </div>
+              <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
+                <span>Select a component in Figma, hit <strong>Copy AI Specs</strong>, and paste the YAML into your agent's chat.</span>
+              </div>
+              <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">4</span>
+                <span>The agent reads the snippet instructions, fetches the Figma screenshot, and builds the component from the YAML spec.</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Supported agents */}
+          <section className={`${panelClass} bg-primary/5`}>
+            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <SparkleIcon size={14} className="text-primary" />
+              Supported agents
+            </h2>
+            <ul className="grid gap-1.5 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <strong>Claude Code</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">CLAUDE.md</code>
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <strong>OpenAI Codex</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">AGENTS.md</code>
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <strong>Cursor / Windsurf</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">.cursorrules</code> or project instructions
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                Works with any agent that reads project-level instruction files.
               </li>
             </ul>
           </section>
@@ -688,6 +871,29 @@ const App = () => {
                 checked={settings.showOuterLayout}
                 onCheckedChange={onToggle('showOuterLayout')}
               />
+            </div>
+            <div className="mt-3 space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground" htmlFor="framework">
+                Target framework
+              </Label>
+              <Select value={settings.framework} onValueChange={onSelect('framework')}>
+                <SelectTrigger id="framework" className={inputTriggerClass}>
+                  <SelectValue placeholder="Auto-detect" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto-detect</SelectItem>
+                  <SelectItem value="react">React</SelectItem>
+                  <SelectItem value="nextjs">Next.js</SelectItem>
+                  <SelectItem value="vue">Vue</SelectItem>
+                  <SelectItem value="svelte">Svelte</SelectItem>
+                  <SelectItem value="flutter">Flutter</SelectItem>
+                  <SelectItem value="html">HTML / CSS</SelectItem>
+                  <SelectItem value="react-native">React Native</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Tailors Copy AI Specs instructions to this framework.
+              </p>
             </div>
           </CollapsibleSection>
 

@@ -7,10 +7,12 @@ import { detectTokensStudio } from "./attributes";
 const MAX_ANATOMY_ELEMENTS = 150;
 const MAX_WALK_DEPTH = 12;
 const MAX_SIGNATURE_DEPTH = 3;
+export const MAX_DIFF_DEPTH = 6;
 
 export type CollectAnatomyResult = {
   elements: AnatomyElement[];
   instanceTemplates: InstanceTemplate[];
+  dedupedNodeIds: Set<string>;
 };
 
 /** Build a type:name tree string for visible children up to maxDepth */
@@ -48,7 +50,7 @@ export function collectRepeatDiffs(
   templateNode: SceneNode,
   repeatNode: SceneNode,
   currentPath = "",
-  maxDepth = MAX_SIGNATURE_DEPTH
+  maxDepth = MAX_DIFF_DEPTH
 ): Record<string, string> {
   const diffs: Record<string, string> = {};
   if (maxDepth <= 0) return diffs;
@@ -86,6 +88,21 @@ export function collectRepeatDiffs(
   // Visibility diff
   if (templateNode.visible !== repeatNode.visible) {
     diffs[`${path}/visible`] = String(repeatNode.visible);
+  }
+
+  // Instance variant property diffs (e.g. Property 1=bad → Property 1=good)
+  if (templateNode.type === "INSTANCE" && repeatNode.type === "INSTANCE") {
+    const tProps = (templateNode as InstanceNode).componentProperties;
+    const rProps = (repeatNode as InstanceNode).componentProperties;
+    if (tProps && rProps) {
+      for (const [key, rVal] of Object.entries(rProps)) {
+        const tVal = tProps[key];
+        if (tVal && String(tVal.value) !== String(rVal.value)) {
+          const cleanKey = key.replace(/#[\d:]+$/, "");
+          diffs[`${path}/${cleanKey}`] = String(rVal.value);
+        }
+      }
+    }
   }
 
   // Recurse into children — disambiguate siblings with duplicate names
@@ -130,6 +147,7 @@ export async function collectAnatomyElements(
 ): Promise<CollectAnatomyResult> {
   const elements: AnatomyElement[] = [];
   const instanceTemplates: InstanceTemplate[] = [];
+  const dedupedNodeIds = new Set<string>();
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
@@ -205,6 +223,8 @@ export async function collectAnatomyElements(
               }
             }
 
+            // Collect all children IDs for layout skip
+            collectDescendantIds(node as InstanceNode, dedupedNodeIds);
             return; // Skip walking children — this is the key node savings
           }
 
@@ -244,6 +264,11 @@ export async function collectAnatomyElements(
       });
     }
 
+    // Skip children of icon-sized instances (≤48px) — agent only needs instance_of
+    if (node.type === "INSTANCE" && depth > 0 && Math.max(node.width, node.height) <= 48) {
+      return;
+    }
+
     if ("children" in node) {
       for (const child of node.children) {
         await walk(child, `${path}/${node.name}`, depth + 1);
@@ -256,7 +281,16 @@ export async function collectAnatomyElements(
   // Remove templates with no repeats (single occurrence — no dedup needed)
   const validTemplates = instanceTemplates.filter(t => t.repeatCount > 0);
 
-  return { elements, instanceTemplates: validTemplates };
+  return { elements, instanceTemplates: validTemplates, dedupedNodeIds };
+}
+
+function collectDescendantIds(node: SceneNode, ids: Set<string>) {
+  if ("children" in node) {
+    for (const child of (node as FrameNode).children) {
+      ids.add(child.id);
+      collectDescendantIds(child, ids);
+    }
+  }
 }
 
 export async function getMainComponentSafe(instance: InstanceNode) {

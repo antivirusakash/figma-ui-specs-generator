@@ -166,6 +166,16 @@ export function toAgentReadyDataPayload(
         record.fill_ref = deps.truncateText(fill.value, compact ? 50 : 80);
         if (fill.rawValue) resolvedTokens.set(fill.value, String(fill.rawValue));
       }
+      if (fill.imageHash) {
+        record.fill_type = "IMAGE";
+        record.image_hash = fill.imageHash;
+      }
+      if (fill.fillSegments && fill.fillSegments.length > 0) {
+        record.fill_segments = fill.fillSegments.map(seg => ({
+          text: deps.truncateText(seg.text, compact ? 40 : 80),
+          fill: seg.fill
+        }));
+      }
     }
     const fontSize = findAttr("Font size");
     if (fontSize) {
@@ -175,12 +185,16 @@ export function toAgentReadyDataPayload(
     if (font) {
       record.font = deps.truncateText(font.value, compact ? 40 : 64);
     }
+    const lineHeight = findAttr("Line height");
+    if (lineHeight && lineHeight.value !== "Auto") {
+      record.line_height = lineHeight.rawValue ?? lineHeight.value;
+    }
     const radius = findAttr("Corner radius");
     if (radius && radius.rawValue !== 0) {
       record.radius = radius.rawValue ?? radius.value;
     }
     const padding = findAttr("Padding");
-    if (padding) {
+    if (padding && padding.value !== "0 0 0 0") {
       record.padding = padding.rawValue ?? padding.value;
     }
     const gap = findAttr("Item spacing");
@@ -196,7 +210,7 @@ export function toAgentReadyDataPayload(
       }
     }
     const strokeAlign = findAttr("Stroke align");
-    if (strokeAlign) record.stroke_align = strokeAlign.value;
+    if (strokeAlign && record.stroke) record.stroke_align = strokeAlign.value;
     const strokeSides = findAttr("Stroke sides");
     if (strokeSides) record.stroke_sides = strokeSides.value;
     const position = findAttr("Position");
@@ -209,6 +223,10 @@ export function toAgentReadyDataPayload(
       if (textStyle.format !== "HARDCODED" && textStyle.rawValue) {
         resolvedTokens.set(textStyle.value, String(textStyle.rawValue));
       }
+    }
+    const opacity = findAttr("Opacity");
+    if (opacity && opacity.rawValue !== 1 && opacity.rawValue !== "100%") {
+      record.opacity = opacity.rawValue ?? opacity.value;
     }
 
     if (includeAttributes) {
@@ -321,10 +339,10 @@ export function toAgentReadyDataPayload(
         path_key: row.pathKey,
         diffs: row.diffs
       };
-      if (row.childrenText?.length) {
+      if (!compact && row.childrenText?.length) {
         item.children_text = row.childrenText.map(t =>
-          deps.truncateText(t, compact ? 60 : 120)
-        ).slice(0, compact ? 6 : 8);
+          deps.truncateText(t, 120)
+        ).slice(0, 8);
       }
       return item;
     })
@@ -332,19 +350,27 @@ export function toAgentReadyDataPayload(
 
   const chunks = [...anatomyChunks, ...layoutChunks, ...propertyChunks, ...repeatsChunks];
 
-  const textIndex = dataModel.anatomy
-    .filter(el => el.textContent || el.childrenText?.length)
-    .slice(0, compact ? 200 : 500)
-    .map(el => {
-      const entry: any = { id: el.nodeId, path: el.pathKey };
-      if (el.textContent) entry.text = deps.truncateText(el.textContent, compact ? 80 : 200);
-      if (el.childrenText?.length) {
-        entry.children_text = el.childrenText
-          .map(t => deps.truncateText(t, compact ? 60 : 120))
-          .slice(0, compact ? 6 : 8);
-      }
-      return entry;
-    });
+  // Build set of repeat node IDs to exclude from text_index
+  const repeatNodeIds = new Set<string>();
+  (dataModel.instanceTemplates ?? []).forEach(tpl => {
+    tpl.repeats.forEach(r => repeatNodeIds.add(r.nodeId));
+  });
+
+  const textIndex = compact
+    ? undefined  // compact mode: text already in anatomy records
+    : dataModel.anatomy
+        .filter(el => (el.textContent || el.childrenText?.length) && !repeatNodeIds.has(el.nodeId ?? ""))
+        .slice(0, 500)
+        .map(el => {
+          const entry: any = { id: el.nodeId, path: el.pathKey };
+          if (el.textContent) entry.text = deps.truncateText(el.textContent, 200);
+          if (el.childrenText?.length) {
+            entry.children_text = el.childrenText
+              .map(t => deps.truncateText(t, 120))
+              .slice(0, 8);
+          }
+          return entry;
+        });
 
   const mcpPlaybook = {
     tools: compact
@@ -355,7 +381,7 @@ export function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v8.yaml.compact" : "specs-plugin.agent_pack.v8.yaml",
+    schema: compact ? "specs-plugin.agent_pack.v9.yaml.compact" : "specs-plugin.agent_pack.v9.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,

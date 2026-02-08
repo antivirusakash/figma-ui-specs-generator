@@ -29,13 +29,14 @@ type LayoutSectionDeps = {
 
 const MAX_LAYOUT_SPECS = 50;
 
-export function collectLayoutData(root: SceneNode): LayoutSpec[] {
+export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSpec[] {
   const data: LayoutSpec[] = [];
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
   const walk = (node: SceneNode, path: string) => {
     if (data.length >= MAX_LAYOUT_SPECS) return;
+    if (skipNodeIds?.has(node.id)) return;
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
       const bounds = node.absoluteBoundingBox;
       const relativeBounds =

@@ -1,7 +1,7 @@
 import { FONT_REGULAR } from "../constants";
 import { log, logError } from "../logger";
 import type { Inventory } from "../inventory";
-import type { Attribute, AttributeFormat, BoundVariablesMap, Settings, TokenValueMap } from "../types";
+import type { Attribute, AttributeFormat, BoundVariablesMap, FillSegment, Settings, TokenValueMap } from "../types";
 import { formatColor, formatNumber, formatSpacing, getFirstSolidPaint, isMixed, extractIconColor } from "./format";
 import { extractTokensStudioMap, findTokenValue, getSafeSharedPluginDataKeys, SHARED_PLUGIN_NAMESPACES } from "./tokens";
 
@@ -69,6 +69,21 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
         key: "Fill",
         ...attr
       });
+    }
+    if (!effectivePaint && "fills" in node && node.type !== "TEXT") {
+      const fills = node.fills as readonly Paint[];
+      if (Array.isArray(fills)) {
+        const imgFill = fills.find((f): f is ImagePaint => f.type === "IMAGE" && f.visible !== false);
+        if (imgFill) {
+          attributes.push({
+            key: "Fill",
+            value: "image",
+            format: "HARDCODED" as AttributeFormat,
+            rawValue: "image",
+            imageHash: imgFill.imageHash ?? undefined
+          });
+        }
+      }
     }
   }
 
@@ -233,11 +248,13 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
   if (node.type === "TEXT") {
     const textNode = node as TextNode;
     if (textNode.fills === figma.mixed) {
+      const segments = mergeAdjacentSameFill(textNode);
       attributes.push({
         key: "Text fill",
         value: "Mixed",
         format: "HARDCODED",
-        rawValue: "mixed"
+        rawValue: "mixed",
+        ...(segments.length > 0 ? { fillSegments: segments } : {})
       });
     } else {
       const textPaint = getFirstSolidPaint(textNode.fills);
@@ -344,6 +361,41 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
   }
 
   return attributes;
+}
+
+/** Extract per-segment fill colors from a TEXT node with mixed fills.
+ *  Merges adjacent segments sharing the same fill and caps at 10 entries. */
+export function mergeAdjacentSameFill(textNode: TextNode): FillSegment[] {
+  try {
+    const segs = textNode.getStyledTextSegments(["fills"]);
+    if (!segs || segs.length === 0) return [];
+
+    const MAX_SEGMENTS = 10;
+    const result: FillSegment[] = [];
+
+    for (const seg of segs) {
+      const solid = (seg.fills as readonly Paint[])?.find(
+        (f): f is SolidPaint => f.type === "SOLID" && f.visible !== false
+      );
+      if (!solid) continue;
+      const r = Math.round(solid.color.r * 255);
+      const g = Math.round(solid.color.g * 255);
+      const b = Math.round(solid.color.b * 255);
+      const hex = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`.toUpperCase();
+
+      const last = result[result.length - 1];
+      if (last && last.fill === hex) {
+        last.text += seg.characters;
+      } else {
+        if (result.length >= MAX_SEGMENTS) break;
+        result.push({ text: seg.characters, fill: hex });
+      }
+    }
+
+    return result;
+  } catch {
+    return [];
+  }
 }
 
 export function formatLineHeight(lineHeight: LineHeight | typeof figma.mixed, settings: Settings) {

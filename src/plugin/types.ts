@@ -1,5 +1,7 @@
 export type SpecTextRole = "title" | "heading" | "body" | "muted" | "label" | "caption";
 
+export type Framework = "auto" | "react" | "nextjs" | "flutter" | "html" | "vue" | "svelte" | "react-native";
+
 export type Settings = {
   anatomy: boolean;
   tabularAnatomy: boolean;
@@ -28,6 +30,7 @@ export type Settings = {
   valuePrecision: number;
   showRawValues: boolean;
   valuePreference: "variable" | "token";
+  framework: Framework;
 };
 
 export type Theme = {
@@ -48,6 +51,8 @@ export type Theme = {
 
 export type AttributeFormat = "PROPERTY" | "HARDCODED" | "STYLE" | "VARIABLE" | "TOKEN";
 
+export type FillSegment = { text: string; fill: string };
+
 export type Attribute = {
   key?: string;
   propertyName?: string;
@@ -55,6 +60,8 @@ export type Attribute = {
   format: AttributeFormat;
   rawValue?: string | number | boolean;
   systemId?: string;
+  fillSegments?: FillSegment[];
+  imageHash?: string;
 };
 
 export type BoundVariablesMap = {

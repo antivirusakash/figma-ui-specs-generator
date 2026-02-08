@@ -250,6 +250,129 @@ describe("collectRepeatDiffs", () => {
     expect(diffs["card/label[2]/text"]).toBe("45 ng/mL");
     expect(Object.keys(diffs)).toHaveLength(2);
   });
+
+  it("detects componentProperties changes on INSTANCE nodes", () => {
+    const template = mockNode("INSTANCE", "progress", {
+      children: [],
+      fills: [],
+    });
+    (template as any).componentProperties = {
+      "Property 1#123:0": { type: "VARIANT", value: "good" },
+      "Size#456:1": { type: "VARIANT", value: "medium" },
+    };
+
+    const repeat = mockNode("INSTANCE", "progress", {
+      children: [],
+      fills: [],
+    });
+    (repeat as any).componentProperties = {
+      "Property 1#123:0": { type: "VARIANT", value: "bad" },
+      "Size#456:1": { type: "VARIANT", value: "medium" },
+    };
+
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    // Should strip #uniqueID suffix and detect the change
+    expect(diffs["progress/Property 1"]).toBe("bad");
+    // Size didn't change, should not appear
+    expect(diffs["progress/Size"]).toBeUndefined();
+  });
+
+  it("strips #uniqueID suffix from componentProperties keys", () => {
+    const template = mockNode("INSTANCE", "bar", { children: [], fills: [] });
+    (template as any).componentProperties = {
+      "State#789:2": { type: "VARIANT", value: "active" },
+    };
+    const repeat = mockNode("INSTANCE", "bar", { children: [], fills: [] });
+    (repeat as any).componentProperties = {
+      "State#789:2": { type: "VARIANT", value: "inactive" },
+    };
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["bar/State"]).toBe("inactive");
+    // The raw key with #id should NOT appear
+    expect(Object.keys(diffs).some(k => k.includes("#"))).toBe(false);
+  });
+
+  it("reaches text at depth 6 with default MAX_DIFF_DEPTH", () => {
+    // card → frame1 → frame2 → frame3 → frame4 → title TEXT (depth 5 from card)
+    const tTitle = mockNode("TEXT", "title", { characters: "Original" });
+    const rTitle = mockNode("TEXT", "title", { characters: "Changed" });
+
+    const wrapInFrames = (leaf: any, depth: number, prefix: string): any => {
+      let current = leaf;
+      for (let i = depth; i >= 1; i--) {
+        current = mockNode("FRAME", `${prefix}${i}`, { children: [current] });
+      }
+      return current;
+    };
+
+    const template = wrapInFrames(tTitle, 5, "f");
+    const repeat = wrapInFrames(rTitle, 5, "f");
+
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["f1/f2/f3/f4/f5/title/text"]).toBe("Changed");
+  });
+
+  it("does NOT reach text beyond MAX_DIFF_DEPTH", () => {
+    // 7 nesting levels — beyond MAX_DIFF_DEPTH=6
+    const tTitle = mockNode("TEXT", "title", { characters: "Original" });
+    const rTitle = mockNode("TEXT", "title", { characters: "Changed" });
+
+    const wrapInFrames = (leaf: any, depth: number, prefix: string): any => {
+      let current = leaf;
+      for (let i = depth; i >= 1; i--) {
+        current = mockNode("FRAME", `${prefix}${i}`, { children: [current] });
+      }
+      return current;
+    };
+
+    const template = wrapInFrames(tTitle, 7, "f");
+    const repeat = wrapInFrames(rTitle, 7, "f");
+
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    // At depth 7+1 (text node) = 8, beyond MAX_DIFF_DEPTH=6
+    expect(Object.keys(diffs)).toHaveLength(0);
+  });
+
+  it("detects nested instance componentProperties via recursion", () => {
+    const innerTemplate = mockNode("INSTANCE", "indicator", { children: [], fills: [] });
+    (innerTemplate as any).componentProperties = {
+      "Status#1:0": { type: "VARIANT", value: "normal" },
+    };
+    const template = mockNode("FRAME", "card", {
+      children: [mockNode("TEXT", "title", { characters: "Same" }), innerTemplate],
+    });
+
+    const innerRepeat = mockNode("INSTANCE", "indicator", { children: [], fills: [] });
+    (innerRepeat as any).componentProperties = {
+      "Status#1:0": { type: "VARIANT", value: "warning" },
+    };
+    const repeat = mockNode("FRAME", "card", {
+      children: [mockNode("TEXT", "title", { characters: "Same" }), innerRepeat],
+    });
+
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["card/indicator/Status"]).toBe("warning");
+  });
+});
+
+// ─── isRelevantNode with icon-sized instance check ───
+
+describe("isRelevantNode", () => {
+  it("returns true for INSTANCE nodes", () => {
+    expect(mod.isRelevantNode(mockNode("INSTANCE", "Icon"), 0)).toBe(true);
+  });
+
+  it("returns true for TEXT nodes", () => {
+    expect(mod.isRelevantNode(mockNode("TEXT", "label"), 0)).toBe(true);
+  });
+
+  it("returns false for deep VECTOR nodes (depth > 4)", () => {
+    expect(mod.isRelevantNode(mockNode("VECTOR", "path"), 5)).toBe(false);
+  });
+
+  it("returns true for VECTOR at depth ≤ 4", () => {
+    expect(mod.isRelevantNode(mockNode("VECTOR", "path"), 4)).toBe(true);
+  });
 });
 
 // ─── collectInstanceText ───

@@ -37,6 +37,7 @@ import { clamp, getTheme } from "./plugin/theme";
 import type {
   AnatomyElement,
   DataModel,
+  Framework,
   LayoutSpec,
   Settings,
   SpecTextRole,
@@ -168,22 +169,48 @@ function buildAnatomyTree(elements: AnatomyElement[]): string {
   return lines.join("\n");
 }
 
-function buildCopyBlock(name: string, figmaUrl: string, anatomyTree: string, yamlData: string): string {
-  const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
-  return `## Figma Component: ${name}
+function getFrameworkInstructions(framework: Framework): string {
+  switch (framework) {
+    case "react":
+      return "Build as a React functional component. Use Tailwind CSS or CSS modules for styling. Use semantic HTML elements.";
+    case "nextjs":
+      return "Build as a Next.js React component. Use Tailwind CSS or CSS modules for styling. Use semantic HTML elements and Next.js Image/Link where appropriate.";
+    case "flutter":
+      return "Build as a StatelessWidget. Map layout specs to Row/Column/Stack/Padding widgets. Use `const` constructors where possible.";
+    case "html":
+      return "Build with semantic HTML and vanilla CSS. Use CSS flexbox/grid for layout specs.";
+    case "vue":
+      return "Build as a Vue 3 SFC (`<script setup>`). Use scoped CSS or Tailwind for styling.";
+    case "svelte":
+      return "Build as a Svelte component. Use scoped styles or Tailwind for styling.";
+    case "react-native":
+      return "Build with React Native View/Text/Image components. Map layout specs to flexbox StyleSheet properties.";
+    default:
+      return "Check the project's `package.json` to detect the framework in use, then build the component accordingly.";
+  }
+}
 
-### Implementation Instructions
-1. Use get_screenshot on the Figma URL below and **save it to \`.figma/${safeName}.png\`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.
-2. Read the anatomy tree below to understand the component structure.
-3. Read the YAML specs — it has every layer, color, font, spacing, and token value you need.
-4. Check the project's working directory or \`package.json\` for the icon library in use (e.g. Phosphor, Lucide, Heroicons). Use matching icons from that library based on the \`instance_of\` names in the anatomy (e.g. \`instance_of: ForkKnife\` → use ForkKnife from the detected library).
-5. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
-6. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
-7. Keep it minimal — only implement what the specs describe, nothing more.
-8. **After implementation is complete**, take a screenshot of your front-end output and compare it side-by-side with \`.figma/${safeName}.png\`. Fix any visual differences until they match.
+function buildCopyBlock(name: string, figmaUrl: string, anatomyTree: string, yamlData: string, framework: Framework = "auto", dimensions?: { width: number; height: number }): string {
+  const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+  const frameworkStep = getFrameworkInstructions(framework);
+  const qaStep = dimensions
+    ? `9. **Visual QA** — render your component at ${dimensions.width}×${dimensions.height}px (1x scale, no device emulation). Take a screenshot and compare with \`.figma/${safeName}.png\`. Verify:\n   - Layout structure matches (correct direction, nesting, alignment)\n   - Spacing is correct (gap, padding values from specs)\n   - Colors match fills/strokes in the spec (within #±02 per channel)\n   - Font sizes, weights, and families match\n   - Border radius values match\n   - Text content is complete (no unintended truncation)\n   Fix any differences and re-compare until all checks pass.`
+    : `9. **Visual QA** — take a screenshot of your front-end output and compare with \`.figma/${safeName}.png\`. Verify:\n   - Layout structure matches (correct direction, nesting, alignment)\n   - Spacing is correct (gap, padding values from specs)\n   - Colors match fills/strokes in the spec (within #±02 per channel)\n   - Font sizes, weights, and families match\n   - Border radius values match\n   - Text content is complete (no unintended truncation)\n   Fix any differences and re-compare until all checks pass.`;
+  return `## Figma Component: ${name}
 
 ### Figma URL
 ${figmaUrl}
+
+### Implementation Instructions
+1. Use get_screenshot on the Figma URL above and **save it to \`.figma/${safeName}.png\`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.
+2. Read the anatomy tree below to understand the component structure.
+3. Read the YAML specs — it has every layer, color, font, spacing, and token value you need.
+4. Check the project's working directory or \`package.json\` for the icon library in use (e.g. Phosphor, Lucide, Heroicons). Use matching icons from that library based on the \`instance_of\` names in the anatomy (e.g. \`instance_of: ForkKnife\` → use ForkKnife from the detected library).
+5. ${frameworkStep}
+6. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
+7. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
+8. Keep it minimal — only implement what the specs describe, nothing more.
+${qaStep}
 
 ### Component Anatomy
 \`\`\`
@@ -229,9 +256,9 @@ async function handleCopyAiSpecs(settings: Settings) {
       aiCompactMode: settings.aiCompactMode ?? true
     };
 
-    const { elements: anatomyElements, instanceTemplates } = await collectAnatomyElements(target, inventory, copySettings);
+    const { elements: anatomyElements, instanceTemplates, dedupedNodeIds } = await collectAnatomyElements(target, inventory, copySettings);
     const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
-    const layoutData = collectLayoutData(target);
+    const layoutData = collectLayoutData(target, dedupedNodeIds);
 
     const dataModel: DataModel = {
       anatomy: anatomyElements,
@@ -266,7 +293,9 @@ async function handleCopyAiSpecs(settings: Settings) {
     const figmaUrl = buildNodeUrl(nodeId) ?? "[Paste Figma frame URL here]";
 
     const anatomyTree = buildAnatomyTree(anatomyElements);
-    const text = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData);
+    const bounds = target.absoluteBoundingBox;
+    const dimensions = bounds ? { width: Math.round(bounds.width), height: Math.round(bounds.height) } : undefined;
+    const text = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData, settings.framework ?? "auto", dimensions);
 
     figma.ui.postMessage({ type: "copy-ai-specs-result", text });
     figma.notify("AI specs copied to clipboard.");
@@ -381,9 +410,12 @@ async function generateSpecs(settings: Settings) {
       artworkSectionWidth = Math.round(targetWidth + artworkPadding + sectionPadding);
     }
 
+    let dedupedNodeIds = new Set<string>();
     let anatomySection: FrameNode | null = null;
     if (settings.anatomy || settings.data) {
-      const { elements: anatomyElements, instanceTemplates } = await collectAnatomyElements(target, inventory, settings);
+      const anatomyResult = await collectAnatomyElements(target, inventory, settings);
+      const { elements: anatomyElements, instanceTemplates } = anatomyResult;
+      dedupedNodeIds = anatomyResult.dedupedNodeIds;
       log("Anatomy elements collected", anatomyElements.length);
       dataModel.anatomy = anatomyElements.map((element) => ({ ...element }));
       if (instanceTemplates.length > 0) {
@@ -423,7 +455,7 @@ async function generateSpecs(settings: Settings) {
       appendSection(twoWaySection);
     }
 
-    const layoutData = settings.layout || settings.data ? collectLayoutData(target) : [];
+    const layoutData = settings.layout || settings.data ? collectLayoutData(target, dedupedNodeIds) : [];
     if (layoutData.length > 0) {
       log("Layout specs collected", layoutData.length);
     }
@@ -714,8 +746,8 @@ function createTwoWaySection(spec: TwoWaySpec, theme: Theme) {
   return createTwoWaySectionModule(spec, theme, deps);
 }
 
-function collectLayoutData(root: SceneNode): LayoutSpec[] {
-  return collectLayoutDataModule(root);
+function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSpec[] {
+  return collectLayoutDataModule(root, skipNodeIds);
 }
 
 async function createLayoutSection(

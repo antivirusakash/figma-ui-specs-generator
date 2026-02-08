@@ -324,6 +324,55 @@ describe('collectLayoutData', () => {
     expect(spec?.itemSpacing).toBe(12);
   });
 
+  it('skips nodes whose IDs are in skipNodeIds set', () => {
+    const child1 = createMockLayoutNode({
+      name: 'Keep',
+      id: 'keep-1',
+      layoutMode: 'HORIZONTAL',
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+    });
+    const child2 = createMockLayoutNode({
+      name: 'Skip',
+      id: 'skip-1',
+      layoutMode: 'VERTICAL',
+      absoluteBoundingBox: { x: 0, y: 60, width: 100, height: 50 },
+    });
+    const root = createMockLayoutNode({
+      name: 'Parent',
+      children: [child1, child2],
+    });
+    const skipIds = new Set(['skip-1']);
+    const result = collectLayoutData(root, skipIds);
+    const names = result.map(r => r.name);
+    expect(names).toContain('Parent');
+    expect(names).toContain('Keep');
+    expect(names).not.toContain('Skip');
+  });
+
+  it('skips deeply nested children of skipped nodes', () => {
+    const grandchild = createMockLayoutNode({
+      name: 'Deep',
+      id: 'deep-1',
+      layoutMode: 'HORIZONTAL',
+      absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 20 },
+    });
+    const child = createMockLayoutNode({
+      name: 'Mid',
+      id: 'mid-1',
+      layoutMode: 'VERTICAL',
+      absoluteBoundingBox: { x: 0, y: 0, width: 80, height: 40 },
+      children: [grandchild],
+    });
+    const root = createMockLayoutNode({
+      name: 'Root',
+      children: [child],
+    });
+    // Skip the mid-level node — its children should also be skipped
+    const skipIds = new Set(['mid-1']);
+    const result = collectLayoutData(root, skipIds);
+    expect(result.map(r => r.name)).toEqual(['Root']);
+  });
+
   it('sets alignment to INFERRED for inferred layouts', () => {
     const child1 = createMockLayoutNode({
       name: 'A', id: 'a', layoutMode: 'NONE' as any,

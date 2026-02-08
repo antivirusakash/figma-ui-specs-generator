@@ -95,3 +95,15 @@ Core workflow:
 2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
 3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
 4. Re-snapshot after page changes
+
+
+## Figma-to-Code Workflow
+
+- When given a Figma spec (YAML from Specs plugin), follow the implementation instructions in the spec header exactly.
+- Use `get_screenshot` from the Figma MCP server to capture the design. Save to `.figma/` and reference it — don't re-fetch.
+- Read the YAML `chunks` for anatomy (structure), layout (flex/grid), and repeats (deduplicated instances).
+- Use `resolved_tokens` to map design token names to actual values (hex, font names).
+- Match `instance_of` names to your icon library (Phosphor, Lucide, etc.) — check `package.json`.
+- For HTML/CSS: Build with semantic HTML and vanilla CSS. Use CSS flexbox for layout.
+- After building, screenshot your output and compare with the `.figma/*.png` reference. Fix differences.
+- Keep implementations minimal — only build what the spec describes.
