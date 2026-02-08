@@ -306,7 +306,31 @@ export function toAgentReadyDataPayload(
     items
   }));
 
-  const chunks = [...anatomyChunks, ...layoutChunks, ...propertyChunks];
+  // Build repeats chunks from instance templates
+  const repeatsChunks = (dataModel.instanceTemplates ?? []).map((tpl, index) => ({
+    chunk_id: `repeats_${index + 1}`,
+    kind: "repeats",
+    template_node_id: tpl.templateNodeId,
+    template_path_key: tpl.templatePathKey,
+    instance_of: tpl.instanceOf,
+    repeat_count: tpl.repeatCount,
+    varying_keys: tpl.varyingKeys,
+    items: tpl.repeats.map(row => {
+      const item: any = {
+        node_id: row.nodeId,
+        path_key: row.pathKey,
+        diffs: row.diffs
+      };
+      if (row.childrenText?.length) {
+        item.children_text = row.childrenText.map(t =>
+          deps.truncateText(t, compact ? 60 : 120)
+        ).slice(0, compact ? 6 : 8);
+      }
+      return item;
+    })
+  }));
+
+  const chunks = [...anatomyChunks, ...layoutChunks, ...propertyChunks, ...repeatsChunks];
 
   const textIndex = dataModel.anatomy
     .filter(el => el.textContent || el.childrenText?.length)
@@ -331,7 +355,7 @@ export function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v7.yaml.compact" : "specs-plugin.agent_pack.v7.yaml",
+    schema: compact ? "specs-plugin.agent_pack.v8.yaml.compact" : "specs-plugin.agent_pack.v8.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
@@ -345,6 +369,8 @@ export function toAgentReadyDataPayload(
       property_groups_total: dataModel.properties.length,
       property_variants_total: limitedPropertyRecords.length,
       variable_refs_total: inventory.getVariableIds().length,
+      instance_templates: (dataModel.instanceTemplates ?? []).length,
+      deduplicated_instances: (dataModel.instanceTemplates ?? []).reduce((sum, t) => sum + t.repeatCount, 0),
       chunks_total: chunks.length,
       truncated: {
         anatomy: dataModel.anatomy.length > maxAnatomy,
@@ -478,15 +504,25 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
     chunks: chunks.map((chunk: any) => {
       const items = Array.isArray(chunk.items) ? chunk.items : [];
       const sampled = items.slice(0, sampleSize);
-      return {
+      const base: any = {
         chunk_id: chunk.chunk_id,
         kind: chunk.kind,
-        item_count: chunk.item_count,
-        ...(chunk.path_range ? { path_range: chunk.path_range } : {}),
-        node_ids: Array.isArray(chunk.node_ids) ? chunk.node_ids : [],
-        items: sampled,
-        ...(items.length > sampleSize ? { truncated_items: items.length - sampleSize } : {})
       };
+      // Preserve kind-specific fields
+      if (chunk.kind === "repeats") {
+        base.template_node_id = chunk.template_node_id;
+        base.template_path_key = chunk.template_path_key;
+        base.instance_of = chunk.instance_of;
+        base.repeat_count = chunk.repeat_count;
+        base.varying_keys = chunk.varying_keys;
+      } else {
+        base.item_count = chunk.item_count;
+        if (chunk.path_range) base.path_range = chunk.path_range;
+        base.node_ids = Array.isArray(chunk.node_ids) ? chunk.node_ids : [];
+      }
+      base.items = sampled;
+      if (items.length > sampleSize) base.truncated_items = items.length - sampleSize;
+      return base;
     })
   });
 }

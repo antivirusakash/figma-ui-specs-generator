@@ -127,8 +127,27 @@ export type LayoutSpec = {
   inferred?: boolean;
 };
 
+export type InstanceRepeatRow = {
+  nodeId: string;
+  pathKey: string;
+  bounds?: Rect;
+  childrenText?: string[];
+  diffs: Record<string, string>;
+};
+
+export type InstanceTemplate = {
+  templateNodeId: string;
+  templatePathKey: string;
+  fingerprint: string;
+  instanceOf: string;
+  repeatCount: number;
+  varyingKeys: string[];
+  repeats: InstanceRepeatRow[];
+};
+
 export type DataModel = {
   anatomy: AnatomyElement[];
   properties: PropertySpec[];
   layout: LayoutSpec[];
+  instanceTemplates?: InstanceTemplate[];
 };

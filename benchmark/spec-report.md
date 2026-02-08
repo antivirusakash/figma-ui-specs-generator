@@ -39,78 +39,17 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 - Frame 313976 (FRAME)
 - description (TEXT) — "Cramp episodes spike 25 %; strength dip…"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Calcium 😰"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, cramps, weak lifts"
-- Progress (INSTANCE) — instance of Property 1=bad
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "53mg / 100mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Cramp risk doubles; lift capacity dips …"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Vitamin E 😰"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, muscle weakness, tingling"
-- Progress (INSTANCE) — instance of Property 1=bad
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "53mg / 100mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Grip weakness & tingling nerves 25 % mo…"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Zinc 😥"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, muscle repair slow, low testost…"
-- Progress (INSTANCE) — instance of Property 1=bad
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "53mg / 100mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Testosterone may fall 5–10 %; wounds he…"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Calcium 😥"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, cramps, weak lifts"
-- Progress (INSTANCE) — instance of Property 1=bad
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "53mg / 100mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Cramp risk doubles; lift capacity dips …"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Iron 😥"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, low stamina, breath issue"
-- Progress (INSTANCE) — instance of Property 1=bad
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "53mg / 100mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Endurance drops 10 % from poor oxygen d…"
 - card (INSTANCE) — instance of card
-- Frame 313977 (FRAME)
-- title (TEXT) — "Vitamin C 🙂"
-- description (TEXT) — "Why?"
-- description (TEXT) — "If low, slow muscle fix"
-- Progress (INSTANCE) — instance of Property 1=normal
-- Frame 313967 (FRAME)
-- description (TEXT) — "Average:"
-- description (TEXT) — "80mg / 150mg"
-- Frame 313976 (FRAME)
-- description (TEXT) — "Muscle fibre repair slows ~15 %, gains …"
 - card (INSTANCE) — instance of card
 - Frame 313977 (FRAME)
 - title (TEXT) — "Omega-3 😀"
 - description (TEXT) — "Why?"
 - description (TEXT) — "If low, more soreness"
 - Progress (INSTANCE) — instance of Property 1=good
-- Frame 313967 (FRAME)
 - description (TEXT) — "Average:"
 - description (TEXT) — "120mg / 100mg"
 - Review (FRAME)
@@ -165,27 +104,61 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 - UsersThree (INSTANCE) — instance of UsersThree
 - Vector (VECTOR)
 - Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Home (TEXT) — "Club"
+- Bottom Nav-item (INSTANCE) — instance of Status=Active
+- ChartLineUp (INSTANCE) — instance of ChartLineUp
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Home (TEXT) — "Report"
+- Bottom Nav-item (INSTANCE) — instance of Status=Inactive
+- Cookie (INSTANCE) — instance of Cookie
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Home (TEXT) — "NutriBites"
+- Bottom Nav-item (INSTANCE) — instance of Status=Inactive
+- User (INSTANCE) — instance of User
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Vector (VECTOR)
+- Home (TEXT) — "Profile"
+- Frame 408 (FRAME)
+- Status Bar (INSTANCE) — instance of Status Bar
+- Time (TEXT) — "9:41"
+- Frame 301 (FRAME)
+- Cellular Connection (BOOLEAN_OPERATION)
+- Wifi (BOOLEAN_OPERATION)
 ```
 
 ### Specs Data (YAML)
 ```yaml
-schema: specs-plugin.agent_pack.v7.yaml.compact
-generated_at: "2026-02-08T06:22:55.834Z"
+schema: specs-plugin.agent_pack.v8.yaml.compact
+generated_at: "2026-02-08T07:04:34.949Z"
 selection:
   node_id: "14398:1137535"
   name: Full Report
   type: FRAME
   clips_content: true
 summary:
-  anatomy_nodes_total: 150
+  anatomy_nodes_total: 121
   layout_nodes_total: 50
   property_groups_total: 0
   property_variants_total: 0
   variable_refs_total: 6
-  chunks_total: 18
+  instance_templates: 3
+  deduplicated_instances: 11
+  chunks_total: 19
   truncated:
     anatomy: false
-    anatomy_included: 150
+    anatomy_included: 121
     anatomy_dropped: 0
     layout: false
     layout_included: 50
@@ -206,8 +179,6 @@ resolved_tokens:
   Default/White/white: "#FFFFFF"
   B1/Bold: "#FFFFFF"
   Default/Grey/grey-40: "#929299"
-  Yellow/40: "#FFB660"
-  Green /  60: "#41D9B3"
   Default/Grey/grey-20: "#CECED2"
   B2 14px/Regular: "#D0D5DD"
 text_index:
@@ -260,24 +231,6 @@ text_index:
       - "Average:"
       - 53mg / 100mg
       - Cramp risk doubles; lift capacity dips 5 %.
-  - id: "I14398:1137544;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[2]"
-    text: Calcium 😰
-  - id: "I14398:1137544;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[2]"
-    text: Why?
-  - id: "I14398:1137544;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[2]"
-    text: If low, cramps, weak lifts
-  - id: "I14398:1137544;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
-    text: "Average:"
-  - id: "I14398:1137544;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
-    text: 53mg / 100mg
-  - id: "I14398:1137544;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[2]"
-    text: Cramp risk doubles; lift capacity dips 5 %.
   - id: "14398:1137545"
     path: "root/Full Report/Frame 313971/INSTANCE:card[3]"
     children_text:
@@ -287,24 +240,6 @@ text_index:
       - "Average:"
       - 53mg / 100mg
       - Grip weakness & tingling nerves 25 % more likely.
-  - id: "I14398:1137545;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[3]"
-    text: Vitamin E 😰
-  - id: "I14398:1137545;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[3]"
-    text: Why?
-  - id: "I14398:1137545;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[3]"
-    text: If low, muscle weakness, tingling
-  - id: "I14398:1137545;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[5]"
-    text: "Average:"
-  - id: "I14398:1137545;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[6]"
-    text: 53mg / 100mg
-  - id: "I14398:1137545;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[3]"
-    text: Grip weakness & tingling nerves 25 % more likely.
   - id: "14398:1137546"
     path: "root/Full Report/Frame 313971/INSTANCE:card[4]"
     children_text:
@@ -314,24 +249,6 @@ text_index:
       - "Average:"
       - 53mg / 100mg
       - Testosterone may fall 5–10 %; wounds heal 25 % slower.
-  - id: "I14398:1137546;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[4]"
-    text: Zinc 😥
-  - id: "I14398:1137546;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[4]"
-    text: Why?
-  - id: "I14398:1137546;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[4]"
-    text: If low, muscle repair slow, low testosterone
-  - id: "I14398:1137546;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[7]"
-    text: "Average:"
-  - id: "I14398:1137546;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[8]"
-    text: 53mg / 100mg
-  - id: "I14398:1137546;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[4]"
-    text: Testosterone may fall 5–10 %; wounds heal 25 % slower.
   - id: "14398:1137547"
     path: "root/Full Report/Frame 313971/INSTANCE:card[5]"
     children_text:
@@ -341,24 +258,6 @@ text_index:
       - "Average:"
       - 53mg / 100mg
       - Cramp risk doubles; lift capacity dips 5 %.
-  - id: "I14398:1137547;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[5]"
-    text: Calcium 😥
-  - id: "I14398:1137547;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[5]"
-    text: Why?
-  - id: "I14398:1137547;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[5]"
-    text: If low, cramps, weak lifts
-  - id: "I14398:1137547;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[9]"
-    text: "Average:"
-  - id: "I14398:1137547;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[10]"
-    text: 53mg / 100mg
-  - id: "I14398:1137547;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[5]"
-    text: Cramp risk doubles; lift capacity dips 5 %.
   - id: "14398:1137548"
     path: "root/Full Report/Frame 313971/INSTANCE:card[6]"
     children_text:
@@ -368,24 +267,6 @@ text_index:
       - "Average:"
       - 53mg / 100mg
       - Endurance drops 10 % from poor oxygen delivery.
-  - id: "I14398:1137548;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[6]"
-    text: Iron 😥
-  - id: "I14398:1137548;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[6]"
-    text: Why?
-  - id: "I14398:1137548;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[6]"
-    text: If low, low stamina, breath issue
-  - id: "I14398:1137548;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[11]"
-    text: "Average:"
-  - id: "I14398:1137548;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[12]"
-    text: 53mg / 100mg
-  - id: "I14398:1137548;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[6]"
-    text: Endurance drops 10 % from poor oxygen delivery.
   - id: "14398:1137549"
     path: "root/Full Report/Frame 313971/INSTANCE:card[7]"
     children_text:
@@ -395,42 +276,24 @@ text_index:
       - "Average:"
       - 80mg / 150mg
       - Muscle fibre repair slows ~15 %, gains delayed.
-  - id: "I14398:1137549;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[7]"
-    text: Vitamin C 🙂
-  - id: "I14398:1137549;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[7]"
-    text: Why?
-  - id: "I14398:1137549;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[7]"
-    text: If low, slow muscle fix
-  - id: "I14398:1137549;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[13]"
-    text: "Average:"
-  - id: "I14398:1137549;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[14]"
-    text: 80mg / 150mg
-  - id: "I14398:1137549;10637:5290"
-    path: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[7]"
-    text: Muscle fibre repair slows ~15 %, gains delayed.
   - id: "14398:1137550"
     path: "root/Full Report/Frame 313971/INSTANCE:card[8]"
     children_text:
       [Omega-3 😀, Why?, If low, more soreness, "Average:", 120mg / 100mg]
   - id: "I14398:1137550;10637:2654"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[8]"
+    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[2]"
     text: Omega-3 😀
   - id: "I14398:1137550;10648:9021"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[8]"
+    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[2]"
     text: Why?
   - id: "I14398:1137550;10637:2655"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[8]"
+    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[2]"
     text: If low, more soreness
   - id: "I14398:1137550;10637:6613"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[15]"
+    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
     text: "Average:"
   - id: "I14398:1137550;10637:6644"
-    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[16]"
+    path: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
     text: 120mg / 100mg
   - id: "14398:1137558"
     path: "root/Full Report/Frame 313971/Review/TEXT:In just 7 days, I found something about my eating I’d never realized before, I finally got that actually makes sense for my lifestyle."
@@ -478,6 +341,37 @@ text_index:
     path: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[3]"
     children_text:
       [Club]
+  - id: "I14398:1137580;302:12893"
+    path: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[3]"
+    text: Club
+  - id: "14398:1137581"
+    path: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[4]"
+    children_text:
+      [Report]
+  - id: "I14398:1137581;302:12893"
+    path: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[4]"
+    text: Report
+  - id: "14398:1137582"
+    path: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[5]"
+    children_text:
+      [NutriBites]
+  - id: "I14398:1137582;302:12910"
+    path: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[5]"
+    text: NutriBites
+  - id: "14398:1137583"
+    path: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[6]"
+    children_text:
+      [Profile]
+  - id: "I14398:1137583;302:12910"
+    path: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[6]"
+    text: Profile
+  - id: "14398:1137585"
+    path: "root/Full Report/Frame 408/INSTANCE:Status Bar"
+    children_text:
+      ["9:41"]
+  - id: "I14398:1137585;40:2108"
+    path: "root/Full Report/Frame 408/Status Bar/TEXT:Time"
+    text: "9:41"
 chunks:
   - chunk_id: anatomy_1
     kind: anatomy
@@ -796,137 +690,22 @@ chunks:
     kind: anatomy
     item_count: 12
     path_range:
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
+      - "root/Full Report/Frame 313971/INSTANCE:card[3]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
     node_ids:
-      - "I14398:1137544;10653:11950"
-      - "I14398:1137544;10637:2654"
-      - "I14398:1137544;10648:9021"
-      - "I14398:1137544;10637:2655"
-      - "I14398:1137544;10637:6620"
-      - "I14398:1137544;10637:6620;10637:6598"
-      - "I14398:1137544;10637:6613"
-      - "I14398:1137544;10637:6644"
-      - "I14398:1137544;10653:11229"
-      - "I14398:1137544;10637:5290"
       - "14398:1137545"
-      - "I14398:1137545;10653:11950"
+      - "14398:1137546"
+      - "14398:1137547"
+      - "14398:1137548"
+      - "14398:1137549"
+      - "14398:1137550"
+      - "I14398:1137550;10653:11950"
+      - "I14398:1137550;10637:2654"
+      - "I14398:1137550;10648:9021"
+      - "I14398:1137550;10637:2655"
+      - "I14398:1137550;10637:6620"
+      - "I14398:1137550;10637:6613"
     items:
-      - node_id: "I14398:1137544;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-      - node_id: "I14398:1137544;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[2]"
-        name: title
-        type: TEXT
-        text: Calcium 😰
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-      - node_id: "I14398:1137544;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[2]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-      - node_id: "I14398:1137544;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[2]"
-        name: description
-        type: TEXT
-        text: If low, cramps, weak lifts
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137544;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[2]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=bad
-        w: 342
-        h: 4
-        stroke_align: inside
-      - node_id: "I14398:1137544;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[2]"
-        name: Frame 313967
-        type: FRAME
-        w: 188
-        h: 4
-        fill: "#EF4B23"
-        radius: 40
-        padding: 0
-        gap: 180
-        stroke_align: inside
-      - node_id: "I14398:1137544;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137544;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
-        name: description
-        type: TEXT
-        text: 53mg / 100mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137544;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[2]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 38
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137544;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[2]"
-        name: description
-        type: TEXT
-        text: Cramp risk doubles; lift capacity dips 5 %.
-        w: 342
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137545"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
         name: card
@@ -946,141 +725,6 @@ chunks:
         radius: 8
         padding: 0
         stroke_align: inside
-      - node_id: "I14398:1137545;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-  - chunk_id: anatomy_4
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[3]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[4]"
-    node_ids:
-      - "I14398:1137545;10637:2654"
-      - "I14398:1137545;10648:9021"
-      - "I14398:1137545;10637:2655"
-      - "I14398:1137545;10637:6620"
-      - "I14398:1137545;10637:6620;10637:6598"
-      - "I14398:1137545;10637:6613"
-      - "I14398:1137545;10637:6644"
-      - "I14398:1137545;10653:11229"
-      - "I14398:1137545;10637:5290"
-      - "14398:1137546"
-      - "I14398:1137546;10653:11950"
-      - "I14398:1137546;10637:2654"
-    items:
-      - node_id: "I14398:1137545;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[3]"
-        name: title
-        type: TEXT
-        text: Vitamin E 😰
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-      - node_id: "I14398:1137545;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[3]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-      - node_id: "I14398:1137545;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[3]"
-        name: description
-        type: TEXT
-        text: If low, muscle weakness, tingling
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137545;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[3]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=bad
-        w: 342
-        h: 4
-        stroke_align: inside
-      - node_id: "I14398:1137545;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[3]"
-        name: Frame 313967
-        type: FRAME
-        w: 188
-        h: 4
-        fill: "#EF4B23"
-        radius: 40
-        padding: 0
-        gap: 180
-        stroke_align: inside
-      - node_id: "I14398:1137545;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[5]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137545;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[6]"
-        name: description
-        type: TEXT
-        text: 53mg / 100mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137545;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[3]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 38
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137545;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[3]"
-        name: description
-        type: TEXT
-        text: Grip weakness & tingling nerves 25 % more likely.
-        w: 342
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137546"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[4]"
         name: card
@@ -1100,141 +744,6 @@ chunks:
         radius: 8
         padding: 0
         stroke_align: inside
-      - node_id: "I14398:1137546;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[4]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-      - node_id: "I14398:1137546;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[4]"
-        name: title
-        type: TEXT
-        text: Zinc 😥
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-  - chunk_id: anatomy_5
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[4]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[5]"
-    node_ids:
-      - "I14398:1137546;10648:9021"
-      - "I14398:1137546;10637:2655"
-      - "I14398:1137546;10637:6620"
-      - "I14398:1137546;10637:6620;10637:6598"
-      - "I14398:1137546;10637:6613"
-      - "I14398:1137546;10637:6644"
-      - "I14398:1137546;10653:11229"
-      - "I14398:1137546;10637:5290"
-      - "14398:1137547"
-      - "I14398:1137547;10653:11950"
-      - "I14398:1137547;10637:2654"
-      - "I14398:1137547;10648:9021"
-    items:
-      - node_id: "I14398:1137546;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[4]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-      - node_id: "I14398:1137546;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[4]"
-        name: description
-        type: TEXT
-        text: If low, muscle repair slow, low testosterone
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137546;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[4]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=bad
-        w: 342
-        h: 4
-        stroke_align: inside
-      - node_id: "I14398:1137546;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[4]"
-        name: Frame 313967
-        type: FRAME
-        w: 188
-        h: 4
-        fill: "#EF4B23"
-        radius: 40
-        padding: 0
-        gap: 180
-        stroke_align: inside
-      - node_id: "I14398:1137546;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[7]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137546;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[8]"
-        name: description
-        type: TEXT
-        text: 53mg / 100mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137546;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[4]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 60
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137546;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[4]"
-        name: description
-        type: TEXT
-        text: Testosterone may fall 5–10 %; wounds heal 25 % slower.
-        w: 342
-        h: 44
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137547"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[5]"
         name: card
@@ -1254,141 +763,6 @@ chunks:
         radius: 8
         padding: 0
         stroke_align: inside
-      - node_id: "I14398:1137547;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[5]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-      - node_id: "I14398:1137547;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[5]"
-        name: title
-        type: TEXT
-        text: Calcium 😥
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-      - node_id: "I14398:1137547;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[5]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-  - chunk_id: anatomy_6
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[5]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[6]"
-    node_ids:
-      - "I14398:1137547;10637:2655"
-      - "I14398:1137547;10637:6620"
-      - "I14398:1137547;10637:6620;10637:6598"
-      - "I14398:1137547;10637:6613"
-      - "I14398:1137547;10637:6644"
-      - "I14398:1137547;10653:11229"
-      - "I14398:1137547;10637:5290"
-      - "14398:1137548"
-      - "I14398:1137548;10653:11950"
-      - "I14398:1137548;10637:2654"
-      - "I14398:1137548;10648:9021"
-      - "I14398:1137548;10637:2655"
-    items:
-      - node_id: "I14398:1137547;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[5]"
-        name: description
-        type: TEXT
-        text: If low, cramps, weak lifts
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137547;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[5]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=bad
-        w: 342
-        h: 4
-        stroke_align: inside
-      - node_id: "I14398:1137547;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[5]"
-        name: Frame 313967
-        type: FRAME
-        w: 188
-        h: 4
-        fill: "#EF4B23"
-        radius: 40
-        padding: 0
-        gap: 180
-        stroke_align: inside
-      - node_id: "I14398:1137547;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[9]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137547;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[10]"
-        name: description
-        type: TEXT
-        text: 53mg / 100mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137547;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[5]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 38
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137547;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[5]"
-        name: description
-        type: TEXT
-        text: Cramp risk doubles; lift capacity dips 5 %.
-        w: 342
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137548"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[6]"
         name: card
@@ -1408,141 +782,6 @@ chunks:
         radius: 8
         padding: 0
         stroke_align: inside
-      - node_id: "I14398:1137548;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[6]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-      - node_id: "I14398:1137548;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[6]"
-        name: title
-        type: TEXT
-        text: Iron 😥
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-      - node_id: "I14398:1137548;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[6]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-      - node_id: "I14398:1137548;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[6]"
-        name: description
-        type: TEXT
-        text: If low, low stamina, breath issue
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-  - chunk_id: anatomy_7
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[6]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[7]"
-    node_ids:
-      - "I14398:1137548;10637:6620"
-      - "I14398:1137548;10637:6620;10637:6598"
-      - "I14398:1137548;10637:6613"
-      - "I14398:1137548;10637:6644"
-      - "I14398:1137548;10653:11229"
-      - "I14398:1137548;10637:5290"
-      - "14398:1137549"
-      - "I14398:1137549;10653:11950"
-      - "I14398:1137549;10637:2654"
-      - "I14398:1137549;10648:9021"
-      - "I14398:1137549;10637:2655"
-      - "I14398:1137549;10637:6620"
-    items:
-      - node_id: "I14398:1137548;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[6]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=bad
-        w: 342
-        h: 4
-        stroke_align: inside
-      - node_id: "I14398:1137548;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[6]"
-        name: Frame 313967
-        type: FRAME
-        w: 188
-        h: 4
-        fill: "#EF4B23"
-        radius: 40
-        padding: 0
-        gap: 180
-        stroke_align: inside
-      - node_id: "I14398:1137548;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[11]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137548;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[12]"
-        name: description
-        type: TEXT
-        text: 53mg / 100mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137548;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[6]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 38
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137548;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[6]"
-        name: description
-        type: TEXT
-        text: Endurance drops 10 % from poor oxygen delivery.
-        w: 342
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137549"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[7]"
         name: card
@@ -1562,142 +801,6 @@ chunks:
         radius: 8
         padding: 0
         stroke_align: inside
-      - node_id: "I14398:1137549;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[7]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 136
-        padding: 16
-        gap: 16
-        stroke_align: inside
-      - node_id: "I14398:1137549;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[7]"
-        name: title
-        type: TEXT
-        text: Vitamin C 🙂
-        w: 296
-        h: 24
-        fill: "#FFFFFF"
-        fill_ref: B1/Bold
-        font_size: 16
-        font: Inter Bold
-        stroke_align: outside
-        text_style: B1/Bold
-      - node_id: "I14398:1137549;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[7]"
-        name: description
-        type: TEXT
-        text: Why?
-        w: 38
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Medium
-        stroke_align: outside
-        text_style: B2/Medium
-      - node_id: "I14398:1137549;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[7]"
-        name: description
-        type: TEXT
-        text: If low, slow muscle fix
-        w: 342
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137549;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[7]"
-        name: Progress
-        type: INSTANCE
-        instance_of: Property 1=normal
-        w: 342
-        h: 4
-        stroke_align: inside
-  - chunk_id: anatomy_8
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[7]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[8]"
-    node_ids:
-      - "I14398:1137549;10637:6620;10637:6610"
-      - "I14398:1137549;10637:6613"
-      - "I14398:1137549;10637:6644"
-      - "I14398:1137549;10653:11229"
-      - "I14398:1137549;10637:5290"
-      - "14398:1137550"
-      - "I14398:1137550;10653:11950"
-      - "I14398:1137550;10637:2654"
-      - "I14398:1137550;10648:9021"
-      - "I14398:1137550;10637:2655"
-      - "I14398:1137550;10637:6620"
-      - "I14398:1137550;10637:6620;10637:6605"
-    items:
-      - node_id: "I14398:1137549;10637:6620;10637:6610"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[7]"
-        name: Frame 313967
-        type: FRAME
-        w: 292
-        h: 4
-        fill: "#FFB660"
-        fill_ref: Yellow/40
-        radius: 40
-        padding: 0
-        gap: 284
-        stroke_align: inside
-      - node_id: "I14398:1137549;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[13]"
-        name: description
-        type: TEXT
-        text: "Average:"
-        w: 58
-        h: 22
-        fill: "#929299"
-        fill_ref: Default/Grey/grey-40
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
-      - node_id: "I14398:1137549;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[14]"
-        name: description
-        type: TEXT
-        text: 80mg / 150mg
-        w: 97
-        h: 22
-        fill: mixed
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-      - node_id: "I14398:1137549;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976[7]"
-        name: Frame 313976
-        type: FRAME
-        w: 374
-        h: 38
-        fill: "#2F2F33"
-        fill_ref: Default/Grey/grey-80
-        padding: 8
-        gap: 8
-        stroke_align: inside
-      - node_id: "I14398:1137549;10637:5290"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description[7]"
-        name: description
-        type: TEXT
-        text: Muscle fibre repair slows ~15 %, gains delayed.
-        w: 342
-        h: 22
-        fill: "#FFFFFF"
-        fill_ref: Default/White/white
-        font_size: 14
-        font: Inter Regular
-        stroke_align: outside
-        text_style: B2/Regular
       - node_id: "14398:1137550"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[8]"
         name: card
@@ -1713,7 +816,7 @@ chunks:
         padding: 0
         stroke_align: inside
       - node_id: "I14398:1137550;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[8]"
+        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
         name: Frame 313977
         type: FRAME
         w: 374
@@ -1722,7 +825,7 @@ chunks:
         gap: 16
         stroke_align: inside
       - node_id: "I14398:1137550;10637:2654"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[8]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[2]"
         name: title
         type: TEXT
         text: Omega-3 😀
@@ -1735,7 +838,7 @@ chunks:
         stroke_align: outside
         text_style: B1/Bold
       - node_id: "I14398:1137550;10648:9021"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[8]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:description[2]"
         name: description
         type: TEXT
         text: Why?
@@ -1748,7 +851,7 @@ chunks:
         stroke_align: outside
         text_style: B2/Medium
       - node_id: "I14398:1137550;10637:2655"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[8]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/TEXT:description[2]"
         name: description
         type: TEXT
         text: If low, more soreness
@@ -1761,47 +864,15 @@ chunks:
         stroke_align: outside
         text_style: B2/Regular
       - node_id: "I14398:1137550;10637:6620"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[8]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[2]"
         name: Progress
         type: INSTANCE
         instance_of: Property 1=good
         w: 342
         h: 4
         stroke_align: inside
-      - node_id: "I14398:1137550;10637:6620;10637:6605"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[8]"
-        name: Frame 313967
-        type: FRAME
-        w: 342
-        h: 4
-        fill: "#41D9B3"
-        fill_ref: Green /  60
-        radius: 40
-        padding: 0
-        gap: 334
-        stroke_align: inside
-  - chunk_id: anatomy_9
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[15]"
-      - "root/Full Report/Frame 313971/FRAME:card"
-    node_ids:
-      - "I14398:1137550;10637:6613"
-      - "I14398:1137550;10637:6644"
-      - "14398:1137551"
-      - "14398:1137552"
-      - "14398:1137553"
-      - "14398:1137554"
-      - "14398:1137555"
-      - "14398:1137556"
-      - "14398:1137557"
-      - "14398:1137558"
-      - "14398:1137559"
-      - "14398:1137560"
-    items:
       - node_id: "I14398:1137550;10637:6613"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[15]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
         name: description
         type: TEXT
         text: "Average:"
@@ -1813,8 +884,28 @@ chunks:
         font: Inter Regular
         stroke_align: outside
         text_style: B2/Regular
+  - chunk_id: anatomy_4
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
+      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
+    node_ids:
+      - "I14398:1137550;10637:6644"
+      - "14398:1137551"
+      - "14398:1137552"
+      - "14398:1137553"
+      - "14398:1137554"
+      - "14398:1137555"
+      - "14398:1137556"
+      - "14398:1137557"
+      - "14398:1137558"
+      - "14398:1137559"
+      - "14398:1137560"
+      - "14398:1137561"
+    items:
       - node_id: "I14398:1137550;10637:6644"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[16]"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
         name: description
         type: TEXT
         text: 120mg / 100mg
@@ -1928,14 +1019,22 @@ chunks:
         stroke: "#325761"
         stroke_align: inside
         stroke_sides: all
-  - chunk_id: anatomy_10
+      - node_id: "14398:1137561"
+        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
+        name: Frame 313977
+        type: FRAME
+        w: 374
+        h: 176
+        padding: 16
+        gap: 16
+        stroke_align: inside
+  - chunk_id: anatomy_5
     kind: anatomy
     item_count: 12
     path_range:
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[9]"
-      - "root/Full Report/Legend/FRAME:Frame 314023"
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313979/TEXT:title"
+      - "root/Full Report/Legend/Frame 314023/FRAME:rating"
     node_ids:
-      - "14398:1137561"
       - "14398:1137563"
       - "14398:1137564"
       - "14398:1137565"
@@ -1947,16 +1046,8 @@ chunks:
       - "14398:1137569"
       - "14398:1137570"
       - "14398:1137571"
+      - "14398:1137572"
     items:
-      - node_id: "14398:1137561"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[9]"
-        name: Frame 313977
-        type: FRAME
-        w: 374
-        h: 176
-        padding: 16
-        gap: 16
-        stroke_align: inside
       - node_id: "14398:1137563"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313979/TEXT:title"
         name: title
@@ -2078,26 +1169,6 @@ chunks:
         padding: 0
         gap: 8
         stroke_align: inside
-  - chunk_id: anatomy_11
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Legend/Frame 314023/FRAME:rating"
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[4]"
-    node_ids:
-      - "14398:1137572"
-      - "14398:1137573"
-      - "14398:1137574"
-      - "14398:1137575"
-      - "14398:1137576"
-      - "14398:1137577"
-      - "14398:1137578"
-      - "I14398:1137578;302:12909"
-      - "I14398:1137578;302:12909;28:4040"
-      - "I14398:1137578;302:12909;28:4041"
-      - "I14398:1137578;302:12909;28:4042"
-      - "I14398:1137578;302:12909;28:4043"
-    items:
       - node_id: "14398:1137572"
         path_key: "root/Full Report/Legend/Frame 314023/FRAME:rating"
         name: rating
@@ -2109,6 +1180,26 @@ chunks:
         padding: 4
         gap: 8
         stroke_align: inside
+  - chunk_id: anatomy_6
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Legend/Frame 314023/TEXT:Caution"
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[5]"
+    node_ids:
+      - "14398:1137573"
+      - "14398:1137574"
+      - "14398:1137575"
+      - "14398:1137576"
+      - "14398:1137577"
+      - "14398:1137578"
+      - "I14398:1137578;302:12909"
+      - "I14398:1137578;302:12909;28:4040"
+      - "I14398:1137578;302:12909;28:4041"
+      - "I14398:1137578;302:12909;28:4042"
+      - "I14398:1137578;302:12909;28:4043"
+      - "I14398:1137578;302:12909;28:4044"
+    items:
       - node_id: "14398:1137573"
         path_key: "root/Full Report/Legend/Frame 314023/TEXT:Caution"
         name: Caution
@@ -2167,6 +1258,7 @@ chunks:
         stroke: "#2F2F33"
         stroke_ref: Default/Grey/grey-80
         stroke_align: inside
+        stroke_sides: "top: 1px"
       - node_id: "14398:1137578"
         path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item"
         name: Bottom Nav-item
@@ -2222,14 +1314,22 @@ chunks:
         stroke: "#929299"
         stroke_ref: Default/Grey/grey-40
         stroke_sides: all
-  - chunk_id: anatomy_12
+      - node_id: "I14398:1137578;302:12909;28:4044"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[5]"
+        name: Vector
+        type: VECTOR
+        w: 17
+        h: 12
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+  - chunk_id: anatomy_7
     kind: anatomy
     item_count: 12
     path_range:
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[5]"
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/Calendar/VECTOR:Vector[6]"
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[6]"
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/Calendar/VECTOR:Vector[7]"
     node_ids:
-      - "I14398:1137578;302:12909;28:4044"
       - "I14398:1137578;302:12909;28:4045"
       - "I14398:1137578;302:12909;28:4046"
       - "I14398:1137578;302:12910"
@@ -2241,16 +1341,8 @@ chunks:
       - "I14398:1137579;302:12909;28:4563"
       - "I14398:1137579;302:12909;28:4564"
       - "I14398:1137579;302:12909;28:4565"
+      - "I14398:1137579;302:12909;28:4566"
     items:
-      - node_id: "I14398:1137578;302:12909;28:4044"
-        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[5]"
-        name: Vector
-        type: VECTOR
-        w: 17
-        h: 12
-        stroke: "#929299"
-        stroke_ref: Default/Grey/grey-40
-        stroke_sides: all
       - node_id: "I14398:1137578;302:12909;28:4045"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/CookingPot/VECTOR:Vector[6]"
         name: Vector
@@ -2355,20 +1447,6 @@ chunks:
         stroke: "#929299"
         stroke_ref: Default/Grey/grey-40
         stroke_sides: all
-  - chunk_id: anatomy_13
-    kind: anatomy
-    item_count: 6
-    path_range:
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/Calendar/VECTOR:Vector[7]"
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[2]"
-    node_ids:
-      - "I14398:1137579;302:12909;28:4566"
-      - "I14398:1137579;302:12910"
-      - "14398:1137580"
-      - "I14398:1137580;302:10361"
-      - "I14398:1137580;302:10361;28:836"
-      - "I14398:1137580;302:10361;28:837"
-    items:
       - node_id: "I14398:1137579;302:12909;28:4566"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Calendar/VECTOR:Vector[7]"
         name: Vector
@@ -2378,6 +1456,26 @@ chunks:
         stroke: "#929299"
         stroke_ref: Default/Grey/grey-40
         stroke_sides: all
+  - chunk_id: anatomy_8
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[2]"
+      - "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[4]"
+    node_ids:
+      - "I14398:1137579;302:12910"
+      - "14398:1137580"
+      - "I14398:1137580;302:10361"
+      - "I14398:1137580;302:10361;28:836"
+      - "I14398:1137580;302:10361;28:837"
+      - "I14398:1137580;302:10361;28:838"
+      - "I14398:1137580;302:10361;28:839"
+      - "I14398:1137580;302:10361;28:840"
+      - "I14398:1137580;302:10361;28:841"
+      - "I14398:1137580;302:10361;28:842"
+      - "I14398:1137580;302:12893"
+      - "14398:1137581"
+    items:
       - node_id: "I14398:1137579;302:12910"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[2]"
         name: Home
@@ -2428,13 +1526,377 @@ chunks:
         stroke: "#929299"
         stroke_ref: Default/Grey/grey-40
         stroke_sides: all
+      - node_id: "I14398:1137580;302:10361;28:838"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[3]"
+        name: Vector
+        type: VECTOR
+        w: 5
+        h: 2
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137580;302:10361;28:839"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[4]"
+        name: Vector
+        type: VECTOR
+        w: 5
+        h: 2
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137580;302:10361;28:840"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[5]"
+        name: Vector
+        type: VECTOR
+        w: 11
+        h: 3
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137580;302:10361;28:841"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[6]"
+        name: Vector
+        type: VECTOR
+        w: 6
+        h: 6
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137580;302:10361;28:842"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/UsersThree/VECTOR:Vector[7]"
+        name: Vector
+        type: VECTOR
+        w: 6
+        h: 6
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137580;302:12893"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[3]"
+        name: Home
+        type: TEXT
+        text: Club
+        w: 69
+        h: 20
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        font_size: 12
+        font: Inter Medium
+        stroke_align: outside
+        text_style: B3/Medium
+      - node_id: "14398:1137581"
+        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[4]"
+        name: Bottom Nav-item
+        type: INSTANCE
+        instance_of: Status=Active
+        children_text:
+          [Report]
+        w: 69
+        h: 96
+        padding: 12
+        gap: 4
+        stroke_align: inside
+  - chunk_id: anatomy_9
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:ChartLineUp"
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[6]"
+    node_ids:
+      - "I14398:1137581;302:10361"
+      - "I14398:1137581;302:10361;28:7782"
+      - "I14398:1137581;302:10361;28:7783"
+      - "I14398:1137581;302:12893"
+      - "14398:1137582"
+      - "I14398:1137582;302:12909"
+      - "I14398:1137582;302:12909;28:4048"
+      - "I14398:1137582;302:12909;28:4049"
+      - "I14398:1137582;302:12909;28:4050"
+      - "I14398:1137582;302:12909;28:4051"
+      - "I14398:1137582;302:12909;28:4052"
+      - "I14398:1137582;302:12909;28:4053"
+    items:
+      - node_id: "I14398:1137581;302:10361"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:ChartLineUp"
+        name: ChartLineUp
+        type: INSTANCE
+        instance_of: ChartLineUp
+        w: 24
+        h: 24
+        fill: "#FFFFFF"
+        stroke_align: inside
+      - node_id: "I14398:1137581;302:10361;28:7782"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/ChartLineUp/VECTOR:Vector"
+        name: Vector
+        type: VECTOR
+        w: 24
+        h: 24
+        stroke_align: inside
+      - node_id: "I14398:1137581;302:10361;28:7783"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/ChartLineUp/VECTOR:Vector[2]"
+        name: Vector
+        type: VECTOR
+        w: 20
+        h: 17
+        fill: "#FFFFFF"
+        fill_ref: Default/White/white
+        stroke_align: inside
+      - node_id: "I14398:1137581;302:12893"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[4]"
+        name: Home
+        type: TEXT
+        text: Report
+        w: 69
+        h: 20
+        fill: "#FFFFFF"
+        fill_ref: Default/White/white
+        font_size: 12
+        font: Inter Bold
+        stroke_align: outside
+        text_style: B3/Bold
+      - node_id: "14398:1137582"
+        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[5]"
+        name: Bottom Nav-item
+        type: INSTANCE
+        instance_of: Status=Inactive
+        children_text:
+          [NutriBites]
+        w: 69
+        h: 96
+        padding: 12
+        gap: 4
+        stroke_align: inside
+      - node_id: "I14398:1137582;302:12909"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:Cookie"
+        name: Cookie
+        type: INSTANCE
+        instance_of: Cookie
+        w: 24
+        h: 24
+        fill: "#929299"
+        stroke_align: inside
+      - node_id: "I14398:1137582;302:12909;28:4048"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector"
+        name: Vector
+        type: VECTOR
+        w: 24
+        h: 24
+        stroke_align: inside
+      - node_id: "I14398:1137582;302:12909;28:4049"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[2]"
+        name: Vector
+        type: VECTOR
+        w: 18
+        h: 18
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137582;302:12909;28:4050"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[3]"
+        name: Vector
+        type: VECTOR
+        w: 2
+        h: 2
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_align: inside
+        stroke_sides: all
+      - node_id: "I14398:1137582;302:12909;28:4051"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[4]"
+        name: Vector
+        type: VECTOR
+        w: 2
+        h: 2
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        stroke_align: inside
+      - node_id: "I14398:1137582;302:12909;28:4052"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[5]"
+        name: Vector
+        type: VECTOR
+        w: 2
+        h: 2
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        stroke_align: inside
+      - node_id: "I14398:1137582;302:12909;28:4053"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/Cookie/VECTOR:Vector[6]"
+        name: Vector
+        type: VECTOR
+        w: 2
+        h: 2
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        stroke_align: inside
+  - chunk_id: anatomy_10
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[5]"
+      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Cellular Connection"
+    node_ids:
+      - "I14398:1137582;302:12910"
+      - "14398:1137583"
+      - "I14398:1137583;302:12909"
+      - "I14398:1137583;302:12909;28:937"
+      - "I14398:1137583;302:12909;28:938"
+      - "I14398:1137583;302:12909;28:939"
+      - "I14398:1137583;302:12910"
+      - "14398:1137584"
+      - "14398:1137585"
+      - "I14398:1137585;40:2108"
+      - "I14398:1137585;40:2109"
+      - "I14398:1137585;40:2102"
+    items:
+      - node_id: "I14398:1137582;302:12910"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[5]"
+        name: Home
+        type: TEXT
+        text: NutriBites
+        w: 69
+        h: 20
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        font_size: 12
+        font: Inter Medium
+        stroke_align: outside
+        text_style: B3/Medium
+      - node_id: "14398:1137583"
+        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[6]"
+        name: Bottom Nav-item
+        type: INSTANCE
+        instance_of: Status=Inactive
+        children_text:
+          [Profile]
+        w: 69
+        h: 96
+        padding: 12
+        gap: 4
+        stroke_align: inside
+      - node_id: "I14398:1137583;302:12909"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:User"
+        name: User
+        type: INSTANCE
+        instance_of: User
+        w: 24
+        h: 24
+        fill: "#929299"
+        stroke_align: inside
+      - node_id: "I14398:1137583;302:12909;28:937"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/User/VECTOR:Vector"
+        name: Vector
+        type: VECTOR
+        w: 24
+        h: 24
+        stroke_align: inside
+      - node_id: "I14398:1137583;302:12909;28:938"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/User/VECTOR:Vector[2]"
+        name: Vector
+        type: VECTOR
+        w: 12
+        h: 12
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137583;302:12909;28:939"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/User/VECTOR:Vector[3]"
+        name: Vector
+        type: VECTOR
+        w: 18
+        h: 5
+        stroke: "#929299"
+        stroke_ref: Default/Grey/grey-40
+        stroke_sides: all
+      - node_id: "I14398:1137583;302:12910"
+        path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/TEXT:Home[6]"
+        name: Home
+        type: TEXT
+        text: Profile
+        w: 69
+        h: 20
+        fill: "#929299"
+        fill_ref: Default/Grey/grey-40
+        font_size: 12
+        font: Inter Medium
+        stroke_align: outside
+        text_style: B3/Medium
+      - node_id: "14398:1137584"
+        path_key: "root/Full Report/FRAME:Frame 408"
+        name: Frame 408
+        type: FRAME
+        w: 414
+        h: 44
+        fill: "#0C0C0C"
+        fill_ref: Default/Grey/grey-100
+        padding: 0
+        stroke_align: inside
+      - node_id: "14398:1137585"
+        path_key: "root/Full Report/Frame 408/INSTANCE:Status Bar"
+        name: Status Bar
+        type: INSTANCE
+        instance_of: Status Bar
+        children_text:
+          ["9:41"]
+        w: 414
+        h: 44
+        padding: 12
+        gap: 219
+        stroke_align: inside
+      - node_id: "I14398:1137585;40:2108"
+        path_key: "root/Full Report/Frame 408/Status Bar/TEXT:Time"
+        name: Time
+        type: TEXT
+        text: "9:41"
+        w: 54
+        h: 20
+        fill: "#FFFFFF"
+        fill_ref: Default/White/white
+        font_size: 15
+        font: SF Pro Text Semibold
+      - node_id: "I14398:1137585;40:2109"
+        path_key: "root/Full Report/Frame 408/Status Bar/FRAME:Frame 301"
+        name: Frame 301
+        type: FRAME
+        w: 66
+        h: 11
+        padding: 0
+        gap: 5
+        stroke_align: inside
+      - node_id: "I14398:1137585;40:2102"
+        path_key: "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Cellular Connection"
+        name: Cellular Connection
+        type: BOOLEAN_OPERATION
+        w: 17
+        h: 11
+        fill: "#FFFFFF"
+        fill_ref: Default/White/white
+  - chunk_id: anatomy_11
+    kind: anatomy
+    item_count: 1
+    path_range:
+      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Wifi"
+      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Wifi"
+    node_ids:
+      ["I14398:1137585;40:2098"]
+    items:
+      - node_id: "I14398:1137585;40:2098"
+        path_key: "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Wifi"
+        name: Wifi
+        type: BOOLEAN_OPERATION
+        w: 15
+        h: 11
+        fill: "#FFFFFF"
+        fill_ref: Default/White/white
   - chunk_id: layout_1
     kind: layout
     item_count: 12
     path_range:
-      - "root/Full Report/FRAME:Frame 313966"
-      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
+      - "root/FRAME:Full Report"
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974"
     node_ids:
+      - "14398:1137535"
       - "14398:1137536"
       - "14398:1137537"
       - "14398:1137538"
@@ -2446,8 +1908,17 @@ chunks:
       - "I14398:1137543;10653:11950"
       - "I14398:1137543;10637:2653"
       - "I14398:1137543;10648:8993"
-      - "I14398:1137543;10637:6614"
     items:
+      - node_id: "14398:1137535"
+        path_key: "root/FRAME:Full Report"
+        name: Full Report
+        type: FRAME
+        direction: column
+        gap: 359
+        align: INFERRED / INFERRED
+        sizing: FIXED / FIXED
+        clips: true
+        inferred: true
       - node_id: "14398:1137536"
         path_key: "root/Full Report/FRAME:Frame 313966"
         name: Frame 313966
@@ -2557,21 +2028,14 @@ chunks:
         gap: 8
         align: MIN / CENTER
         sizing: FIXED / AUTO
-      - node_id: "I14398:1137543;10637:6614"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
-        name: Frame 313968
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
   - chunk_id: layout_2
     kind: layout
     item_count: 12
     path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967"
-      - "root/Full Report/Frame 313971/INSTANCE:card[3]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
+      - "root/Full Report/Frame 313971/card/FRAME:Frame 313976[2]"
     node_ids:
+      - "I14398:1137543;10637:6614"
       - "I14398:1137543;10637:6620;10637:6598"
       - "I14398:1137543;10637:6645"
       - "I14398:1137543;10653:11229"
@@ -2583,8 +2047,15 @@ chunks:
       - "I14398:1137544;10637:6620;10637:6598"
       - "I14398:1137544;10637:6645"
       - "I14398:1137544;10653:11229"
-      - "14398:1137545"
     items:
+      - node_id: "I14398:1137543;10637:6614"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
+        name: Frame 313968
+        type: FRAME
+        direction: column
+        gap: 8
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137543;10637:6620;10637:6598"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967"
         name: Frame 313967
@@ -2691,22 +2162,14 @@ chunks:
           top: 8
           bottom: 8
         clips: true
-      - node_id: "14398:1137545"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
   - chunk_id: layout_3
     kind: layout
     item_count: 12
     path_range:
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[4]"
+      - "root/Full Report/Frame 313971/INSTANCE:card[3]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974[4]"
     node_ids:
+      - "14398:1137545"
       - "I14398:1137545;10653:11950"
       - "I14398:1137545;10637:2653"
       - "I14398:1137545;10648:8993"
@@ -2718,8 +2181,16 @@ chunks:
       - "I14398:1137546;10653:11950"
       - "I14398:1137546;10637:2653"
       - "I14398:1137546;10648:8993"
-      - "I14398:1137546;10637:6614"
     items:
+      - node_id: "14398:1137545"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
+        name: card
+        type: INSTANCE
+        direction: column
+        gap: 0
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "I14398:1137545;10653:11950"
         path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
         name: Frame 313977
@@ -2825,21 +2296,14 @@ chunks:
         gap: 8
         align: MIN / CENTER
         sizing: FIXED / AUTO
-      - node_id: "I14398:1137546;10637:6614"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[4]"
-        name: Frame 313968
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
   - chunk_id: layout_4
     kind: layout
     item_count: 12
     path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[4]"
-      - "root/Full Report/Frame 313971/INSTANCE:card[6]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[4]"
+      - "root/Full Report/Frame 313971/card/FRAME:Frame 313976[5]"
     node_ids:
+      - "I14398:1137546;10637:6614"
       - "I14398:1137546;10637:6620;10637:6598"
       - "I14398:1137546;10637:6645"
       - "I14398:1137546;10653:11229"
@@ -2851,8 +2315,15 @@ chunks:
       - "I14398:1137547;10637:6620;10637:6598"
       - "I14398:1137547;10637:6645"
       - "I14398:1137547;10653:11229"
-      - "14398:1137548"
     items:
+      - node_id: "I14398:1137546;10637:6614"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[4]"
+        name: Frame 313968
+        type: FRAME
+        direction: column
+        gap: 8
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137546;10637:6620;10637:6598"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967[4]"
         name: Frame 313967
@@ -2959,6 +2430,15 @@ chunks:
           top: 8
           bottom: 8
         clips: true
+  - chunk_id: layout_5
+    kind: layout
+    item_count: 2
+    path_range:
+      - "root/Full Report/Frame 313971/INSTANCE:card[6]"
+      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[6]"
+    node_ids:
+      ["14398:1137548", "I14398:1137548;10653:11950"]
+    items:
       - node_id: "14398:1137548"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[6]"
         name: card
@@ -2968,15 +2448,6 @@ chunks:
         align: CENTER / MIN
         sizing: AUTO / FIXED
         clips: true
-  - chunk_id: layout_5
-    kind: layout
-    item_count: 2
-    path_range:
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[6]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[6]"
-    node_ids:
-      ["I14398:1137548;10653:11950", "I14398:1137548;10637:2653"]
-    items:
       - node_id: "I14398:1137548;10653:11950"
         path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[6]"
         name: Frame 313977
@@ -2990,12 +2461,118 @@ chunks:
           right: 16
           top: 16
           bottom: 16
-      - node_id: "I14398:1137548;10637:2653"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[6]"
-        name: Frame 313961
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
+  - chunk_id: repeats_1
+    kind: repeats
+    template_node_id: "14398:1137543"
+    template_path_key: "root/Full Report/Frame 313971/INSTANCE:card"
+    instance_of: card
+    repeat_count: 6
+    varying_keys:
+      [card/Frame 313976/description/text]
+    items:
+      - node_id: "14398:1137544"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[2]"
+        diffs:
+          card/Frame 313976/description/text: Cramp risk doubles; lift capacity dips 5 %.
+        children_text:
+          - Calcium 😰
+          - Why?
+          - If low, cramps, weak lifts
+          - "Average:"
+          - 53mg / 100mg
+          - Cramp risk doubles; lift capacity dips 5 %.
+      - node_id: "14398:1137545"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
+        diffs:
+          card/Frame 313976/description/text: Grip weakness & tingling nerves 25 % more likely.
+        children_text:
+          - Vitamin E 😰
+          - Why?
+          - If low, muscle weakness, tingling
+          - "Average:"
+          - 53mg / 100mg
+          - Grip weakness & tingling nerves 25 % more likely.
+      - node_id: "14398:1137546"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[4]"
+        diffs:
+          card/Frame 313976/description/text: Testosterone may fall 5–10 %; wounds heal 25 % slower.
+        children_text:
+          - Zinc 😥
+          - Why?
+          - If low, muscle repair slow, low testosterone
+          - "Average:"
+          - 53mg / 100mg
+          - Testosterone may fall 5–10 %; wounds heal 25 % slower.
+      - node_id: "14398:1137547"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[5]"
+        diffs:
+          card/Frame 313976/description/text: Cramp risk doubles; lift capacity dips 5 %.
+        children_text:
+          - Calcium 😥
+          - Why?
+          - If low, cramps, weak lifts
+          - "Average:"
+          - 53mg / 100mg
+          - Cramp risk doubles; lift capacity dips 5 %.
+      - node_id: "14398:1137548"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[6]"
+        diffs:
+          card/Frame 313976/description/text: Endurance drops 10 % from poor oxygen delivery.
+        children_text:
+          - Iron 😥
+          - Why?
+          - If low, low stamina, breath issue
+          - "Average:"
+          - 53mg / 100mg
+          - Endurance drops 10 % from poor oxygen delivery.
+      - node_id: "14398:1137549"
+        path_key: "root/Full Report/Frame 313971/INSTANCE:card[7]"
+        diffs:
+          card/Frame 313976/description/text: Muscle fibre repair slows ~15 %, gains delayed.
+        children_text:
+          - Vitamin C 🙂
+          - Why?
+          - If low, slow muscle fix
+          - "Average:"
+          - 80mg / 150mg
+          - Muscle fibre repair slows ~15 %, gains delayed.
+  - chunk_id: repeats_2
+    kind: repeats
+    template_node_id: "I14398:1137543;10637:6620"
+    template_path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress"
+    instance_of: Property 1=bad
+    repeat_count: 1
+    varying_keys:
+      [Progress/Frame 313967/fill, Progress/Frame 313967/width]
+    items:
+      - node_id: "I14398:1137550;10637:6620"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[2]"
+        diffs:
+          Progress/Frame 313967/fill: "#41D9B3"
+          Progress/Frame 313967/width: "342"
+  - chunk_id: repeats_3
+    kind: repeats
+    template_node_id: "14398:1137553"
+    template_path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star"
+    instance_of: Star
+    repeat_count: 4
+    varying_keys:
+      []
+    items:
+      - node_id: "14398:1137554"
+        path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[2]"
+        diffs:
+          {}
+      - node_id: "14398:1137555"
+        path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[3]"
+        diffs:
+          {}
+      - node_id: "14398:1137556"
+        path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[4]"
+        diffs:
+          {}
+      - node_id: "14398:1137557"
+        path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[5]"
+        diffs:
+          {}
 ```

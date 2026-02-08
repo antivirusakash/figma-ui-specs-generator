@@ -229,14 +229,15 @@ async function handleCopyAiSpecs(settings: Settings) {
       aiCompactMode: settings.aiCompactMode ?? true
     };
 
-    const anatomyElements = await collectAnatomyElements(target, inventory, copySettings);
+    const { elements: anatomyElements, instanceTemplates } = await collectAnatomyElements(target, inventory, copySettings);
     const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
     const layoutData = collectLayoutData(target);
 
     const dataModel: DataModel = {
       anatomy: anatomyElements,
       properties: propertySpecs,
-      layout: layoutData
+      layout: layoutData,
+      instanceTemplates: instanceTemplates.length > 0 ? instanceTemplates : undefined
     };
 
     const dataDeps = {
@@ -382,9 +383,12 @@ async function generateSpecs(settings: Settings) {
 
     let anatomySection: FrameNode | null = null;
     if (settings.anatomy || settings.data) {
-      const anatomyElements = await collectAnatomyElements(target, inventory, settings);
+      const { elements: anatomyElements, instanceTemplates } = await collectAnatomyElements(target, inventory, settings);
       log("Anatomy elements collected", anatomyElements.length);
       dataModel.anatomy = anatomyElements.map((element) => ({ ...element }));
+      if (instanceTemplates.length > 0) {
+        dataModel.instanceTemplates = instanceTemplates;
+      }
       if (settings.anatomy) {
         const sideBySide = settings.layout && !settings.multiColumn;
         const sectionSettings = sideBySide ? { ...settings, multiColumn: true, sectionWidth: artworkSectionWidth } : settings;
@@ -764,7 +768,7 @@ async function createCompleteVariantSections(
   const { componentSet, baseComponent } = context;
 
   const baseInstance = baseComponent.createInstance();
-  const baseElements = await collectAnatomyElements(baseInstance, inventory, settings);
+  const { elements: baseElements } = await collectAnatomyElements(baseInstance, inventory, settings);
   const baseElementKeys = new Set(baseElements.map(buildElementKey));
   const baseLayouts = collectLayoutData(baseInstance);
   const baseLayoutKeys = new Set(baseLayouts.map(buildLayoutKey));
@@ -779,7 +783,7 @@ async function createCompleteVariantSections(
   for (const variant of variants) {
     if (variant.id === baseComponent.id) continue;
     const instance = variant.createInstance();
-    const elements = await collectAnatomyElements(instance, inventory, settings);
+    const { elements } = await collectAnatomyElements(instance, inventory, settings);
     const newElements = elements.filter((element) => !baseElementKeys.has(buildElementKey(element)));
     if (newElements.length > 0) {
       const anatomySection = await createAnatomySection(
@@ -861,8 +865,8 @@ async function createNestedComponentSections(
     const header = createText(`Nested Component · ${instance.name}`, 12, FONT_MEDIUM, theme.text, "heading");
     container.appendChild(header);
 
-    const anatomyElements =
-      settings.anatomy || settings.data ? await collectAnatomyElements(instance, inventory, settings) : [];
+    const { elements: anatomyElements } =
+      settings.anatomy || settings.data ? await collectAnatomyElements(instance, inventory, settings) : { elements: [] as AnatomyElement[] };
     const propertySpecs = settings.properties || settings.data
       ? await collectPropertySpecs(instance, inventory, settings)
       : [];
