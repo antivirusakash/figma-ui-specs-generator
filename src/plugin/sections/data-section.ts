@@ -200,7 +200,13 @@ export function toAgentReadyDataPayload(
     const strokeSides = findAttr("Stroke sides");
     if (strokeSides) record.stroke_sides = strokeSides.value;
     const position = findAttr("Position");
-    if (position) record.position = position.value;
+    if (position) {
+      record.position = position.value;
+      if (element.bounds) {
+        record.x = Math.round(element.bounds.x);
+        record.y = Math.round(element.bounds.y);
+      }
+    }
     const constraints = findAttr("Constraints");
     if (constraints) record.constraints = constraints.value;
     const textStyle = findAttr("Text style");
