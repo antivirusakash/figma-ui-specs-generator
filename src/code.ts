@@ -169,15 +169,18 @@ function buildAnatomyTree(elements: AnatomyElement[]): string {
 }
 
 function buildCopyBlock(name: string, figmaUrl: string, anatomyTree: string, yamlData: string): string {
+  const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
   return `## Figma Component: ${name}
 
 ### Implementation Instructions
-1. Use get_screenshot on the Figma URL below to see what this component looks like.
+1. Use get_screenshot on the Figma URL below and **save it to \`.figma/${safeName}.png\`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.
 2. Read the anatomy tree below to understand the component structure.
 3. Read the YAML specs — it has every layer, color, font, spacing, and token value you need.
-4. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
-5. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
-6. Keep it minimal — only implement what the specs describe, nothing more.
+4. Check the project's working directory or \`package.json\` for the icon library in use (e.g. Phosphor, Lucide, Heroicons). Use matching icons from that library based on the \`instance_of\` names in the anatomy (e.g. \`instance_of: ForkKnife\` → use ForkKnife from the detected library).
+5. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
+6. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
+7. Keep it minimal — only implement what the specs describe, nothing more.
+8. **After implementation is complete**, take a screenshot of your front-end output and compare it side-by-side with \`.figma/${safeName}.png\`. Fix any visual differences until they match.
 
 ### Figma URL
 ${figmaUrl}

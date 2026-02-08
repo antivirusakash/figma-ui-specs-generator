@@ -241,4 +241,108 @@ describe('collectLayoutData', () => {
     expect(result[0]?.primaryAxisAlignItems).toBe('CENTER');
     expect(result[0]?.counterAxisAlignItems).toBe('MAX');
   });
+
+  it('infers VERTICAL direction from vertically stacked children', () => {
+    const child1 = createMockLayoutNode({
+      name: 'A', id: 'a', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+      visible: true,
+    });
+    const child2 = createMockLayoutNode({
+      name: 'B', id: 'b', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 60, width: 100, height: 50 },
+      visible: true,
+    });
+    const root = createMockLayoutNode({
+      name: 'NoLayout', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 110 },
+      children: [child1, child2],
+    });
+    const result = collectLayoutData(root);
+    const spec = result.find((r) => r.name === 'NoLayout');
+    expect(spec).toBeDefined();
+    expect(spec?.layoutMode).toBe('VERTICAL');
+    expect(spec?.inferred).toBe(true);
+  });
+
+  it('infers HORIZONTAL direction from side-by-side children', () => {
+    const child1 = createMockLayoutNode({
+      name: 'A', id: 'a', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 100 },
+      visible: true,
+    });
+    const child2 = createMockLayoutNode({
+      name: 'B', id: 'b', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 60, y: 0, width: 50, height: 100 },
+      visible: true,
+    });
+    const root = createMockLayoutNode({
+      name: 'HRow', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 110, height: 100 },
+      children: [child1, child2],
+    });
+    const result = collectLayoutData(root);
+    const spec = result.find((r) => r.name === 'HRow');
+    expect(spec).toBeDefined();
+    expect(spec?.layoutMode).toBe('HORIZONTAL');
+    expect(spec?.inferred).toBe(true);
+  });
+
+  it('does NOT infer direction for single-child frame', () => {
+    const child1 = createMockLayoutNode({
+      name: 'A', id: 'a', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+      visible: true,
+    });
+    const root = createMockLayoutNode({
+      name: 'SingleChild', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+      children: [child1],
+    });
+    const result = collectLayoutData(root);
+    expect(result.find((r) => r.name === 'SingleChild')).toBeUndefined();
+  });
+
+  it('estimates gap between inferred children', () => {
+    const child1 = createMockLayoutNode({
+      name: 'A', id: 'a', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+      visible: true,
+    });
+    const child2 = createMockLayoutNode({
+      name: 'B', id: 'b', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 62, width: 100, height: 50 },
+      visible: true,
+    });
+    const root = createMockLayoutNode({
+      name: 'Gapped', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 112 },
+      children: [child1, child2],
+    });
+    const result = collectLayoutData(root);
+    const spec = result.find((r) => r.name === 'Gapped');
+    expect(spec?.itemSpacing).toBe(12);
+  });
+
+  it('sets alignment to INFERRED for inferred layouts', () => {
+    const child1 = createMockLayoutNode({
+      name: 'A', id: 'a', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+      visible: true,
+    });
+    const child2 = createMockLayoutNode({
+      name: 'B', id: 'b', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 60, width: 100, height: 50 },
+      visible: true,
+    });
+    const root = createMockLayoutNode({
+      name: 'InferAlign', layoutMode: 'NONE' as any,
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 110 },
+      children: [child1, child2],
+    });
+    const result = collectLayoutData(root);
+    const spec = result.find((r) => r.name === 'InferAlign');
+    expect(spec?.primaryAxisAlignItems).toBe('INFERRED');
+    expect(spec?.counterAxisAlignItems).toBe('INFERRED');
+  });
 });

@@ -76,6 +76,60 @@ export function collectLayoutData(root: SceneNode): LayoutSpec[] {
         gapLine,
         pathKey
       });
+    } else if (
+      "children" in node && node.type === "FRAME" &&
+      (!("layoutMode" in node) || node.layoutMode === "NONE")
+    ) {
+      const kids = (node as any).children.filter(
+        (c: any) => c.visible !== false && c.absoluteBoundingBox
+      );
+      if (kids.length >= 2) {
+        const a = kids[0].absoluteBoundingBox;
+        const b = kids[1].absoluteBoundingBox;
+        const dx = Math.abs(b.x - a.x);
+        const dy = Math.abs(b.y - a.y);
+        const inferredMode = dx > dy ? "HORIZONTAL" : "VERTICAL";
+        let estGap = 0;
+        if (inferredMode === "HORIZONTAL") {
+          estGap = Math.max(0, Math.round(b.x - (a.x + a.width)));
+        } else {
+          estGap = Math.max(0, Math.round(b.y - (a.y + a.height)));
+        }
+
+        const bounds = node.absoluteBoundingBox;
+        const relativeBounds =
+          bounds && rootBounds
+            ? {
+                x: bounds.x - rootBounds.x,
+                y: bounds.y - rootBounds.y,
+                width: bounds.width,
+                height: bounds.height
+              }
+            : undefined;
+
+        const baseKey = `${path}/${node.type}:${node.name}`;
+        const count = (nameCounts.get(baseKey) ?? 0) + 1;
+        nameCounts.set(baseKey, count);
+        const pathKey = count > 1 ? `${baseKey}[${count}]` : baseKey;
+
+        data.push({
+          nodeId: node.id,
+          name: node.name,
+          type: node.type,
+          clipsContent: "clipsContent" in node ? node.clipsContent : undefined,
+          layoutMode: inferredMode,
+          primaryAxisAlignItems: "INFERRED",
+          counterAxisAlignItems: "INFERRED",
+          primaryAxisSizingMode: "FIXED",
+          counterAxisSizingMode: "FIXED",
+          itemSpacing: estGap,
+          padding: { left: 0, right: 0, top: 0, bottom: 0 },
+          bounds: relativeBounds,
+          gapLine: undefined,
+          pathKey,
+          inferred: true,
+        });
+      }
     }
 
     if ("children" in node && data.length < MAX_LAYOUT_SPECS) {
@@ -279,6 +333,7 @@ function createLayoutSpecRow(
   deps: LayoutSectionDeps
 ) {
   const direction = spec.layoutMode === "HORIZONTAL" ? "Row" : "Col";
+  const dirLabel = spec.inferred ? `${direction}*` : direction;
   const gap = deps.formatSpacing(spec.itemSpacing, settings);
   const padding = formatPaddingShort(spec.padding, settings, deps);
   const sizing = `${shortSizing(spec.primaryAxisSizingMode)}/${shortSizing(spec.counterAxisSizingMode)}`;
@@ -292,7 +347,7 @@ function createLayoutSpecRow(
     [
       String(index + 1),
       deps.truncateText(spec.name, nameMax),
-      direction,
+      dirLabel,
       gap,
       deps.truncateText(padding, 60),
       sizing
@@ -390,6 +445,7 @@ function createLayoutRowCells(
 function shortSizing(mode: string) {
   if (mode === "AUTO") return "Auto";
   if (mode === "FIXED") return "Fix";
+  if (mode === "INFERRED") return "?";
   return mode;
 }
 

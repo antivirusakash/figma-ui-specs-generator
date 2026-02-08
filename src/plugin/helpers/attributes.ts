@@ -109,12 +109,59 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
     });
   }
 
+  if ("strokeTopWeight" in node) {
+    const n = node as any;
+    const top = n.strokeTopWeight ?? 0;
+    const right = n.strokeRightWeight ?? 0;
+    const bottom = n.strokeBottomWeight ?? 0;
+    const left = n.strokeLeftWeight ?? 0;
+    const allSame = top === right && right === bottom && bottom === left;
+    if (!allSame) {
+      const sides: string[] = [];
+      if (top > 0) sides.push(`top: ${formatSpacing(top, settings)}`);
+      if (right > 0) sides.push(`right: ${formatSpacing(right, settings)}`);
+      if (bottom > 0) sides.push(`bottom: ${formatSpacing(bottom, settings)}`);
+      if (left > 0) sides.push(`left: ${formatSpacing(left, settings)}`);
+      if (sides.length > 0) {
+        attributes.push({
+          key: "Stroke sides",
+          value: sides.join(", "),
+          format: "HARDCODED" as AttributeFormat,
+        });
+      }
+    } else if (top > 0 && getFirstSolidPaint(("strokes" in node ? node.strokes : undefined) as any)) {
+      attributes.push({
+        key: "Stroke sides",
+        value: "all",
+        format: "HARDCODED" as AttributeFormat,
+      });
+    }
+  } else if ("strokes" in node && "strokeWeight" in node
+      && typeof node.strokeWeight === "number" && node.strokeWeight > 0
+      && getFirstSolidPaint(node.strokes as any)) {
+    attributes.push({
+      key: "Stroke sides",
+      value: "all",
+      format: "HARDCODED" as AttributeFormat,
+    });
+  }
+
   if ("layoutPositioning" in node && (node as any).layoutPositioning === "ABSOLUTE") {
     attributes.push({
       key: "Position",
       value: "absolute",
       format: "HARDCODED" as AttributeFormat,
     });
+    if ("constraints" in node) {
+      const c = (node as any).constraints;
+      if (c && (c.horizontal || c.vertical)) {
+        attributes.push({
+          key: "Constraints",
+          value: `h:${(c.horizontal || "MIN").toLowerCase()}, v:${(c.vertical || "MIN").toLowerCase()}`,
+          format: "HARDCODED" as AttributeFormat,
+        });
+      }
+    }
   }
 
   if ("cornerRadius" in node && typeof node.cornerRadius === "number") {

@@ -126,8 +126,8 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const maxAnatomy = 64;
-  const maxLayout = 48;
+  const maxAnatomy = compact ? 200 : 1500;
+  const maxLayout = compact ? 100 : 1500;
   const maxProperties = compact ? 12 : 48;
   const resolvedTokens = new Map<string, string>();
 
@@ -197,8 +197,12 @@ export function toAgentReadyDataPayload(
     }
     const strokeAlign = findAttr("Stroke align");
     if (strokeAlign) record.stroke_align = strokeAlign.value;
+    const strokeSides = findAttr("Stroke sides");
+    if (strokeSides) record.stroke_sides = strokeSides.value;
     const position = findAttr("Position");
     if (position) record.position = position.value;
+    const constraints = findAttr("Constraints");
+    if (constraints) record.constraints = constraints.value;
     const textStyle = findAttr("Text style");
     if (textStyle) {
       record.text_style = deps.truncateText(textStyle.value, compact ? 40 : 64);
@@ -236,6 +240,7 @@ export function toAgentReadyDataPayload(
     };
     if (hasNonZeroPad) record.padding = pad;
     if (spec.clipsContent) record.clips = true;
+    if (spec.inferred) record.inferred = true;
     return record;
   });
 
@@ -279,6 +284,7 @@ export function toAgentReadyDataPayload(
     chunk_id: `anatomy_${index + 1}`,
     kind: "anatomy",
     item_count: items.length,
+    path_range: items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [],
     node_ids: items.map((item) => item.node_id).filter(Boolean),
     items
   }));
@@ -287,6 +293,7 @@ export function toAgentReadyDataPayload(
     chunk_id: `layout_${index + 1}`,
     kind: "layout",
     item_count: items.length,
+    path_range: items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [],
     node_ids: items.map((item) => item.node_id).filter(Boolean),
     items
   }));
@@ -303,7 +310,7 @@ export function toAgentReadyDataPayload(
 
   const textIndex = dataModel.anatomy
     .filter(el => el.textContent || el.childrenText?.length)
-    .slice(0, compact ? 80 : 100)
+    .slice(0, compact ? 200 : 500)
     .map(el => {
       const entry: any = { id: el.nodeId, path: el.pathKey };
       if (el.textContent) entry.text = deps.truncateText(el.textContent, compact ? 80 : 200);
@@ -324,12 +331,13 @@ export function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v5.yaml.compact" : "specs-plugin.agent_pack.v5.yaml",
+    schema: compact ? "specs-plugin.agent_pack.v7.yaml.compact" : "specs-plugin.agent_pack.v7.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
       name: target.name,
-      type: target.type
+      type: target.type,
+      ...("clipsContent" in target && (target as any).clipsContent ? { clips_content: true } : {})
     },
     summary: {
       anatomy_nodes_total: dataModel.anatomy.length,
@@ -340,8 +348,14 @@ export function toAgentReadyDataPayload(
       chunks_total: chunks.length,
       truncated: {
         anatomy: dataModel.anatomy.length > maxAnatomy,
+        anatomy_included: Math.min(dataModel.anatomy.length, maxAnatomy),
+        anatomy_dropped: Math.max(0, dataModel.anatomy.length - maxAnatomy),
         layout: dataModel.layout.length > maxLayout,
-        properties: propertyRecords.length > maxProperties
+        layout_included: Math.min(dataModel.layout.length, maxLayout),
+        layout_dropped: Math.max(0, dataModel.layout.length - maxLayout),
+        properties: propertyRecords.length > maxProperties,
+        properties_included: Math.min(propertyRecords.length, maxProperties),
+        properties_dropped: Math.max(0, propertyRecords.length - maxProperties),
       }
     },
     mcp_playbook: mcpPlaybook,
@@ -468,6 +482,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
         chunk_id: chunk.chunk_id,
         kind: chunk.kind,
         item_count: chunk.item_count,
+        ...(chunk.path_range ? { path_range: chunk.path_range } : {}),
         node_ids: Array.isArray(chunk.node_ids) ? chunk.node_ids : [],
         items: sampled,
         ...(items.length > sampleSize ? { truncated_items: items.length - sampleSize } : {})

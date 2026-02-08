@@ -124,6 +124,7 @@ export type LayoutSpec = {
     x2: number;
     y2: number;
   };
+  inferred?: boolean;
 };
 
 export type DataModel = {
