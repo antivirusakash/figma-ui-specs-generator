@@ -345,6 +345,12 @@ export function isRelevantNode(node: SceneNode, depth = 0) {
   if (node.type === "COMPONENT") return true;
   if (node.type === "BOOLEAN_OPERATION") return true;
 
+  // Include frames with auto-layout at any depth (needed for inline layout data)
+  if ((node.type === "FRAME" || node.type === "COMPONENT_SET") &&
+      "layoutMode" in node && (node as any).layoutMode !== "NONE") {
+    return true;
+  }
+
   // Skip purely structural frames/groups at depth > 3
   if (depth > 3 && (node.type === "FRAME" || node.type === "GROUP")) {
     if (!hasVisualProperties(node)) return false;

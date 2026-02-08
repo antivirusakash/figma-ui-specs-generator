@@ -1,14 +1,14 @@
 ## Figma Component: Full Report
 
 ### Figma URL
-https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id=14398-1137535&t=rwZoM8Hib6oP0cI8-11
+[Paste Figma frame URL here]
 
 ### Implementation Instructions
 1. Use get_screenshot on the Figma URL above and **save it to `.figma/full_report.png`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.
 2. Read the anatomy tree below to understand the component structure.
 3. Read the YAML specs — it has every layer, color, font, spacing, and token value you need.
 4. Check the project's working directory or `package.json` for the icon library in use (e.g. Phosphor, Lucide, Heroicons). Use matching icons from that library based on the `instance_of` names in the anatomy (e.g. `instance_of: ForkKnife` → use ForkKnife from the detected library).
-5. Build with semantic HTML and vanilla CSS. Use CSS flexbox/grid for layout specs.
+5. Check the project's `package.json` to detect the framework in use, then build the component accordingly.
 6. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
 7. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
 8. Keep it minimal — only implement what the specs describe, nothing more.
@@ -37,11 +37,15 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 - Frame 313971 (FRAME)
 - card (INSTANCE) — instance of card
 - Frame 313977 (FRAME)
+- Frame 313961 (FRAME)
+- Frame 313974 (FRAME)
 - title (TEXT) — "Magnesium 😰"
 - description (TEXT) — "Why?"
 - description (TEXT) — "If low, muscle cramps"
+- Frame 313968 (FRAME)
 - Progress (INSTANCE) — instance of Property 1=bad
 - Frame 313967 (FRAME)
+- Frame 313970 (FRAME)
 - description (TEXT) — "Average:"
 - description (TEXT) — "53mg / 100mg"
 - Frame 313976 (FRAME)
@@ -54,10 +58,14 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 - card (INSTANCE) — instance of card
 - card (INSTANCE) — instance of card
 - Frame 313977 (FRAME)
+- Frame 313961 (FRAME)
+- Frame 313974 (FRAME)
 - title (TEXT) — "Omega-3 😀"
 - description (TEXT) — "Why?"
 - description (TEXT) — "If low, more soreness"
+- Frame 313968 (FRAME)
 - Progress (INSTANCE) — instance of Property 1=good
+- Frame 313970 (FRAME)
 - description (TEXT) — "Average:"
 - description (TEXT) — "120mg / 100mg"
 - Review (FRAME)
@@ -71,6 +79,7 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 - Jasmine, New York (TEXT) — "Jasmine, New York"
 - card (FRAME)
 - Frame 313977 (FRAME)
+- Frame 313979 (FRAME)
 - title (TEXT) — "Boost your health report by 30% this we…"
 - title (TEXT) — "Join 14,283 users already on a precisio…"
 - Frame 313961 (INSTANCE) — instance of Frame 313959
@@ -116,29 +125,25 @@ https://www.figma.com/design/YKbY29IDDVia5S27lVBfox/NutriScan-App-Design?node-id
 
 ### Specs Data (YAML)
 ```yaml
-schema: specs-plugin.agent_pack.v9.yaml.compact
-generated_at: "2026-02-08T17:36:55.544Z"
+schema: specs-plugin.agent_pack.v10.yaml.compact
+generated_at: "2026-02-08T17:52:56.911Z"
 selection:
   node_id: "14398:1137535"
   name: Full Report
   type: FRAME
   clips_content: true
 summary:
-  anatomy_nodes_total: 89
-  layout_nodes_total: 50
+  anatomy_nodes_total: 98
   property_groups_total: 0
   property_variants_total: 0
   variable_refs_total: 6
   instance_templates: 3
   deduplicated_instances: 11
-  chunks_total: 16
+  chunks_total: 12
   truncated:
     anatomy: false
-    anatomy_included: 89
+    anatomy_included: 98
     anatomy_dropped: 0
-    layout: false
-    layout_included: 50
-    layout_dropped: 0
     properties: false
     properties_included: 0
     properties_dropped: 0
@@ -185,6 +190,11 @@ chunks:
         h: 2560
         fill: "#0C0C0C"
         fill_ref: Default/Grey/grey-100
+        direction: column
+        align: INFERRED / INFERRED
+        sizing: FIXED / FIXED
+        clips: true
+        inferred: true
       - node_id: "14398:1137536"
         path_key: "root/Full Report/FRAME:Frame 313966"
         name: Frame 313966
@@ -192,6 +202,9 @@ chunks:
         w: 414
         h: 128
         padding: 0
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "14398:1137537"
         path_key: "root/Full Report/Frame 313966/FRAME:Frame 19455"
         name: Frame 19455
@@ -200,6 +213,9 @@ chunks:
         h: 128
         padding: 24
         gap: 12
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
       - node_id: "14398:1137538"
         path_key: "root/Full Report/Frame 313966/Frame 19455/FRAME:Frame 313972"
         name: Frame 313972
@@ -208,6 +224,9 @@ chunks:
         h: 34
         padding: 0
         gap: 16
+        direction: row
+        align: MIN / MIN
+        sizing: FIXED / AUTO
       - node_id: "14398:1137539"
         path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/TEXT:Body Health Report"
         name: Body Health Report
@@ -236,6 +255,9 @@ chunks:
         stroke_ref: Default/Grey/grey-80
         stroke_align: inside
         stroke_sides: all
+        direction: row
+        align: CENTER / CENTER
+        sizing: AUTO / AUTO
       - node_id: "I14398:1137540;9959:501"
         path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/Frame 313961/FRAME:Button"
         name: Button
@@ -244,6 +266,9 @@ chunks:
         h: 32
         padding: 6
         gap: 12
+        direction: row
+        align: CENTER / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137540;9959:502"
         path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/Frame 313961/Button/TEXT:🥣 Breakfast"
         name: 🥣 Breakfast
@@ -265,6 +290,9 @@ chunks:
         h: 32
         padding: 6
         gap: 12
+        direction: row
+        align: CENTER / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137540;9959:504"
         path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/Frame 313961/Button/INSTANCE:CaretDown"
         name: CaretDown
@@ -300,25 +328,28 @@ chunks:
         h: 1878
         padding: 0
         gap: 16
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
   - chunk_id: anatomy_2
     kind: anatomy
     item_count: 12
     path_range:
       - "root/Full Report/Frame 313971/INSTANCE:card"
-      - "root/Full Report/Frame 313971/INSTANCE:card[2]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description"
     node_ids:
       - "14398:1137543"
       - "I14398:1137543;10653:11950"
+      - "I14398:1137543;10637:2653"
+      - "I14398:1137543;10648:8993"
       - "I14398:1137543;10637:2654"
       - "I14398:1137543;10648:9021"
       - "I14398:1137543;10637:2655"
+      - "I14398:1137543;10637:6614"
       - "I14398:1137543;10637:6620"
       - "I14398:1137543;10637:6620;10637:6598"
+      - "I14398:1137543;10637:6645"
       - "I14398:1137543;10637:6613"
-      - "I14398:1137543;10637:6644"
-      - "I14398:1137543;10653:11229"
-      - "I14398:1137543;10637:5290"
-      - "14398:1137544"
     items:
       - node_id: "14398:1137543"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card"
@@ -338,6 +369,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "I14398:1137543;10653:11950"
         path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977"
         name: Frame 313977
@@ -346,6 +381,31 @@ chunks:
         h: 136
         padding: 16
         gap: 16
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
+      - node_id: "I14398:1137543;10637:2653"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961"
+        name: Frame 313961
+        type: FRAME
+        w: 342
+        h: 54
+        padding: 0
+        gap: 8
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
+      - node_id: "I14398:1137543;10648:8993"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974"
+        name: Frame 313974
+        type: FRAME
+        w: 342
+        h: 24
+        padding: 0
+        gap: 8
+        direction: row
+        align: MIN / CENTER
+        sizing: FIXED / AUTO
       - node_id: "I14398:1137543;10637:2654"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title"
         name: title
@@ -385,6 +445,17 @@ chunks:
         font: Inter Regular
         line_height: 22px
         text_style: B2/Regular
+      - node_id: "I14398:1137543;10637:6614"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
+        name: Frame 313968
+        type: FRAME
+        w: 342
+        h: 34
+        padding: 0
+        gap: 8
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137543;10637:6620"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress"
         name: Progress
@@ -402,6 +473,20 @@ chunks:
         radius: 40
         padding: 0
         gap: 180
+        direction: row
+        align: MIN / CENTER
+        sizing: AUTO / AUTO
+      - node_id: "I14398:1137543;10637:6645"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/FRAME:Frame 313970"
+        name: Frame 313970
+        type: FRAME
+        w: 342
+        h: 22
+        padding: 0
+        gap: 8
+        direction: row
+        align: MAX / CENTER
+        sizing: FIXED / AUTO
       - node_id: "I14398:1137543;10637:6613"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description"
         name: description
@@ -415,6 +500,26 @@ chunks:
         font: Inter Regular
         line_height: 22px
         text_style: B2/Regular
+  - chunk_id: anatomy_3
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[2]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[2]"
+    node_ids:
+      - "I14398:1137543;10637:6644"
+      - "I14398:1137543;10653:11229"
+      - "I14398:1137543;10637:5290"
+      - "14398:1137544"
+      - "14398:1137545"
+      - "14398:1137546"
+      - "14398:1137547"
+      - "14398:1137548"
+      - "14398:1137549"
+      - "14398:1137550"
+      - "I14398:1137550;10653:11950"
+      - "I14398:1137550;10637:2653"
+    items:
       - node_id: "I14398:1137543;10637:6644"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[2]"
         name: description
@@ -445,6 +550,10 @@ chunks:
         fill_ref: Default/Grey/grey-80
         padding: 8
         gap: 8
+        direction: row
+        align: CENTER / CENTER
+        sizing: FIXED / AUTO
+        clips: true
       - node_id: "I14398:1137543;10637:5290"
         path_key: "root/Full Report/Frame 313971/card/Frame 313976/TEXT:description"
         name: description
@@ -476,26 +585,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
-  - chunk_id: anatomy_3
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/INSTANCE:card[3]"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
-    node_ids:
-      - "14398:1137545"
-      - "14398:1137546"
-      - "14398:1137547"
-      - "14398:1137548"
-      - "14398:1137549"
-      - "14398:1137550"
-      - "I14398:1137550;10653:11950"
-      - "I14398:1137550;10637:2654"
-      - "I14398:1137550;10648:9021"
-      - "I14398:1137550;10637:2655"
-      - "I14398:1137550;10637:6620"
-      - "I14398:1137550;10637:6613"
-    items:
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137545"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
         name: card
@@ -514,6 +607,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137546"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[4]"
         name: card
@@ -532,6 +629,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137547"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[5]"
         name: card
@@ -550,6 +651,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137548"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[6]"
         name: card
@@ -568,6 +673,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137549"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[7]"
         name: card
@@ -586,6 +695,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137550"
         path_key: "root/Full Report/Frame 313971/INSTANCE:card[8]"
         name: card
@@ -599,6 +712,10 @@ chunks:
         fill_ref: Default/Grey/grey-90
         radius: 8
         padding: 0
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "I14398:1137550;10653:11950"
         path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
         name: Frame 313977
@@ -607,6 +724,51 @@ chunks:
         h: 136
         padding: 16
         gap: 16
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
+      - node_id: "I14398:1137550;10637:2653"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[2]"
+        name: Frame 313961
+        type: FRAME
+        w: 342
+        h: 54
+        padding: 0
+        gap: 8
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
+  - chunk_id: anatomy_4
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974[2]"
+      - "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star"
+    node_ids:
+      - "I14398:1137550;10648:8993"
+      - "I14398:1137550;10637:2654"
+      - "I14398:1137550;10648:9021"
+      - "I14398:1137550;10637:2655"
+      - "I14398:1137550;10637:6614"
+      - "I14398:1137550;10637:6620"
+      - "I14398:1137550;10637:6645"
+      - "I14398:1137550;10637:6613"
+      - "I14398:1137550;10637:6644"
+      - "14398:1137551"
+      - "14398:1137552"
+      - "14398:1137553"
+    items:
+      - node_id: "I14398:1137550;10648:8993"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974[2]"
+        name: Frame 313974
+        type: FRAME
+        w: 342
+        h: 24
+        padding: 0
+        gap: 8
+        direction: row
+        align: MIN / CENTER
+        sizing: FIXED / AUTO
       - node_id: "I14398:1137550;10637:2654"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Frame 313974/TEXT:title[2]"
         name: title
@@ -646,6 +808,17 @@ chunks:
         font: Inter Regular
         line_height: 22px
         text_style: B2/Regular
+      - node_id: "I14398:1137550;10637:6614"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[2]"
+        name: Frame 313968
+        type: FRAME
+        w: 342
+        h: 34
+        padding: 0
+        gap: 8
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137550;10637:6620"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/INSTANCE:Progress[2]"
         name: Progress
@@ -653,6 +826,17 @@ chunks:
         instance_of: Property 1=good
         w: 342
         h: 4
+      - node_id: "I14398:1137550;10637:6645"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/FRAME:Frame 313970[2]"
+        name: Frame 313970
+        type: FRAME
+        w: 342
+        h: 22
+        padding: 0
+        gap: 8
+        direction: row
+        align: MAX / CENTER
+        sizing: FIXED / AUTO
       - node_id: "I14398:1137550;10637:6613"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[3]"
         name: description
@@ -666,26 +850,6 @@ chunks:
         font: Inter Regular
         line_height: 22px
         text_style: B2/Regular
-  - chunk_id: anatomy_4
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
-    node_ids:
-      - "I14398:1137550;10637:6644"
-      - "14398:1137551"
-      - "14398:1137552"
-      - "14398:1137553"
-      - "14398:1137554"
-      - "14398:1137555"
-      - "14398:1137556"
-      - "14398:1137557"
-      - "14398:1137558"
-      - "14398:1137559"
-      - "14398:1137560"
-      - "14398:1137561"
-    items:
       - node_id: "I14398:1137550;10637:6644"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Frame 313970/TEXT:description[4]"
         name: description
@@ -717,6 +881,9 @@ chunks:
         radius: 8
         padding: 16
         gap: 16
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "14398:1137552"
         path_key: "root/Full Report/Frame 313971/Review/FRAME:Frame 313816"
         name: Frame 313816
@@ -725,6 +892,9 @@ chunks:
         h: 24
         padding: 0
         gap: 4
+        direction: row
+        align: MIN / CENTER
+        sizing: AUTO / AUTO
       - node_id: "14398:1137553"
         path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star"
         name: Star
@@ -733,6 +903,26 @@ chunks:
         w: 24
         h: 24
         fill: "#FFFFFF"
+  - chunk_id: anatomy_5
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[2]"
+      - "root/Full Report/Frame 313971/card/Frame 313977/INSTANCE:Frame 313961"
+    node_ids:
+      - "14398:1137554"
+      - "14398:1137555"
+      - "14398:1137556"
+      - "14398:1137557"
+      - "14398:1137558"
+      - "14398:1137559"
+      - "14398:1137560"
+      - "14398:1137561"
+      - "14398:1137562"
+      - "14398:1137563"
+      - "14398:1137564"
+      - "14398:1137565"
+    items:
       - node_id: "14398:1137554"
         path_key: "root/Full Report/Frame 313971/Review/Frame 313816/INSTANCE:Star[2]"
         name: Star
@@ -803,6 +993,10 @@ chunks:
         stroke: "#325761"
         stroke_align: inside
         stroke_sides: all
+        direction: column
+        align: CENTER / MIN
+        sizing: AUTO / FIXED
+        clips: true
       - node_id: "14398:1137561"
         path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
         name: Frame 313977
@@ -811,26 +1005,20 @@ chunks:
         h: 176
         padding: 16
         gap: 16
-  - chunk_id: anatomy_5
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313979/TEXT:title"
-      - "root/Full Report/Legend/Frame 314023/FRAME:rating"
-    node_ids:
-      - "14398:1137563"
-      - "14398:1137564"
-      - "14398:1137565"
-      - "I14398:1137565;9959:501"
-      - "I14398:1137565;9959:502"
-      - "14398:1137566"
-      - "14398:1137567"
-      - "14398:1137568"
-      - "14398:1137569"
-      - "14398:1137570"
-      - "14398:1137571"
-      - "14398:1137572"
-    items:
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
+      - node_id: "14398:1137562"
+        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313979"
+        name: Frame 313979
+        type: FRAME
+        w: 342
+        h: 90
+        padding: 0
+        gap: 8
+        direction: column
+        align: MIN / MIN
+        sizing: AUTO / FIXED
       - node_id: "14398:1137563"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313979/TEXT:title"
         name: title
@@ -873,6 +1061,29 @@ chunks:
         stroke_ref: Default/Grey/grey-80
         stroke_align: inside
         stroke_sides: all
+        direction: row
+        align: CENTER / CENTER
+        sizing: AUTO / AUTO
+  - chunk_id: anatomy_6
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Button"
+      - "root/Full Report/Legend/Frame 314024/FRAME:rating"
+    node_ids:
+      - "I14398:1137565;9959:501"
+      - "I14398:1137565;9959:502"
+      - "14398:1137566"
+      - "14398:1137567"
+      - "14398:1137568"
+      - "14398:1137569"
+      - "14398:1137570"
+      - "14398:1137571"
+      - "14398:1137572"
+      - "14398:1137573"
+      - "14398:1137574"
+      - "14398:1137575"
+    items:
       - node_id: "I14398:1137565;9959:501"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Button"
         name: Button
@@ -881,6 +1092,9 @@ chunks:
         h: 38
         padding: 8
         gap: 12
+        direction: row
+        align: CENTER / CENTER
+        sizing: AUTO / AUTO
       - node_id: "I14398:1137565;9959:502"
         path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/Button/TEXT:🥣 Breakfast"
         name: 🥣 Breakfast
@@ -911,6 +1125,10 @@ chunks:
         h: 36
         padding: 8
         gap: 24
+        direction: row
+        align: CENTER / CENTER
+        sizing: FIXED / AUTO
+        clips: true
       - node_id: "14398:1137568"
         path_key: "root/Full Report/Legend/FRAME:Frame 314021"
         name: Frame 314021
@@ -919,6 +1137,9 @@ chunks:
         h: 20
         padding: 0
         gap: 8
+        direction: row
+        align: MIN / CENTER
+        sizing: AUTO / AUTO
       - node_id: "14398:1137569"
         path_key: "root/Full Report/Legend/Frame 314021/FRAME:rating"
         name: rating
@@ -929,6 +1150,10 @@ chunks:
         radius: 8
         padding: 4
         gap: 8
+        direction: column
+        align: CENTER / CENTER
+        sizing: FIXED / FIXED
+        clips: true
       - node_id: "14398:1137570"
         path_key: "root/Full Report/Legend/Frame 314021/TEXT:Optimal"
         name: Optimal
@@ -950,6 +1175,9 @@ chunks:
         h: 20
         padding: 0
         gap: 8
+        direction: row
+        align: MIN / CENTER
+        sizing: AUTO / AUTO
       - node_id: "14398:1137572"
         path_key: "root/Full Report/Legend/Frame 314023/FRAME:rating"
         name: rating
@@ -960,26 +1188,10 @@ chunks:
         radius: 8
         padding: 4
         gap: 8
-  - chunk_id: anatomy_6
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Legend/Frame 314023/TEXT:Caution"
-      - "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[3]"
-    node_ids:
-      - "14398:1137573"
-      - "14398:1137574"
-      - "14398:1137575"
-      - "14398:1137576"
-      - "14398:1137577"
-      - "14398:1137578"
-      - "I14398:1137578;302:12909"
-      - "I14398:1137578;302:12910"
-      - "14398:1137579"
-      - "I14398:1137579;302:12909"
-      - "I14398:1137579;302:12910"
-      - "14398:1137580"
-    items:
+        direction: column
+        align: CENTER / CENTER
+        sizing: FIXED / FIXED
+        clips: true
       - node_id: "14398:1137573"
         path_key: "root/Full Report/Legend/Frame 314023/TEXT:Caution"
         name: Caution
@@ -1001,6 +1213,9 @@ chunks:
         h: 20
         padding: 0
         gap: 8
+        direction: row
+        align: MIN / CENTER
+        sizing: AUTO / AUTO
       - node_id: "14398:1137575"
         path_key: "root/Full Report/Legend/Frame 314024/FRAME:rating"
         name: rating
@@ -1011,6 +1226,30 @@ chunks:
         radius: 8
         padding: 4
         gap: 8
+        direction: column
+        align: CENTER / CENTER
+        sizing: FIXED / FIXED
+        clips: true
+  - chunk_id: anatomy_7
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Legend/Frame 314024/TEXT:Deficient"
+      - "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[4]"
+    node_ids:
+      - "14398:1137576"
+      - "14398:1137577"
+      - "14398:1137578"
+      - "I14398:1137578;302:12909"
+      - "I14398:1137578;302:12910"
+      - "14398:1137579"
+      - "I14398:1137579;302:12909"
+      - "I14398:1137579;302:12910"
+      - "14398:1137580"
+      - "I14398:1137580;302:10361"
+      - "I14398:1137580;302:12893"
+      - "14398:1137581"
+    items:
       - node_id: "14398:1137576"
         path_key: "root/Full Report/Legend/Frame 314024/TEXT:Deficient"
         name: Deficient
@@ -1037,6 +1276,9 @@ chunks:
         stroke_ref: Default/Grey/grey-80
         stroke_align: inside
         stroke_sides: "top: 1px"
+        direction: row
+        align: CENTER / MIN
+        sizing: FIXED / AUTO
       - node_id: "14398:1137578"
         path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item"
         name: Bottom Nav-item
@@ -1048,6 +1290,9 @@ chunks:
         h: 96
         padding: 12
         gap: 4
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137578;302:12909"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:CookingPot"
         name: CookingPot
@@ -1080,6 +1325,9 @@ chunks:
         h: 96
         padding: 12
         gap: 4
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137579;302:12909"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:Calendar"
         name: Calendar
@@ -1112,26 +1360,9 @@ chunks:
         h: 96
         padding: 12
         gap: 4
-  - chunk_id: anatomy_7
-    kind: anatomy
-    item_count: 12
-    path_range:
-      - "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:UsersThree"
-      - "root/Full Report/FRAME:Frame 408"
-    node_ids:
-      - "I14398:1137580;302:10361"
-      - "I14398:1137580;302:12893"
-      - "14398:1137581"
-      - "I14398:1137581;302:10361"
-      - "I14398:1137581;302:12893"
-      - "14398:1137582"
-      - "I14398:1137582;302:12909"
-      - "I14398:1137582;302:12910"
-      - "14398:1137583"
-      - "I14398:1137583;302:12909"
-      - "I14398:1137583;302:12910"
-      - "14398:1137584"
-    items:
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137580;302:10361"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:UsersThree"
         name: UsersThree
@@ -1164,6 +1395,29 @@ chunks:
         h: 96
         padding: 12
         gap: 4
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
+  - chunk_id: anatomy_8
+    kind: anatomy
+    item_count: 12
+    path_range:
+      - "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:ChartLineUp"
+      - "root/Full Report/Frame 408/Status Bar/FRAME:Frame 301"
+    node_ids:
+      - "I14398:1137581;302:10361"
+      - "I14398:1137581;302:12893"
+      - "14398:1137582"
+      - "I14398:1137582;302:12909"
+      - "I14398:1137582;302:12910"
+      - "14398:1137583"
+      - "I14398:1137583;302:12909"
+      - "I14398:1137583;302:12910"
+      - "14398:1137584"
+      - "14398:1137585"
+      - "I14398:1137585;40:2108"
+      - "I14398:1137585;40:2109"
+    items:
       - node_id: "I14398:1137581;302:10361"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:ChartLineUp"
         name: ChartLineUp
@@ -1196,6 +1450,9 @@ chunks:
         h: 96
         padding: 12
         gap: 4
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137582;302:12909"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:Cookie"
         name: Cookie
@@ -1228,6 +1485,9 @@ chunks:
         h: 96
         padding: 12
         gap: 4
+        direction: column
+        align: MIN / CENTER
+        sizing: AUTO / FIXED
       - node_id: "I14398:1137583;302:12909"
         path_key: "root/Full Report/Bottom Nav/Bottom Nav-item/INSTANCE:User"
         name: User
@@ -1258,19 +1518,9 @@ chunks:
         fill: "#0C0C0C"
         fill_ref: Default/Grey/grey-100
         padding: 0
-  - chunk_id: anatomy_8
-    kind: anatomy
-    item_count: 5
-    path_range:
-      - "root/Full Report/Frame 408/INSTANCE:Status Bar"
-      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Wifi"
-    node_ids:
-      - "14398:1137585"
-      - "I14398:1137585;40:2108"
-      - "I14398:1137585;40:2109"
-      - "I14398:1137585;40:2102"
-      - "I14398:1137585;40:2098"
-    items:
+        direction: column
+        align: CENTER / CENTER
+        sizing: AUTO / AUTO
       - node_id: "14398:1137585"
         path_key: "root/Full Report/Frame 408/INSTANCE:Status Bar"
         name: Status Bar
@@ -1302,6 +1552,15 @@ chunks:
         h: 11
         padding: 0
         gap: 5
+  - chunk_id: anatomy_9
+    kind: anatomy
+    item_count: 2
+    path_range:
+      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Cellular Connection"
+      - "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Wifi"
+    node_ids:
+      ["I14398:1137585;40:2102", "I14398:1137585;40:2098"]
+    items:
       - node_id: "I14398:1137585;40:2102"
         path_key: "root/Full Report/Frame 408/Status Bar/Frame 301/BOOLEAN_OPERATION:Cellular Connection"
         name: Cellular Connection
@@ -1318,606 +1577,6 @@ chunks:
         h: 11
         fill: "#FFFFFF"
         fill_ref: Default/White/white
-  - chunk_id: layout_1
-    kind: layout
-    item_count: 12
-    path_range:
-      - "root/FRAME:Full Report"
-      - "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974"
-    node_ids:
-      - "14398:1137535"
-      - "14398:1137536"
-      - "14398:1137537"
-      - "14398:1137538"
-      - "14398:1137540"
-      - "I14398:1137540;9959:501"
-      - "I14398:1137540;9959:503"
-      - "14398:1137542"
-      - "14398:1137543"
-      - "I14398:1137543;10653:11950"
-      - "I14398:1137543;10637:2653"
-      - "I14398:1137543;10648:8993"
-    items:
-      - node_id: "14398:1137535"
-        path_key: "root/FRAME:Full Report"
-        name: Full Report
-        type: FRAME
-        direction: column
-        gap: 359
-        align: INFERRED / INFERRED
-        sizing: FIXED / FIXED
-        clips: true
-        inferred: true
-      - node_id: "14398:1137536"
-        path_key: "root/Full Report/FRAME:Frame 313966"
-        name: Frame 313966
-        type: FRAME
-        direction: column
-        gap: 0
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "14398:1137537"
-        path_key: "root/Full Report/Frame 313966/FRAME:Frame 19455"
-        name: Frame 19455
-        type: FRAME
-        direction: column
-        gap: 12
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        padding:
-          left: 20
-          right: 20
-          top: 24
-          bottom: 16
-      - node_id: "14398:1137538"
-        path_key: "root/Full Report/Frame 313966/Frame 19455/FRAME:Frame 313972"
-        name: Frame 313972
-        type: FRAME
-        direction: row
-        gap: 16
-        align: MIN / MIN
-        sizing: FIXED / AUTO
-      - node_id: "14398:1137540"
-        path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/INSTANCE:Frame 313961"
-        name: Frame 313961
-        type: INSTANCE
-        direction: row
-        gap: 0
-        align: CENTER / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "I14398:1137540;9959:501"
-        path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/Frame 313961/FRAME:Button"
-        name: Button
-        type: FRAME
-        direction: row
-        gap: 12
-        align: CENTER / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 12
-          right: 0
-          top: 6
-          bottom: 6
-      - node_id: "I14398:1137540;9959:503"
-        path_key: "root/Full Report/Frame 313966/Frame 19455/Frame 313972/Frame 313961/FRAME:Button[2]"
-        name: Button
-        type: FRAME
-        direction: row
-        gap: 12
-        align: CENTER / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 8
-          right: 12
-          top: 6
-          bottom: 6
-      - node_id: "14398:1137542"
-        path_key: "root/Full Report/FRAME:Frame 313971"
-        name: Frame 313971
-        type: FRAME
-        direction: column
-        gap: 16
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "14398:1137543"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "I14398:1137543;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977"
-        name: Frame 313977
-        type: FRAME
-        direction: column
-        gap: 16
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-        padding:
-          left: 16
-          right: 16
-          top: 16
-          bottom: 16
-      - node_id: "I14398:1137543;10637:2653"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961"
-        name: Frame 313961
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "I14398:1137543;10648:8993"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974"
-        name: Frame 313974
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MIN / CENTER
-        sizing: FIXED / AUTO
-  - chunk_id: layout_2
-    kind: layout
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
-      - "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
-    node_ids:
-      - "I14398:1137543;10637:6614"
-      - "I14398:1137543;10637:6620;10637:6598"
-      - "I14398:1137543;10637:6645"
-      - "I14398:1137543;10653:11229"
-      - "14398:1137544"
-      - "14398:1137545"
-      - "14398:1137546"
-      - "14398:1137547"
-      - "14398:1137548"
-      - "14398:1137549"
-      - "14398:1137550"
-      - "I14398:1137550;10653:11950"
-    items:
-      - node_id: "I14398:1137543;10637:6614"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968"
-        name: Frame 313968
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "I14398:1137543;10637:6620;10637:6598"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/Progress/FRAME:Frame 313967"
-        name: Frame 313967
-        type: FRAME
-        direction: row
-        gap: 180
-        align: MIN / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "I14398:1137543;10637:6645"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/FRAME:Frame 313970"
-        name: Frame 313970
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MAX / CENTER
-        sizing: FIXED / AUTO
-      - node_id: "I14398:1137543;10653:11229"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313976"
-        name: Frame 313976
-        type: FRAME
-        direction: row
-        gap: 8
-        align: CENTER / CENTER
-        sizing: FIXED / AUTO
-        padding:
-          left: 16
-          right: 16
-          top: 8
-          bottom: 8
-        clips: true
-      - node_id: "14398:1137544"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[2]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137545"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[3]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137546"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[4]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137547"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[5]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137548"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[6]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137549"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[7]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137550"
-        path_key: "root/Full Report/Frame 313971/INSTANCE:card[8]"
-        name: card
-        type: INSTANCE
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "I14398:1137550;10653:11950"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[2]"
-        name: Frame 313977
-        type: FRAME
-        direction: column
-        gap: 16
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-        padding:
-          left: 16
-          right: 16
-          top: 16
-          bottom: 16
-  - chunk_id: layout_3
-    kind: layout
-    item_count: 12
-    path_range:
-      - "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[2]"
-      - "root/Full Report/FRAME:Legend"
-    node_ids:
-      - "I14398:1137550;10637:2653"
-      - "I14398:1137550;10648:8993"
-      - "I14398:1137550;10637:6614"
-      - "I14398:1137550;10637:6645"
-      - "14398:1137551"
-      - "14398:1137552"
-      - "14398:1137560"
-      - "14398:1137561"
-      - "14398:1137562"
-      - "14398:1137565"
-      - "I14398:1137565;9959:501"
-      - "14398:1137567"
-    items:
-      - node_id: "I14398:1137550;10637:2653"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313961[2]"
-        name: Frame 313961
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "I14398:1137550;10648:8993"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Frame 313974[2]"
-        name: Frame 313974
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MIN / CENTER
-        sizing: FIXED / AUTO
-      - node_id: "I14398:1137550;10637:6614"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313968[2]"
-        name: Frame 313968
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "I14398:1137550;10637:6645"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313968/FRAME:Frame 313970[2]"
-        name: Frame 313970
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MAX / CENTER
-        sizing: FIXED / AUTO
-      - node_id: "14398:1137551"
-        path_key: "root/Full Report/Frame 313971/FRAME:Review"
-        name: Review
-        type: FRAME
-        direction: column
-        gap: 16
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 16
-          right: 16
-          top: 16
-          bottom: 16
-      - node_id: "14398:1137552"
-        path_key: "root/Full Report/Frame 313971/Review/FRAME:Frame 313816"
-        name: Frame 313816
-        type: FRAME
-        direction: row
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "14398:1137560"
-        path_key: "root/Full Report/Frame 313971/FRAME:card"
-        name: card
-        type: FRAME
-        direction: column
-        gap: 0
-        align: CENTER / MIN
-        sizing: AUTO / FIXED
-        clips: true
-      - node_id: "14398:1137561"
-        path_key: "root/Full Report/Frame 313971/card/FRAME:Frame 313977[3]"
-        name: Frame 313977
-        type: FRAME
-        direction: column
-        gap: 16
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-        padding:
-          left: 16
-          right: 16
-          top: 16
-          bottom: 16
-      - node_id: "14398:1137562"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/FRAME:Frame 313979"
-        name: Frame 313979
-        type: FRAME
-        direction: column
-        gap: 8
-        align: MIN / MIN
-        sizing: AUTO / FIXED
-      - node_id: "14398:1137565"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/INSTANCE:Frame 313961"
-        name: Frame 313961
-        type: INSTANCE
-        direction: row
-        gap: 0
-        align: CENTER / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "I14398:1137565;9959:501"
-        path_key: "root/Full Report/Frame 313971/card/Frame 313977/Frame 313961/FRAME:Button"
-        name: Button
-        type: FRAME
-        direction: row
-        gap: 12
-        align: CENTER / CENTER
-        sizing: AUTO / AUTO
-        padding:
-          left: 16
-          right: 16
-          top: 8
-          bottom: 8
-      - node_id: "14398:1137567"
-        path_key: "root/Full Report/FRAME:Legend"
-        name: Legend
-        type: FRAME
-        direction: row
-        gap: 24
-        align: CENTER / CENTER
-        sizing: FIXED / AUTO
-        padding:
-          left: 20
-          right: 20
-          top: 8
-          bottom: 8
-        clips: true
-  - chunk_id: layout_4
-    kind: layout
-    item_count: 12
-    path_range:
-      - "root/Full Report/Legend/FRAME:Frame 314021"
-      - "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[5]"
-    node_ids:
-      - "14398:1137568"
-      - "14398:1137569"
-      - "14398:1137571"
-      - "14398:1137572"
-      - "14398:1137574"
-      - "14398:1137575"
-      - "14398:1137577"
-      - "14398:1137578"
-      - "14398:1137579"
-      - "14398:1137580"
-      - "14398:1137581"
-      - "14398:1137582"
-    items:
-      - node_id: "14398:1137568"
-        path_key: "root/Full Report/Legend/FRAME:Frame 314021"
-        name: Frame 314021
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MIN / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "14398:1137569"
-        path_key: "root/Full Report/Legend/Frame 314021/FRAME:rating"
-        name: rating
-        type: FRAME
-        direction: column
-        gap: 8
-        align: CENTER / CENTER
-        sizing: FIXED / FIXED
-        padding:
-          left: 8
-          right: 8
-          top: 4
-          bottom: 4
-        clips: true
-      - node_id: "14398:1137571"
-        path_key: "root/Full Report/Legend/FRAME:Frame 314023"
-        name: Frame 314023
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MIN / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "14398:1137572"
-        path_key: "root/Full Report/Legend/Frame 314023/FRAME:rating"
-        name: rating
-        type: FRAME
-        direction: column
-        gap: 8
-        align: CENTER / CENTER
-        sizing: FIXED / FIXED
-        padding:
-          left: 8
-          right: 8
-          top: 4
-          bottom: 4
-        clips: true
-      - node_id: "14398:1137574"
-        path_key: "root/Full Report/Legend/FRAME:Frame 314024"
-        name: Frame 314024
-        type: FRAME
-        direction: row
-        gap: 8
-        align: MIN / CENTER
-        sizing: AUTO / AUTO
-      - node_id: "14398:1137575"
-        path_key: "root/Full Report/Legend/Frame 314024/FRAME:rating"
-        name: rating
-        type: FRAME
-        direction: column
-        gap: 8
-        align: CENTER / CENTER
-        sizing: FIXED / FIXED
-        padding:
-          left: 8
-          right: 8
-          top: 4
-          bottom: 4
-        clips: true
-      - node_id: "14398:1137577"
-        path_key: "root/Full Report/FRAME:Bottom Nav"
-        name: Bottom Nav
-        type: FRAME
-        direction: row
-        gap: 0
-        align: CENTER / MIN
-        sizing: FIXED / AUTO
-      - node_id: "14398:1137578"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-      - node_id: "14398:1137579"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[2]"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-      - node_id: "14398:1137580"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[3]"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-      - node_id: "14398:1137581"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[4]"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-      - node_id: "14398:1137582"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[5]"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-  - chunk_id: layout_5
-    kind: layout
-    item_count: 2
-    path_range:
-      - "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[6]"
-      - "root/Full Report/FRAME:Frame 408"
-    node_ids:
-      ["14398:1137583", "14398:1137584"]
-    items:
-      - node_id: "14398:1137583"
-        path_key: "root/Full Report/Bottom Nav/INSTANCE:Bottom Nav-item[6]"
-        name: Bottom Nav-item
-        type: INSTANCE
-        direction: column
-        gap: 4
-        align: MIN / CENTER
-        sizing: AUTO / FIXED
-        padding:
-          left: 0
-          right: 0
-          top: 12
-          bottom: 36
-      - node_id: "14398:1137584"
-        path_key: "root/Full Report/FRAME:Frame 408"
-        name: Frame 408
-        type: FRAME
-        direction: column
-        gap: 0
-        align: CENTER / CENTER
-        sizing: AUTO / AUTO
   - chunk_id: repeats_1
     kind: repeats
     template_node_id: "14398:1137543"

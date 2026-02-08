@@ -100,19 +100,6 @@ function toLegacyDataPayload(dataModel: DataModel, includeAttributes: boolean) {
             })),
         differences: option.differences
       }))
-    })),
-    layout: dataModel.layout.map((spec) => ({
-      nodeId: spec.nodeId,
-      name: spec.name,
-      type: spec.type,
-      pathKey: spec.pathKey,
-      layoutMode: spec.layoutMode,
-      itemSpacing: spec.itemSpacing,
-      padding: spec.padding,
-      primaryAxisAlignItems: spec.primaryAxisAlignItems,
-      counterAxisAlignItems: spec.counterAxisAlignItems,
-      primaryAxisSizingMode: spec.primaryAxisSizingMode,
-      counterAxisSizingMode: spec.counterAxisSizingMode
     }))
   };
 }
@@ -126,8 +113,7 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const maxAnatomy = compact ? 200 : 1500;
-  const maxLayout = compact ? 100 : 1500;
+  const maxAnatomy = compact ? 250 : 1500;
   const maxProperties = compact ? 12 : 48;
   const resolvedTokens = new Map<string, string>();
 
@@ -229,6 +215,15 @@ export function toAgentReadyDataPayload(
       record.opacity = opacity.rawValue ?? opacity.value;
     }
 
+    // Layout fields (inline on anatomy items)
+    if (element.layoutDirection) {
+      record.direction = element.layoutDirection === "HORIZONTAL" ? "row" : "column";
+    }
+    if (element.layoutAlign) record.align = element.layoutAlign;
+    if (element.layoutSizing) record.sizing = element.layoutSizing;
+    if (element.layoutClips) record.clips = true;
+    if (element.layoutInferred) record.inferred = true;
+
     if (includeAttributes) {
       record.attributes = element.attributes.slice(0, compact ? 5 : 8).map((attribute) => {
         const attr: any = {
@@ -240,25 +235,6 @@ export function toAgentReadyDataPayload(
         return attr;
       });
     }
-    return record;
-  });
-
-  const layoutRecords = dataModel.layout.slice(0, maxLayout).map((spec) => {
-    const pad = spec.padding;
-    const hasNonZeroPad = pad && (pad.top || pad.right || pad.bottom || pad.left);
-    const record: any = {
-      node_id: spec.nodeId,
-      path_key: spec.pathKey ?? "",
-      name: deps.truncateText(spec.name, compact ? 32 : 64),
-      type: spec.type,
-      direction: spec.layoutMode === "HORIZONTAL" ? "row" : "column",
-      gap: spec.itemSpacing,
-      align: `${spec.primaryAxisAlignItems} / ${spec.counterAxisAlignItems}`,
-      sizing: `${spec.primaryAxisSizingMode} / ${spec.counterAxisSizingMode}`
-    };
-    if (hasNonZeroPad) record.padding = pad;
-    if (spec.clipsContent) record.clips = true;
-    if (spec.inferred) record.inferred = true;
     return record;
   });
 
@@ -307,15 +283,6 @@ export function toAgentReadyDataPayload(
     items
   }));
 
-  const layoutChunks = chunkArray(layoutRecords, compact ? 12 : 16).map((items, index) => ({
-    chunk_id: `layout_${index + 1}`,
-    kind: "layout",
-    item_count: items.length,
-    path_range: items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [],
-    node_ids: items.map((item) => item.node_id).filter(Boolean),
-    items
-  }));
-
   const propertyChunks = chunkArray(limitedPropertyRecords, compact ? 6 : 12).map((items, index) => ({
     chunk_id: `properties_${index + 1}`,
     kind: "properties",
@@ -348,7 +315,7 @@ export function toAgentReadyDataPayload(
     })
   }));
 
-  const chunks = [...anatomyChunks, ...layoutChunks, ...propertyChunks, ...repeatsChunks];
+  const chunks = [...anatomyChunks, ...propertyChunks, ...repeatsChunks];
 
   // Build set of repeat node IDs to exclude from text_index
   const repeatNodeIds = new Set<string>();
@@ -381,7 +348,7 @@ export function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v9.yaml.compact" : "specs-plugin.agent_pack.v9.yaml",
+    schema: compact ? "specs-plugin.agent_pack.v10.yaml.compact" : "specs-plugin.agent_pack.v10.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
@@ -391,7 +358,6 @@ export function toAgentReadyDataPayload(
     },
     summary: {
       anatomy_nodes_total: dataModel.anatomy.length,
-      layout_nodes_total: dataModel.layout.length,
       property_groups_total: dataModel.properties.length,
       property_variants_total: limitedPropertyRecords.length,
       variable_refs_total: inventory.getVariableIds().length,
@@ -402,9 +368,6 @@ export function toAgentReadyDataPayload(
         anatomy: dataModel.anatomy.length > maxAnatomy,
         anatomy_included: Math.min(dataModel.anatomy.length, maxAnatomy),
         anatomy_dropped: Math.max(0, dataModel.anatomy.length - maxAnatomy),
-        layout: dataModel.layout.length > maxLayout,
-        layout_included: Math.min(dataModel.layout.length, maxLayout),
-        layout_dropped: Math.max(0, dataModel.layout.length - maxLayout),
         properties: propertyRecords.length > maxProperties,
         properties_included: Math.min(propertyRecords.length, maxProperties),
         properties_dropped: Math.max(0, propertyRecords.length - maxProperties),

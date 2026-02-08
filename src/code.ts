@@ -260,10 +260,37 @@ async function handleCopyAiSpecs(settings: Settings) {
     const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
     const layoutData = collectLayoutData(target, dedupedNodeIds);
 
+    // Merge layout data into anatomy elements
+    if (layoutData.length > 0) {
+      const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
+      anatomyElements.forEach(el => {
+        const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
+        if (ls) {
+          el.layoutDirection = ls.layoutMode;
+          el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
+          el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+          if (ls.clipsContent) el.layoutClips = true;
+          if (ls.inferred) el.layoutInferred = true;
+        }
+      });
+      layoutData.forEach(ls => {
+        if (!anatomyElements.some(el => el.nodeId === ls.nodeId)) {
+          anatomyElements.push({
+            name: ls.name, type: ls.type, attributes: [],
+            bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
+            layoutDirection: ls.layoutMode,
+            layoutAlign: `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`,
+            layoutSizing: `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`,
+            layoutClips: ls.clipsContent || undefined,
+            layoutInferred: ls.inferred || undefined
+          });
+        }
+      });
+    }
+
     const dataModel: DataModel = {
       anatomy: anatomyElements,
       properties: propertySpecs,
-      layout: layoutData,
       instanceTemplates: instanceTemplates.length > 0 ? instanceTemplates : undefined
     };
 
@@ -396,8 +423,7 @@ async function generateSpecs(settings: Settings) {
 
     const dataModel: DataModel = {
       anatomy: [],
-      properties: [],
-      layout: []
+      properties: []
     };
 
     // Derive side-by-side section width from artwork's natural size
@@ -459,8 +485,32 @@ async function generateSpecs(settings: Settings) {
     if (layoutData.length > 0) {
       log("Layout specs collected", layoutData.length);
     }
-    if (settings.data) {
-      dataModel.layout = layoutData.map((spec) => ({ ...spec }));
+    if (settings.data && layoutData.length > 0) {
+      const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
+      dataModel.anatomy.forEach(el => {
+        const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
+        if (ls) {
+          el.layoutDirection = ls.layoutMode;
+          el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
+          el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+          if (ls.clipsContent) el.layoutClips = true;
+          if (ls.inferred) el.layoutInferred = true;
+        }
+      });
+      // Safety net: add layout-only nodes missing from anatomy
+      layoutData.forEach(ls => {
+        if (!dataModel.anatomy.some(el => el.nodeId === ls.nodeId)) {
+          dataModel.anatomy.push({
+            name: ls.name, type: ls.type, attributes: [],
+            bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
+            layoutDirection: ls.layoutMode,
+            layoutAlign: `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`,
+            layoutSizing: `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`,
+            layoutClips: ls.clipsContent || undefined,
+            layoutInferred: ls.inferred || undefined
+          });
+        }
+      });
     }
     let layoutSection: FrameNode | null = null;
     if (settings.layout) {
@@ -927,10 +977,23 @@ async function createNestedComponentSections(
     }
 
     if (settings.data) {
+      // Merge layout into anatomy for nested components too
+      if (layoutData.length > 0) {
+        const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
+        anatomyElements.forEach(el => {
+          const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
+          if (ls) {
+            el.layoutDirection = ls.layoutMode;
+            el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
+            el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+            if (ls.clipsContent) el.layoutClips = true;
+            if (ls.inferred) el.layoutInferred = true;
+          }
+        });
+      }
       const model: DataModel = {
         anatomy: anatomyElements,
-        properties: propertySpecs,
-        layout: layoutData
+        properties: propertySpecs
       };
       const dataSection = createDataSection(model, settings.includeDataAttributes, theme, instance, settings, inventory);
       container.appendChild(dataSection);

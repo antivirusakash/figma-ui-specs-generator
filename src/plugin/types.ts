@@ -80,6 +80,12 @@ export type AnatomyElement = {
   pathKey?: string;
   textContent?: string;
   childrenText?: string[];
+  // Layout (optional — only for nodes with auto-layout or inferred layout)
+  layoutDirection?: string;
+  layoutAlign?: string;
+  layoutSizing?: string;
+  layoutClips?: boolean;
+  layoutInferred?: boolean;
 };
 
 export type ComponentSetContext = {
@@ -155,6 +161,5 @@ export type InstanceTemplate = {
 export type DataModel = {
   anatomy: AnatomyElement[];
   properties: PropertySpec[];
-  layout: LayoutSpec[];
   instanceTemplates?: InstanceTemplate[];
 };
