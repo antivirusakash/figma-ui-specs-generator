@@ -3,11 +3,7 @@ import type { Inventory } from "../inventory";
 import type { AnatomyElement, ComponentSetContext, InstanceTemplate, Settings } from "../types";
 import { collectAttributes } from "./attributes";
 import { detectTokensStudio } from "./attributes";
-
-const MAX_ANATOMY_ELEMENTS = 150;
-const MAX_WALK_DEPTH = 12;
-const MAX_SIGNATURE_DEPTH = 3;
-export const MAX_DIFF_DEPTH = 6;
+import { LIMITS } from "../limits";
 
 export type CollectAnatomyResult = {
   elements: AnatomyElement[];
@@ -16,7 +12,7 @@ export type CollectAnatomyResult = {
 };
 
 /** Build a type:name tree string for visible children up to maxDepth */
-export function computeChildSignature(node: SceneNode, maxDepth = MAX_SIGNATURE_DEPTH): string {
+export function computeChildSignature(node: SceneNode, maxDepth = LIMITS.MAX_SIGNATURE_DEPTH): string {
   if (maxDepth <= 0) return "";
   if (!("children" in node)) return "";
   const parts: string[] = [];
@@ -38,7 +34,7 @@ export async function computeInstanceFingerprint(
   const main = mainComponent !== undefined ? mainComponent : await getMainComponentSafe(instance);
   if (!main) return null;
   const compId = main.parent?.type === "COMPONENT_SET" ? main.parent.id : main.id;
-  const sig = computeChildSignature(instance, MAX_SIGNATURE_DEPTH);
+  const sig = computeChildSignature(instance, LIMITS.MAX_SIGNATURE_DEPTH);
   return `${compId}|${sig}`;
 }
 
@@ -50,7 +46,7 @@ export function collectRepeatDiffs(
   templateNode: SceneNode,
   repeatNode: SceneNode,
   currentPath = "",
-  maxDepth = MAX_DIFF_DEPTH
+  maxDepth = LIMITS.MAX_DIFF_DEPTH
 ): Record<string, string> {
   const diffs: Record<string, string> = {};
   if (maxDepth <= 0) return diffs;
@@ -156,8 +152,8 @@ export async function collectAnatomyElements(
 
   const walk = async (node: SceneNode, path: string, depth: number) => {
     if (!node.visible) return;
-    if (elements.length >= MAX_ANATOMY_ELEMENTS) return;
-    if (depth > MAX_WALK_DEPTH) return;
+    if (elements.length >= LIMITS.MAX_ANATOMY_ELEMENTS) return;
+    if (depth > LIMITS.MAX_WALK_DEPTH) return;
 
     const isElement = isRelevantNode(node, depth);
 
@@ -265,7 +261,7 @@ export async function collectAnatomyElements(
     }
 
     // Skip children of icon-sized instances (≤48px) — agent only needs instance_of
-    if (node.type === "INSTANCE" && depth > 0 && Math.max(node.width, node.height) <= 48) {
+    if (node.type === "INSTANCE" && depth > 0 && Math.max(node.width, node.height) <= LIMITS.ICON_SKIP_MAX_PX) {
       return;
     }
 
@@ -371,7 +367,7 @@ export function isRelevantNode(node: SceneNode, depth = 0) {
   return false;
 }
 
-export function collectInstanceText(instance: InstanceNode, maxDepth = 3): string[] {
+export function collectInstanceText(instance: InstanceNode, maxDepth = LIMITS.MAX_INSTANCE_TEXT_DEPTH): string[] {
   const texts: string[] = [];
   const walk = (n: SceneNode, depth: number) => {
     if (depth > maxDepth || !n.visible) return;

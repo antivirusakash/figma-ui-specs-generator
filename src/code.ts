@@ -47,6 +47,7 @@ import type {
 
 // Helpers
 import { formatColor, formatSpacing, solidFill, truncateText } from "./plugin/helpers/format";
+import { LIMITS } from "./plugin/limits";
 import { collectAttributes } from "./plugin/helpers/attributes";
 import {
   collectAnatomyElements,
@@ -162,7 +163,7 @@ function buildAnatomyTree(elements: AnatomyElement[]): string {
     let line = `${indent}- ${el.name} (${el.type})`;
     const details: string[] = [];
     if (el.instanceOf) details.push(`instance of ${el.instanceOf}`);
-    if (el.textContent) details.push(`"${truncateText(el.textContent, 40)}"`);
+    if (el.textContent) details.push(`"${truncateText(el.textContent, LIMITS.CANVAS_ANATOMY_TEXT_TRUNC)}"`);
     if (details.length > 0) line += ` — ${details.join(", ")}`;
     lines.push(line);
   }
@@ -267,8 +268,10 @@ async function handleCopyAiSpecs(settings: Settings) {
         const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
         if (ls) {
           el.layoutDirection = ls.layoutMode;
-          el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
-          el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+          el.layoutJustify = ls.primaryAxisAlignItems;
+          el.layoutAlignItems = ls.counterAxisAlignItems;
+          el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
+          el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
           if (ls.clipsContent) el.layoutClips = true;
           if (ls.inferred) el.layoutInferred = true;
         }
@@ -279,8 +282,10 @@ async function handleCopyAiSpecs(settings: Settings) {
             name: ls.name, type: ls.type, attributes: [],
             bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
             layoutDirection: ls.layoutMode,
-            layoutAlign: `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`,
-            layoutSizing: `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`,
+            layoutJustify: ls.primaryAxisAlignItems,
+            layoutAlignItems: ls.counterAxisAlignItems,
+            layoutWSizing: ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode,
+            layoutHSizing: ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode,
             layoutClips: ls.clipsContent || undefined,
             layoutInferred: ls.inferred || undefined
           });
@@ -322,7 +327,8 @@ async function handleCopyAiSpecs(settings: Settings) {
     const anatomyTree = buildAnatomyTree(anatomyElements);
     const bounds = target.absoluteBoundingBox;
     const dimensions = bounds ? { width: Math.round(bounds.width), height: Math.round(bounds.height) } : undefined;
-    const text = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData, settings.framework ?? "auto", dimensions);
+    const block = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData, settings.framework ?? "auto", dimensions);
+    const text = `${block}\n\n<!-- chars: ${block.length} -->`;
 
     figma.ui.postMessage({ type: "copy-ai-specs-result", text });
     figma.notify("AI specs copied to clipboard.");
@@ -491,8 +497,10 @@ async function generateSpecs(settings: Settings) {
         const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
         if (ls) {
           el.layoutDirection = ls.layoutMode;
-          el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
-          el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+          el.layoutJustify = ls.primaryAxisAlignItems;
+          el.layoutAlignItems = ls.counterAxisAlignItems;
+          el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
+          el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
           if (ls.clipsContent) el.layoutClips = true;
           if (ls.inferred) el.layoutInferred = true;
         }
@@ -504,8 +512,10 @@ async function generateSpecs(settings: Settings) {
             name: ls.name, type: ls.type, attributes: [],
             bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
             layoutDirection: ls.layoutMode,
-            layoutAlign: `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`,
-            layoutSizing: `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`,
+            layoutJustify: ls.primaryAxisAlignItems,
+            layoutAlignItems: ls.counterAxisAlignItems,
+            layoutWSizing: ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode,
+            layoutHSizing: ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode,
             layoutClips: ls.clipsContent || undefined,
             layoutInferred: ls.inferred || undefined
           });
@@ -860,7 +870,7 @@ async function createCompleteVariantSections(
   const allVariants = componentSet.children.filter(
     (child): child is ComponentNode => child.type === "COMPONENT"
   );
-  const variants = allVariants.slice(0, 12);
+  const variants = allVariants.slice(0, LIMITS.MAX_ANATOMY_VARIANTS);
 
   for (const variant of variants) {
     if (variant.id === baseComponent.id) continue;
@@ -932,7 +942,7 @@ async function createNestedComponentSections(
     const key = main?.id ?? instance.name;
     if (!seen.has(key)) seen.set(key, instance);
   }
-  const uniqueInstances = [...seen.values()].slice(0, 8);
+  const uniqueInstances = [...seen.values()].slice(0, LIMITS.MAX_NESTED_COMPONENTS);
 
   const sections: FrameNode[] = [];
   for (const instance of uniqueInstances) {
@@ -984,8 +994,10 @@ async function createNestedComponentSections(
           const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
           if (ls) {
             el.layoutDirection = ls.layoutMode;
-            el.layoutAlign = `${ls.primaryAxisAlignItems} / ${ls.counterAxisAlignItems}`;
-            el.layoutSizing = `${ls.primaryAxisSizingMode} / ${ls.counterAxisSizingMode}`;
+            el.layoutJustify = ls.primaryAxisAlignItems;
+            el.layoutAlignItems = ls.counterAxisAlignItems;
+            el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
+            el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
             if (ls.clipsContent) el.layoutClips = true;
             if (ls.inferred) el.layoutInferred = true;
           }

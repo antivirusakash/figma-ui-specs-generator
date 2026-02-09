@@ -1,6 +1,7 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import type { Inventory } from "../inventory";
 import type { DataModel, Settings, SpecTextRole, Theme } from "../types";
+import { LIMITS } from "../limits";
 
 type CreateTextFn = (
   text: string,
@@ -35,6 +36,38 @@ const MCP_AGENT_TOOLS = [
   "get_figjam"
 ];
 
+export function mapFigmaAlign(value: string): string {
+  switch (value) {
+    case "MIN": return "flex-start";
+    case "CENTER": return "center";
+    case "MAX": return "flex-end";
+    case "SPACE_BETWEEN": return "space-between";
+    default: return value.toLowerCase();
+  }
+}
+
+export function mapFigmaSizing(value: string): string {
+  switch (value) {
+    case "FIXED": return "fixed";
+    case "HUG": return "auto";
+    case "AUTO": return "auto";
+    case "FILL": return "fill";
+    default: return value.toLowerCase();
+  }
+}
+
+export function simplifyPadding(value: string): string | number {
+  const parts = value.split(" ");
+  if (parts.length !== 4) return value;
+  const [t, r, b, l] = parts;
+  if (t === r && r === b && b === l) {
+    const n = Number(t);
+    return Number.isFinite(n) ? n : t!;
+  }
+  if (t === b && r === l) return `${t} ${r}`;
+  return value;
+}
+
 function chunkArray<T>(items: T[], size: number) {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -43,7 +76,7 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
-function splitText(value: string, maxChars = 8000) {
+function splitText(value: string, maxChars = LIMITS.CANVAS_SPLIT_TEXT_CHARS) {
   const lines = value.split("\n");
   const chunks: string[] = [];
   let current = "";
@@ -113,29 +146,29 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const maxAnatomy = compact ? 250 : 1500;
-  const maxProperties = compact ? 12 : 48;
+  const maxAnatomy = LIMITS.MAX_ANATOMY_RECORDS;
+  const maxProperties = LIMITS.MAX_PROPERTY_RECORDS;
   const resolvedTokens = new Map<string, string>();
 
   const anatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
     const record: any = {
       node_id: element.nodeId ?? "",
       path_key: element.pathKey ?? "",
-      name: deps.truncateText(element.name, compact ? 32 : 64),
+      name: deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME),
       type: element.type
     };
     if (element.instanceOf) {
-      record.instance_of = deps.truncateText(element.instanceOf, compact ? 32 : 64);
+      record.instance_of = deps.truncateText(element.instanceOf, LIMITS.TRUNC_INSTANCE_OF);
     }
 
     // Promoted top-level fields for AI code generation
     if (element.textContent) {
-      record.text = deps.truncateText(element.textContent, compact ? 80 : 200);
+      record.text = deps.truncateText(element.textContent, LIMITS.TRUNC_TEXT_CONTENT);
     }
     if (element.childrenText?.length) {
       record.children_text = element.childrenText.map(t =>
-        deps.truncateText(t, compact ? 60 : 120)
-      ).slice(0, compact ? 6 : 8);
+        deps.truncateText(t, LIMITS.TRUNC_CHILDREN_TEXT)
+      );
     }
     if (element.bounds) {
       record.w = Math.round(element.bounds.width);
@@ -146,10 +179,20 @@ export function toAgentReadyDataPayload(
       element.attributes.find(a => a.key === key);
 
     const fill = findAttr("Fill") ?? findAttr("Text fill");
-    if (fill) {
+    // Skip misleading white default fill on INSTANCE containers with children
+    const skipWhiteFill = fill
+      && element.type === "INSTANCE"
+      && String(fill.rawValue ?? fill.value) === "#FFFFFF"
+      && fill.format === "HARDCODED"
+      && (element.childrenText?.length ?? 0) > 0;
+    if (fill && !skipWhiteFill) {
       record.fill = fill.rawValue ?? fill.value;
       if (fill.format !== "HARDCODED") {
-        record.fill_ref = deps.truncateText(fill.value, compact ? 50 : 80);
+        record.fill_ref = deps.truncateText(fill.value, LIMITS.TRUNC_FILL_REF);
+        record.fill_ref_type = fill.format === "STYLE" ? "color_style"
+          : fill.format === "VARIABLE" ? "variable"
+          : fill.format === "TOKEN" ? "token"
+          : fill.format;
         if (fill.rawValue) resolvedTokens.set(fill.value, String(fill.rawValue));
       }
       if (fill.imageHash) {
@@ -158,7 +201,7 @@ export function toAgentReadyDataPayload(
       }
       if (fill.fillSegments && fill.fillSegments.length > 0) {
         record.fill_segments = fill.fillSegments.map(seg => ({
-          text: deps.truncateText(seg.text, compact ? 40 : 80),
+          text: deps.truncateText(seg.text, LIMITS.TRUNC_FILL_SEGMENT_TEXT),
           fill: seg.fill
         }));
       }
@@ -169,7 +212,7 @@ export function toAgentReadyDataPayload(
     }
     const font = findAttr("Font");
     if (font) {
-      record.font = deps.truncateText(font.value, compact ? 40 : 64);
+      record.font = deps.truncateText(font.value, LIMITS.TRUNC_FONT);
     }
     const lineHeight = findAttr("Line height");
     if (lineHeight && lineHeight.value !== "Auto") {
@@ -181,7 +224,7 @@ export function toAgentReadyDataPayload(
     }
     const padding = findAttr("Padding");
     if (padding && padding.value !== "0 0 0 0") {
-      record.padding = padding.rawValue ?? padding.value;
+      record.padding = simplifyPadding(String(padding.rawValue ?? padding.value));
     }
     const gap = findAttr("Item spacing");
     if (gap && gap.rawValue !== 0) {
@@ -191,7 +234,7 @@ export function toAgentReadyDataPayload(
     if (stroke) {
       record.stroke = stroke.rawValue ?? stroke.value;
       if (stroke.format !== "HARDCODED") {
-        record.stroke_ref = deps.truncateText(stroke.value, compact ? 50 : 80);
+        record.stroke_ref = deps.truncateText(stroke.value, LIMITS.TRUNC_STROKE_REF);
         if (stroke.rawValue) resolvedTokens.set(stroke.value, String(stroke.rawValue));
       }
     }
@@ -199,6 +242,14 @@ export function toAgentReadyDataPayload(
     if (strokeAlign && record.stroke) record.stroke_align = strokeAlign.value;
     const strokeSides = findAttr("Stroke sides");
     if (strokeSides) record.stroke_sides = strokeSides.value;
+    const shadow = findAttr("Shadow");
+    if (shadow) record.shadow = shadow.value;
+    const innerShadow = findAttr("Inner shadow");
+    if (innerShadow) record.inner_shadow = innerShadow.value;
+    const blur = findAttr("Blur");
+    if (blur) record.blur = blur.value;
+    const backdropBlur = findAttr("Backdrop blur");
+    if (backdropBlur) record.backdrop_blur = backdropBlur.value;
     const position = findAttr("Position");
     if (position) {
       record.position = position.value;
@@ -211,7 +262,7 @@ export function toAgentReadyDataPayload(
     if (constraints) record.constraints = constraints.value;
     const textStyle = findAttr("Text style");
     if (textStyle) {
-      record.text_style = deps.truncateText(textStyle.value, compact ? 40 : 64);
+      record.text_style = deps.truncateText(textStyle.value, LIMITS.TRUNC_TEXT_STYLE);
       if (textStyle.format !== "HARDCODED" && textStyle.rawValue) {
         resolvedTokens.set(textStyle.value, String(textStyle.rawValue));
       }
@@ -225,16 +276,18 @@ export function toAgentReadyDataPayload(
     if (element.layoutDirection) {
       record.direction = element.layoutDirection === "HORIZONTAL" ? "row" : "column";
     }
-    if (element.layoutAlign) record.align = element.layoutAlign;
-    if (element.layoutSizing) record.sizing = element.layoutSizing;
+    if (element.layoutJustify) record.justify = mapFigmaAlign(element.layoutJustify);
+    if (element.layoutAlignItems) record.align = mapFigmaAlign(element.layoutAlignItems);
+    if (element.layoutWSizing) record.w_sizing = mapFigmaSizing(element.layoutWSizing);
+    if (element.layoutHSizing) record.h_sizing = mapFigmaSizing(element.layoutHSizing);
     if (element.layoutClips) record.clips = true;
     if (element.layoutInferred) record.inferred = true;
 
     if (includeAttributes) {
-      record.attributes = element.attributes.slice(0, compact ? 5 : 8).map((attribute) => {
+      record.attributes = element.attributes.map((attribute) => {
         const attr: any = {
           key: attribute.key ?? attribute.propertyName,
-          value: deps.truncateText(attribute.value, compact ? 50 : 80),
+          value: deps.truncateText(attribute.value, LIMITS.TRUNC_ATTRIBUTE_VALUE),
           format: attribute.format
         };
         if (attribute.systemId) attr.system_id = attribute.systemId;
@@ -269,18 +322,16 @@ export function toAgentReadyDataPayload(
         changed_elements: option.elements.length,
         difference_count: option.differences.length,
         differences: option.differences
-          .slice(0, compact ? 1 : 6)
-          .map((line) => deps.truncateText(line, compact ? 64 : 160)),
+          .map((line) => deps.truncateText(line, LIMITS.TRUNC_PROPERTY_DIFF)),
         node_ids: option.elements
           .map((element) => element.nodeId ?? "")
           .filter(Boolean)
-          .slice(0, compact ? 3 : 12)
       });
     });
   });
   const limitedPropertyRecords = propertyRecords.slice(0, maxProperties);
 
-  const anatomyChunks = chunkArray(anatomyRecords, compact ? 12 : 16).map((items, index) => ({
+  const anatomyChunks = chunkArray(anatomyRecords, LIMITS.ANATOMY_CHUNK_SIZE).map((items, index) => ({
     chunk_id: `anatomy_${index + 1}`,
     kind: "anatomy",
     item_count: items.length,
@@ -289,7 +340,7 @@ export function toAgentReadyDataPayload(
     items
   }));
 
-  const propertyChunks = chunkArray(limitedPropertyRecords, compact ? 6 : 12).map((items, index) => ({
+  const propertyChunks = chunkArray(limitedPropertyRecords, LIMITS.PROPERTY_CHUNK_SIZE).map((items, index) => ({
     chunk_id: `properties_${index + 1}`,
     kind: "properties",
     item_count: items.length,
@@ -312,10 +363,10 @@ export function toAgentReadyDataPayload(
         path_key: row.pathKey,
         diffs: row.diffs
       };
-      if (!compact && row.childrenText?.length) {
+      if (row.childrenText?.length) {
         item.children_text = row.childrenText.map(t =>
-          deps.truncateText(t, 120)
-        ).slice(0, 8);
+          deps.truncateText(t, LIMITS.TRUNC_REPEAT_CHILDREN_TEXT)
+        );
       }
       return item;
     })
@@ -329,18 +380,14 @@ export function toAgentReadyDataPayload(
     tpl.repeats.forEach(r => repeatNodeIds.add(r.nodeId));
   });
 
-  const textIndex = compact
-    ? undefined  // compact mode: text already in anatomy records
-    : dataModel.anatomy
+  const textIndex = dataModel.anatomy
         .filter(el => (el.textContent || el.childrenText?.length) && !repeatNodeIds.has(el.nodeId ?? ""))
-        .slice(0, 500)
         .map(el => {
           const entry: any = { id: el.nodeId, path: el.pathKey };
-          if (el.textContent) entry.text = deps.truncateText(el.textContent, 200);
+          if (el.textContent) entry.text = deps.truncateText(el.textContent, LIMITS.TRUNC_TEXT_INDEX_TEXT);
           if (el.childrenText?.length) {
             entry.children_text = el.childrenText
-              .map(t => deps.truncateText(t, 120))
-              .slice(0, 8);
+              .map(t => deps.truncateText(t, LIMITS.TRUNC_TEXT_INDEX_CHILDREN));
           }
           return entry;
         });
@@ -354,7 +401,7 @@ export function toAgentReadyDataPayload(
   };
 
   return {
-    schema: compact ? "specs-plugin.agent_pack.v10.yaml.compact" : "specs-plugin.agent_pack.v10.yaml",
+    schema: compact ? "specs-plugin.agent_pack.v11.yaml.compact" : "specs-plugin.agent_pack.v11.yaml",
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
@@ -486,7 +533,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
   }
 
   const compact = Boolean(payload.compact_mode ?? payload.schema?.includes("compact"));
-  const sampleSize = compact ? 6 : 8;
+  const sampleSize = LIMITS.SAMPLE_SIZE;
   const chunks = Array.isArray(payload.chunks) ? payload.chunks : [];
   return stripNulls({
     schema: payload.schema,
@@ -568,8 +615,8 @@ export function createDataSection(
   const serialized = settings.agentReadyData
     ? toYaml(stripNulls(previewPayload))
     : JSON.stringify(previewPayload, null, 2);
-  const chunks = splitText(serialized, 4000);
-  const textChunks = chunks.slice(0, 3);
+  const chunks = splitText(serialized, LIMITS.CANVAS_TEXT_CHUNK_CHARS);
+  const textChunks = chunks.slice(0, LIMITS.CANVAS_MAX_TEXT_CHUNKS);
   deps.log("Data section payload", {
     mode: settings.agentReadyData ? "agent-pack-preview" : "legacy",
     chars: serialized.length,

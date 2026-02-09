@@ -1,7 +1,7 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import { log } from "../logger";
 import type { LayoutSpec, Settings, SpecTextRole, Theme } from "../types";
-
+import { LIMITS } from "../limits";
 type CreateTextFn = (
   text: string,
   size?: number,
@@ -27,7 +27,6 @@ type LayoutSectionDeps = {
   truncateText: (value: string, maxLength: number) => string;
 };
 
-const MAX_LAYOUT_SPECS = 50;
 
 export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSpec[] {
   const data: LayoutSpec[] = [];
@@ -35,7 +34,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
   const nameCounts = new Map<string, number>();
 
   const walk = (node: SceneNode, path: string) => {
-    if (data.length >= MAX_LAYOUT_SPECS) return;
+    if (data.length >= LIMITS.MAX_LAYOUT_SPECS) return;
     if (skipNodeIds?.has(node.id)) return;
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
       const bounds = node.absoluteBoundingBox;
@@ -133,7 +132,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
       }
     }
 
-    if ("children" in node && data.length < MAX_LAYOUT_SPECS) {
+    if ("children" in node && data.length < LIMITS.MAX_LAYOUT_SPECS) {
       node.children.forEach((child) => walk(child, `${path}/${node.name}`));
     }
   };

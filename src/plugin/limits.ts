@@ -1,0 +1,56 @@
+/** Central configuration for all caps, limits, and truncation values.
+ *  Adjust these for stress testing or output size tuning. */
+
+export const LIMITS = {
+  // ── Tree Walking ──
+  MAX_ANATOMY_ELEMENTS: 2000,
+  MAX_WALK_DEPTH: 24,
+  MAX_SIGNATURE_DEPTH: 6,
+  MAX_DIFF_DEPTH: 12,
+  MAX_INSTANCE_TEXT_DEPTH: 12,
+  ICON_SKIP_MAX_PX: 48,
+
+  // ── Data Output (agent-ready YAML) ──
+  MAX_ANATOMY_RECORDS: 2000,
+  MAX_PROPERTY_RECORDS: 200,
+  ANATOMY_CHUNK_SIZE: 50,
+  PROPERTY_CHUNK_SIZE: 50,
+  SAMPLE_SIZE: 2000,
+
+  // ── Truncation: Text Content ──
+  TRUNC_TEXT_CONTENT: 2000,
+  TRUNC_CHILDREN_TEXT: 2000,
+  TRUNC_FILL_SEGMENT_TEXT: 2000,
+  TRUNC_REPEAT_CHILDREN_TEXT: 2000,
+  TRUNC_TEXT_INDEX_TEXT: 2000,
+  TRUNC_TEXT_INDEX_CHILDREN: 2000,
+
+  // ── Truncation: Names & Refs ──
+  TRUNC_ELEMENT_NAME: 200,
+  TRUNC_INSTANCE_OF: 500,
+  TRUNC_FILL_REF: 200,
+  TRUNC_STROKE_REF: 200,
+  TRUNC_FONT: 200,
+  TRUNC_TEXT_STYLE: 200,
+  TRUNC_ATTRIBUTE_VALUE: 500,
+  TRUNC_PROPERTY_DIFF: 500,
+
+  // ── Attributes ──
+  MAX_COMPONENT_PROPS: 4,
+  MAX_FILL_SEGMENTS: 10,
+
+  // ── Canvas Display (Figma frame rendering) ──
+  CANVAS_TEXT_CHUNK_CHARS: 4000,
+  CANVAS_MAX_TEXT_CHUNKS: 3,
+  CANVAS_SPLIT_TEXT_CHARS: 8000,
+  CANVAS_ANATOMY_TEXT_TRUNC: 40,
+
+  // ── Layout Section ──
+  MAX_LAYOUT_SPECS: 50,
+
+  // ── Properties Section (canvas) ──
+  MAX_VARIANT_OPTIONS: 8,
+  MAX_TWO_WAY_COMBOS: 20,
+  MAX_NESTED_COMPONENTS: 8,
+  MAX_ANATOMY_VARIANTS: 12,
+} as const;

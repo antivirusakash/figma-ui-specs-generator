@@ -12,6 +12,7 @@ import type {
   Theme,
   TwoWaySpec
 } from "../types";
+import { LIMITS } from "../limits";
 
 type CreateTextFn = (
   text: string,
@@ -91,7 +92,7 @@ export async function collectPropertySpecs(
     if (!prop) continue;
     if (prop.type === "VARIANT") {
       const allOptions = componentSet.variantGroupProperties[propName]?.values ?? [];
-      const options = allOptions.slice(0, 8);
+      const options = allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS);
       const optionSpecs: PropertyOption[] = [];
       for (const option of options) {
         const variantInstance = baseInstance.clone();
@@ -287,12 +288,10 @@ export async function collectTwoWaySpec(
 
   const baseElements = await deps.collectAnatomyElements(baseInstance, inventory, settings);
   const combinations: TwoWaySpec["combinations"] = [];
-  const MAX_TWO_WAY_COMBOS = 20;
-
   for (const a of optionsA) {
-    if (combinations.length >= MAX_TWO_WAY_COMBOS) break;
+    if (combinations.length >= LIMITS.MAX_TWO_WAY_COMBOS) break;
     for (const b of optionsB) {
-      if (combinations.length >= MAX_TWO_WAY_COMBOS) break;
+      if (combinations.length >= LIMITS.MAX_TWO_WAY_COMBOS) break;
       const variantInstance = baseInstance.clone();
       tempFrame.appendChild(variantInstance);
       try {

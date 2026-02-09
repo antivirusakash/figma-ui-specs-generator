@@ -82,8 +82,14 @@ export type AnatomyElement = {
   childrenText?: string[];
   // Layout (optional — only for nodes with auto-layout or inferred layout)
   layoutDirection?: string;
+  /** @deprecated use layoutJustify + layoutAlignItems */
   layoutAlign?: string;
+  /** @deprecated use layoutWSizing + layoutHSizing */
   layoutSizing?: string;
+  layoutJustify?: string;
+  layoutAlignItems?: string;
+  layoutWSizing?: string;
+  layoutHSizing?: string;
   layoutClips?: boolean;
   layoutInferred?: boolean;
 };

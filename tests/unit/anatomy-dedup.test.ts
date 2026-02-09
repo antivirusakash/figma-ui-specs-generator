@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
+import { LIMITS } from "../../src/plugin/limits";
 
 // Mock Figma global
 const FIGMA_MIXED = Symbol("figma.mixed");
@@ -313,7 +314,7 @@ describe("collectRepeatDiffs", () => {
   });
 
   it("does NOT reach text beyond MAX_DIFF_DEPTH", () => {
-    // 7 nesting levels — beyond MAX_DIFF_DEPTH=6
+    const beyondDepth = LIMITS.MAX_DIFF_DEPTH + 1;
     const tTitle = mockNode("TEXT", "title", { characters: "Original" });
     const rTitle = mockNode("TEXT", "title", { characters: "Changed" });
 
@@ -325,11 +326,11 @@ describe("collectRepeatDiffs", () => {
       return current;
     };
 
-    const template = wrapInFrames(tTitle, 7, "f");
-    const repeat = wrapInFrames(rTitle, 7, "f");
+    const template = wrapInFrames(tTitle, beyondDepth, "f");
+    const repeat = wrapInFrames(rTitle, beyondDepth, "f");
 
     const diffs = mod.collectRepeatDiffs(template, repeat);
-    // At depth 7+1 (text node) = 8, beyond MAX_DIFF_DEPTH=6
+    // Beyond MAX_DIFF_DEPTH — text node is unreachable
     expect(Object.keys(diffs)).toHaveLength(0);
   });
 

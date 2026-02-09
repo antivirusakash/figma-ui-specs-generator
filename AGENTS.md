@@ -97,6 +97,53 @@ Core workflow:
 4. Re-snapshot after page changes
 
 
+## Specs Plugin Architecture
+
+Figma plugin: reads selected node → generates annotated spec frames on canvas + agent-ready YAML.
+
+### File Map
+```
+src/
+  code.ts              — Plugin backend: orchestration, state, deps injection (~687 lines)
+  ui-app.tsx           — React UI panel (420×720, Tailwind)
+  ui.css               — Tailwind styles
+src/plugin/
+  types.ts             — Settings, Framework, AnatomyElement, InstanceTemplate, DataModel, Attribute
+  limits.ts            — All numeric caps/truncation in one place (stress-test friendly)
+  constants.ts         — Canvas dimensions, fonts
+  theme.ts             — Figma frame colors
+  inventory.ts         — Design inventory collection
+  helpers/
+    anatomy-collector.ts — collectAnatomyElements, instance fingerprint dedup, repeat diffs
+    attributes.ts        — collectAttributes, mergeAdjacentSameFill, token/variable resolution
+    format.ts            — solidFill, hexToRgb, formatColor, truncateText, etc.
+    tokens.ts            — Tokens Studio integration (extractTokensStudioMap, findTokenValue)
+    text-helpers.ts      — createTextNode, fitTextToWidth, text wrapping
+    frame-builders.ts    — createSectionFrame, createTableRow, createContentCard
+  sections/
+    anatomy-section.ts   — Anatomy visualization on canvas
+    data-section.ts      — Agent-ready YAML output (toYaml, chunking, compact mode)
+    properties-section.ts — Component properties & variant combos
+    layout-section.ts    — Auto-layout specs
+    inventory-section.ts — Design inventory
+    variables-section.ts — Figma variables/tokens
+scripts/build.js         — esbuild bundler (~82kb output)
+tests/unit/              — 7 test files, 141 tests (vitest)
+```
+
+### Key Patterns
+- Section modules receive deps via injection object from code.ts (createText, solidFill, etc.)
+- `limits.ts` centralizes all numeric caps — change one file to tune output size
+- Instance dedup: fingerprint (componentSet + childSignature) → template + repeat diffs
+- Layout fields inline on AnatomyElement (no separate layout chunks)
+- YAML output: `v11.yaml.compact` schema; `resolved_tokens` map; chunked anatomy/properties
+
+### Build & Test
+- `npm run build` — esbuild bundle
+- `npm run test:unit` — vitest (159 tests)
+- `npm run test:ui` — playwright
+- `npm run typecheck` — tsc --noEmit
+
 ## Figma-to-Code Workflow
 
 - When given a Figma spec (YAML from Specs plugin), follow the implementation instructions in the spec header exactly.
@@ -104,6 +151,8 @@ Core workflow:
 - Read the YAML `chunks` for anatomy (structure), layout (flex/grid), and repeats (deduplicated instances).
 - Use `resolved_tokens` to map design token names to actual values (hex, font names).
 - Match `instance_of` names to your icon library (Phosphor, Lucide, etc.) — check `package.json`.
-- For HTML/CSS: Build with semantic HTML and vanilla CSS. Use CSS flexbox for layout.
+- **Placeholders**: If you cannot find a matching icon, SVG, image, or vector asset, use a placeholder (`https://placehold.co/{width}x{height}`) sized to the element's `w` and `h` from specs. Do NOT stop or ask — keep building.
+- Detect the framework from `package.json` and build accordingly.
 - After building, screenshot your output and compare with the `.figma/*.png` reference. Fix differences.
 - Keep implementations minimal — only build what the spec describes.
+- **Summary**: After completing the build, list: what was built and file location, any placeholder images/icons used (with the original `instance_of` or element name so the user can replace them), and any assumptions or deviations.

@@ -212,9 +212,11 @@ const App = () => {
 - Read the YAML \`chunks\` for anatomy (structure), layout (flex/grid), and repeats (deduplicated instances).
 - Use \`resolved_tokens\` to map design token names to actual values (hex, font names).
 - Match \`instance_of\` names to your icon library (Phosphor, Lucide, etc.) — check \`package.json\`.
+- **Placeholders**: If you cannot find a matching icon, SVG, image, or vector asset, use a placeholder (\`https://placehold.co/{width}x{height}\`) sized to the element's \`w\` and \`h\` from specs. Do NOT stop or ask — keep building.
 ${fwLine}
 - After building, screenshot your output and compare with the \`.figma/*.png\` reference. Fix differences.
-- Keep implementations minimal — only build what the spec describes.`;
+- Keep implementations minimal — only build what the spec describes.
+- **Summary**: After completing the build, list: what was built and file location, any placeholder images/icons used (with the original \`instance_of\` or element name so the user can replace them), and any assumptions or deviations.`;
   }, [settings.framework]);
 
   const copySnippet = useCallback(() => {
@@ -453,7 +455,7 @@ ${fwLine}
                 { n: '1', title: 'Select a component', hint: 'Click any component, instance, or frame on your canvas.' },
                 { n: '2', title: 'Choose a preset', hint: 'Pick Full handoff, AI agent, or Quick check. Fine-tune settings below.' },
                 { n: '3', title: 'Generate', hint: 'Hit Generate. The button turns green when your spec is ready.' },
-                { n: '4', title: 'Copy for AI', hint: 'Tap Copy AI Specs to grab structured YAML for your coding tool.' }
+                { n: '4', title: 'Copy for AI', hint: 'Tap Copy Prompt + Specs to grab structured YAML for your coding tool.' }
               ].map((step, i) => (
                 <div key={step.n} className={`relative ${i < 3 ? 'pb-4' : ''}`}>
                   <div className="absolute -left-[1.625rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
@@ -507,7 +509,7 @@ ${fwLine}
               </li>
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
-                After generating, use Copy AI Specs for structured YAML.
+                After generating, use Copy Prompt + Specs for structured YAML.
               </li>
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
@@ -604,7 +606,7 @@ ${fwLine}
               </div>
               <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
-                <span>Select a component in Figma, hit <strong>Copy AI Specs</strong>, and paste the YAML into your agent's chat.</span>
+                <span>Select a component in Figma, hit <strong>Copy Prompt + Specs</strong>, and paste the YAML into your agent's chat.</span>
               </div>
               <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">4</span>
@@ -635,6 +637,28 @@ ${fwLine}
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
                 Works with any agent that reads project-level instruction files.
+              </li>
+            </ul>
+          </section>
+
+          {/* Suggested skills */}
+          <section className={`${panelClass} bg-primary/5`}>
+            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <SparkleIcon size={14} className="text-primary" />
+              Suggested skills for best output
+            </h2>
+            <ul className="grid gap-1.5 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <span><strong>Agent Browser</strong> by Vercel — <a href="https://github.com/vercel-labs/agent-browser" target="_blank" rel="noopener noreferrer" className="text-primary underline">github.com/vercel-labs/agent-browser</a></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <span><strong>React Best Practices</strong> by Vercel — <a href="https://vercel.com/blog/introducing-react-best-practices" target="_blank" rel="noopener noreferrer" className="text-primary underline">vercel.com/blog/introducing-react-best-practices</a></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
+                <span><strong>Web Design Guidelines</strong> — <a href="https://skills.sh/vercel-labs/agent-skills/web-design-guidelines" target="_blank" rel="noopener noreferrer" className="text-primary underline">skills.sh/vercel-labs/agent-skills/web-design-guidelines</a></span>
               </li>
             </ul>
           </section>
@@ -892,7 +916,7 @@ ${fwLine}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Tailors Copy AI Specs instructions to this framework.
+                Tailors Copy Prompt + Specs instructions to this framework.
               </p>
             </div>
           </CollapsibleSection>
@@ -1052,24 +1076,26 @@ ${fwLine}
             )}
           </Button>
           {generateSuccess && (
-            <Button
-              id="copy-ai-specs"
-              onClick={copyAiSpecs}
-              disabled={isCopying}
-              className={`h-11 shrink-0 ${copySuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-            >
-              {copySuccess ? (
-                <span className="flex items-center gap-1.5">
-                  <CheckCircleIcon size={16} weight="bold" />
-                  Copied!
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5">
-                  <CopyIcon size={16} />
-                  Copy AI Specs
-                </span>
-              )}
-            </Button>
+            <div className={`rounded-md ${copySuccess ? '' : 'pulse-ring-wrap'}`}>
+              <Button
+                id="copy-ai-specs"
+                onClick={copyAiSpecs}
+                disabled={isCopying}
+                className={`h-11 shrink-0 w-full ${copySuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+              >
+                {copySuccess ? (
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircleIcon size={16} weight="bold" />
+                    Copied!
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <CopyIcon size={16} />
+                    Copy Prompt + Specs
+                  </span>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       </footer>

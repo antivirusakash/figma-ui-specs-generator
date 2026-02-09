@@ -4,6 +4,7 @@ import type { Inventory } from "../inventory";
 import type { Attribute, AttributeFormat, BoundVariablesMap, FillSegment, Settings, TokenValueMap } from "../types";
 import { formatColor, formatNumber, formatSpacing, getFirstSolidPaint, isMixed, extractIconColor } from "./format";
 import { extractTokensStudioMap, findTokenValue, getSafeSharedPluginDataKeys, SHARED_PLUGIN_NAMESPACES } from "./tokens";
+import { LIMITS } from "../limits";
 
 export async function collectAttributes(node: SceneNode, inventory: Inventory, settings: Settings): Promise<Attribute[]> {
   const attributes: Attribute[] = [];
@@ -159,6 +160,40 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
       value: "all",
       format: "HARDCODED" as AttributeFormat,
     });
+  }
+
+  // Effects (shadows, blurs)
+  if ("effects" in node) {
+    const effects = (node as any).effects as readonly Effect[];
+    if (effects?.length) {
+      for (const effect of effects) {
+        if (effect.visible === false) continue;
+        if (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW") {
+          const { r, g, b } = effect.color;
+          const a = effect.color.a;
+          const hex = `#${[r, g, b].map(c => Math.round(c * 255).toString(16).padStart(2, "0")).join("")}`;
+          const parts = [
+            `${effect.offset.x}px ${effect.offset.y}px ${effect.radius}px`,
+            effect.spread ? `${effect.spread}px` : null,
+            a < 1 ? `${hex}/${Math.round(a * 100)}%` : hex,
+          ].filter(Boolean).join(" ");
+          const label = effect.type === "INNER_SHADOW" ? "Inner shadow" : "Shadow";
+          attributes.push({
+            key: label,
+            value: parts,
+            format: "HARDCODED" as AttributeFormat,
+          });
+        }
+        if (effect.type === "LAYER_BLUR" || effect.type === "BACKGROUND_BLUR") {
+          const label = effect.type === "BACKGROUND_BLUR" ? "Backdrop blur" : "Blur";
+          attributes.push({
+            key: label,
+            value: `${effect.radius}px`,
+            format: "HARDCODED" as AttributeFormat,
+          });
+        }
+      }
+    }
   }
 
   if ("layoutPositioning" in node && (node as any).layoutPositioning === "ABSOLUTE") {
@@ -364,13 +399,12 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
 }
 
 /** Extract per-segment fill colors from a TEXT node with mixed fills.
- *  Merges adjacent segments sharing the same fill and caps at 10 entries. */
+ *  Merges adjacent segments sharing the same fill and caps at LIMITS.MAX_FILL_SEGMENTS entries. */
 export function mergeAdjacentSameFill(textNode: TextNode): FillSegment[] {
   try {
     const segs = textNode.getStyledTextSegments(["fills"]);
     if (!segs || segs.length === 0) return [];
 
-    const MAX_SEGMENTS = 10;
     const result: FillSegment[] = [];
 
     for (const seg of segs) {
@@ -387,7 +421,7 @@ export function mergeAdjacentSameFill(textNode: TextNode): FillSegment[] {
       if (last && last.fill === hex) {
         last.text += seg.characters;
       } else {
-        if (result.length >= MAX_SEGMENTS) break;
+        if (result.length >= LIMITS.MAX_FILL_SEGMENTS) break;
         result.push({ text: seg.characters, fill: hex });
       }
     }
