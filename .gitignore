@@ -1,2 +1,5 @@
 .claude
 .codex
+node_modules
+dist
+.figma
