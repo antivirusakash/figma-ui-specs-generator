@@ -31,6 +31,7 @@ export type Settings = {
   showRawValues: boolean;
   valuePreference: "variable" | "token";
   framework: Framework;
+  schemaVersion: "v11" | "v12";
 };
 
 export type Theme = {

@@ -388,7 +388,7 @@ function renderAnatomyMarkers(artwork: FrameNode, elements: AnatomyElement[], th
   const BADGE_SIZE = 16;
 
   for (let i = 0; i < elements.length; i++) {
-    const element = elements[i];
+    const element = elements[i]!;
     if (!element.bounds) continue;
 
     const elX = cloneOffsetX + element.bounds.x * cloneScale;

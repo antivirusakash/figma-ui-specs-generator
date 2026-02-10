@@ -120,6 +120,7 @@ src/plugin/
     tokens.ts            — Tokens Studio integration (extractTokensStudioMap, findTokenValue)
     text-helpers.ts      — createTextNode, fitTextToWidth, text wrapping
     frame-builders.ts    — createSectionFrame, createTableRow, createContentCard
+    v12-repeat-diff.ts   — encodeDiffs, decodeDiffs, deduplicateWidthDiffs (v12 indexed diffs)
   sections/
     anatomy-section.ts   — Anatomy visualization on canvas
     data-section.ts      — Agent-ready YAML output (toYaml, chunking, compact mode)
@@ -127,8 +128,8 @@ src/plugin/
     layout-section.ts    — Auto-layout specs
     inventory-section.ts — Design inventory
     variables-section.ts — Figma variables/tokens
-scripts/build.js         — esbuild bundler (~82kb output)
-tests/unit/              — 7 test files, 141 tests (vitest)
+scripts/build.js         — esbuild bundler (~84kb output)
+tests/unit/              — 10 test files, 201 tests (vitest)
 ```
 
 ### Key Patterns
@@ -136,11 +137,12 @@ tests/unit/              — 7 test files, 141 tests (vitest)
 - `limits.ts` centralizes all numeric caps — change one file to tune output size
 - Instance dedup: fingerprint (componentSet + childSignature) → template + repeat diffs
 - Layout fields inline on AnatomyElement (no separate layout chunks)
-- YAML output: `v11.yaml.compact` schema; `resolved_tokens` map; chunked anatomy/properties
+- YAML output: `v11.yaml.compact` (default) or `v12.yaml.compact` (opt-in, ~30% smaller); `resolved_tokens` map; chunked anatomy/properties
+- v12 changes: indexed repeat diffs, path field removal, anatomy/repeat node dedup, width cascade dedup
 
 ### Build & Test
 - `npm run build` — esbuild bundle
-- `npm run test:unit` — vitest (159 tests)
+- `npm run test:unit` — vitest (201 tests)
 - `npm run test:ui` — playwright
 - `npm run typecheck` — tsc --noEmit
 

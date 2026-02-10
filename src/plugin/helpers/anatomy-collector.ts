@@ -12,7 +12,7 @@ export type CollectAnatomyResult = {
 };
 
 /** Build a type:name tree string for visible children up to maxDepth */
-export function computeChildSignature(node: SceneNode, maxDepth = LIMITS.MAX_SIGNATURE_DEPTH): string {
+export function computeChildSignature(node: SceneNode, maxDepth: number = LIMITS.MAX_SIGNATURE_DEPTH): string {
   if (maxDepth <= 0) return "";
   if (!("children" in node)) return "";
   const parts: string[] = [];
@@ -46,7 +46,7 @@ export function collectRepeatDiffs(
   templateNode: SceneNode,
   repeatNode: SceneNode,
   currentPath = "",
-  maxDepth = LIMITS.MAX_DIFF_DEPTH
+  maxDepth: number = LIMITS.MAX_DIFF_DEPTH
 ): Record<string, string> {
   const diffs: Record<string, string> = {};
   if (maxDepth <= 0) return diffs;
@@ -108,13 +108,16 @@ export function collectRepeatDiffs(
     const len = Math.min(tChildren.length, rChildren.length);
     const nameCounts = new Map<string, number>();
     for (let i = 0; i < len; i++) {
-      const childName = rChildren[i].name;
+      const tChild = tChildren[i];
+      const rChild = rChildren[i];
+      if (!tChild || !rChild) continue;
+      const childName = rChild.name;
       const count = (nameCounts.get(childName) ?? 0) + 1;
       nameCounts.set(childName, count);
       // Build full child path; append [N] suffix when sibling names collide
       const childSegment = count > 1 ? `${childName}[${count}]` : childName;
       const childPath = `${path}/${childSegment}`;
-      const childDiffs = collectRepeatDiffs(tChildren[i], rChildren[i], childPath, maxDepth - 1);
+      const childDiffs = collectRepeatDiffs(tChild, rChild, childPath, maxDepth - 1);
       Object.assign(diffs, childDiffs);
     }
   }

@@ -2,6 +2,7 @@ import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import type { Inventory } from "../inventory";
 import type { DataModel, Settings, SpecTextRole, Theme } from "../types";
 import { LIMITS } from "../limits";
+import { encodeDiffs, deduplicateWidthDiffs } from "../helpers/v12-repeat-diff";
 
 type CreateTextFn = (
   text: string,
@@ -76,7 +77,7 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
-function splitText(value: string, maxChars = LIMITS.CANVAS_SPLIT_TEXT_CHARS) {
+function splitText(value: string, maxChars: number = LIMITS.CANVAS_SPLIT_TEXT_CHARS) {
   const lines = value.split("\n");
   const chunks: string[] = [];
   let current = "";
@@ -146,17 +147,27 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
+  const isV12 = compact && settings.schemaVersion === "v12";
   const maxAnatomy = LIMITS.MAX_ANATOMY_RECORDS;
   const maxProperties = LIMITS.MAX_PROPERTY_RECORDS;
   const resolvedTokens = new Map<string, string>();
 
-  const anatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
+  // Build set of repeat node IDs early (needed for O1: anatomy chunk filtering)
+  const repeatNodeIds = new Set<string>();
+  (dataModel.instanceTemplates ?? []).forEach(tpl => {
+    tpl.repeats.forEach(r => repeatNodeIds.add(r.nodeId));
+  });
+
+  const allAnatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
     const record: any = {
       node_id: element.nodeId ?? "",
-      path_key: element.pathKey ?? "",
-      name: deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME),
-      type: element.type
     };
+    // O2: omit path_key in v12 compact
+    if (!isV12) {
+      record.path_key = element.pathKey ?? "";
+    }
+    record.name = deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME);
+    record.type = element.type;
     if (element.instanceOf) {
       record.instance_of = deps.truncateText(element.instanceOf, LIMITS.TRUNC_INSTANCE_OF);
     }
@@ -331,14 +342,25 @@ export function toAgentReadyDataPayload(
   });
   const limitedPropertyRecords = propertyRecords.slice(0, maxProperties);
 
-  const anatomyChunks = chunkArray(anatomyRecords, LIMITS.ANATOMY_CHUNK_SIZE).map((items, index) => ({
-    chunk_id: `anatomy_${index + 1}`,
-    kind: "anatomy",
-    item_count: items.length,
-    path_range: items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [],
-    node_ids: items.map((item) => item.node_id).filter(Boolean),
-    items
-  }));
+  // O1: In v12, exclude repeat node_ids from anatomy records
+  const anatomyRecords = isV12
+    ? allAnatomyRecords.filter(r => !repeatNodeIds.has(r.node_id))
+    : allAnatomyRecords;
+
+  const anatomyChunks = chunkArray(anatomyRecords, LIMITS.ANATOMY_CHUNK_SIZE).map((items, index) => {
+    const chunk: any = {
+      chunk_id: `anatomy_${index + 1}`,
+      kind: "anatomy",
+      item_count: items.length,
+    };
+    // O2: omit path_range in v12
+    if (!isV12) {
+      chunk.path_range = items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [];
+    }
+    chunk.node_ids = items.map((item: any) => item.node_id).filter(Boolean);
+    chunk.items = items;
+    return chunk;
+  });
 
   const propertyChunks = chunkArray(limitedPropertyRecords, LIMITS.PROPERTY_CHUNK_SIZE).map((items, index) => ({
     chunk_id: `properties_${index + 1}`,
@@ -349,38 +371,51 @@ export function toAgentReadyDataPayload(
   }));
 
   // Build repeats chunks from instance templates
-  const repeatsChunks = (dataModel.instanceTemplates ?? []).map((tpl, index) => ({
-    chunk_id: `repeats_${index + 1}`,
-    kind: "repeats",
-    template_node_id: tpl.templateNodeId,
-    template_path_key: tpl.templatePathKey,
-    instance_of: tpl.instanceOf,
-    repeat_count: tpl.repeatCount,
-    varying_keys: tpl.varyingKeys,
-    items: tpl.repeats.map(row => {
+  const repeatsChunks = (dataModel.instanceTemplates ?? []).map((tpl, index) => {
+    // O3: sort varying_keys deterministically in v12 (needed for indexed diffs)
+    const varyingKeys = isV12 ? [...tpl.varyingKeys].sort() : tpl.varyingKeys;
+
+    const chunk: any = {
+      chunk_id: `repeats_${index + 1}`,
+      kind: "repeats",
+      template_node_id: tpl.templateNodeId,
+    };
+    // O2: omit template_path_key in v12
+    if (!isV12) {
+      chunk.template_path_key = tpl.templatePathKey;
+    }
+    chunk.instance_of = tpl.instanceOf;
+    chunk.repeat_count = tpl.repeatCount;
+    chunk.varying_keys = varyingKeys;
+    chunk.items = tpl.repeats.map(row => {
       const item: any = {
         node_id: row.nodeId,
-        path_key: row.pathKey,
-        diffs: row.diffs
       };
+      // O2: omit path_key in v12
+      if (!isV12) {
+        item.path_key = row.pathKey;
+      }
+      // O3: indexed diffs in v12, width dedup
+      if (isV12) {
+        const dedupedDiffs = deduplicateWidthDiffs(row.diffs);
+        item.diffs = encodeDiffs(dedupedDiffs, varyingKeys);
+      } else {
+        item.diffs = row.diffs;
+      }
       if (row.childrenText?.length) {
         item.children_text = row.childrenText.map(t =>
           deps.truncateText(t, LIMITS.TRUNC_REPEAT_CHILDREN_TEXT)
         );
       }
       return item;
-    })
-  }));
+    });
+    return chunk;
+  });
 
   const chunks = [...anatomyChunks, ...propertyChunks, ...repeatsChunks];
 
-  // Build set of repeat node IDs to exclude from text_index
-  const repeatNodeIds = new Set<string>();
-  (dataModel.instanceTemplates ?? []).forEach(tpl => {
-    tpl.repeats.forEach(r => repeatNodeIds.add(r.nodeId));
-  });
-
-  const textIndex = dataModel.anatomy
+  // text_index: omitted entirely in v12 (text is in children_text on anatomy/repeat items)
+  const textIndex = isV12 ? undefined : dataModel.anatomy
         .filter(el => (el.textContent || el.childrenText?.length) && !repeatNodeIds.has(el.nodeId ?? ""))
         .map(el => {
           const entry: any = { id: el.nodeId, path: el.pathKey };
@@ -397,11 +432,20 @@ export function toAgentReadyDataPayload(
       ? ["get_metadata", "get_design_context", "get_screenshot", "get_variable_defs"]
       : MCP_AGENT_TOOLS,
     parse_root: "chunks",
-    preferred_keys: ["node_id", "path_key", "kind", "items"]
+    // O2: drop path_key from preferred_keys in v12
+    preferred_keys: isV12
+      ? ["node_id", "kind", "items"]
+      : ["node_id", "path_key", "kind", "items"]
   };
 
+  const schemaString = isV12
+    ? "specs-plugin.agent_pack.v12.yaml.compact"
+    : compact
+      ? "specs-plugin.agent_pack.v11.yaml.compact"
+      : "specs-plugin.agent_pack.v11.yaml";
+
   return {
-    schema: compact ? "specs-plugin.agent_pack.v11.yaml.compact" : "specs-plugin.agent_pack.v11.yaml",
+    schema: schemaString,
     generated_at: new Date().toISOString(),
     selection: {
       node_id: target.id,
@@ -488,13 +532,13 @@ export function toYaml(data: unknown, indent = 0): string {
           lines.push(`${pad}- {}`);
           continue;
         }
-        const [firstKey, firstVal] = entries[0];
+        const [firstKey, firstVal] = entries[0]!;
         const firstValStr = firstVal && typeof firstVal === "object"
           ? `\n${toYaml(firstVal, indent + 4)}`
           : ` ${yamlScalar(firstVal)}`;
         lines.push(`${pad}- ${firstKey}:${firstValStr}`);
         for (let i = 1; i < entries.length; i++) {
-          const [key, val] = entries[i];
+          const [key, val] = entries[i]!;
           if (val && typeof val === "object") {
             lines.push(`${pad}  ${key}:`);
             lines.push(toYaml(val, indent + 4));
@@ -603,7 +647,7 @@ export function createDataSection(
   if (settings.agentReadyData) {
     section.appendChild(
       deps.createText(
-        "Use chunk_manifest[].node_ids with MCP tools (get_metadata/get_design_context/get_screenshot) for precise extraction.",
+        "Use chunks[].node_ids with MCP tools (get_metadata/get_design_context/get_screenshot) for precise extraction.",
         9,
         FONT_REGULAR,
         theme.muted,

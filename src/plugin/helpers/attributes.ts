@@ -71,7 +71,7 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
         ...attr
       });
     }
-    if (!effectivePaint && "fills" in node && node.type !== "TEXT") {
+    if (!effectivePaint && "fills" in node) {
       const fills = node.fills as readonly Paint[];
       if (Array.isArray(fills)) {
         const imgFill = fills.find((f): f is ImagePaint => f.type === "IMAGE" && f.visible !== false);

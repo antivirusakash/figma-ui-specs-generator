@@ -36,7 +36,7 @@ type PropertiesSectionDeps = {
   ) => Promise<FrameNode>;
   solidFill: (hex: string, opacity?: number) => SolidPaint;
   truncateText: (value: string, maxLength: number) => string;
-  collectAnatomyElements: (target: SceneNode, inventory: Inventory, settings: Settings) => Promise<AnatomyElement[]>;
+  collectAnatomyElements: (target: SceneNode, inventory: Inventory, settings: Settings) => Promise<{ elements: AnatomyElement[]; [key: string]: any }>;
   getMainComponentSafe: (instance: InstanceNode) => Promise<ComponentNode | null>;
   collectLayoutData: (root: SceneNode) => LayoutSpec[];
 };
@@ -83,7 +83,7 @@ export async function collectPropertySpecs(
   figma.currentPage.appendChild(tempFrame);
   tempFrame.appendChild(baseInstance);
 
-  const baseElements = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
   const properties = baseInstance.componentProperties;
   const specs: PropertySpec[] = [];
   log("Property keys", Object.keys(properties));
@@ -102,7 +102,7 @@ export async function collectPropertySpecs(
         } catch {
           // ignore invalid variants
         }
-        const elements = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
         const differences = diffElements(baseElements, elements);
         optionSpecs.push({ name: option, elements, differences });
         variantInstance.remove();
@@ -125,7 +125,7 @@ export async function collectPropertySpecs(
         } catch {
           // ignore
         }
-        const elements = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
         const differences = diffElements(baseElements, elements);
         optionSpecs.push({ name: String(option), elements, differences });
         variantInstance.remove();
@@ -286,7 +286,7 @@ export async function collectTwoWaySpec(
   figma.currentPage.appendChild(tempFrame);
   tempFrame.appendChild(baseInstance);
 
-  const baseElements = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
   const combinations: TwoWaySpec["combinations"] = [];
   for (const a of optionsA) {
     if (combinations.length >= LIMITS.MAX_TWO_WAY_COMBOS) break;
@@ -299,7 +299,7 @@ export async function collectTwoWaySpec(
       } catch {
         // ignore
       }
-      const elements = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+      const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
       const differences = diffElements(baseElements, elements);
       combinations.push({ a, b, differences });
       variantInstance.remove();

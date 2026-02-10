@@ -231,15 +231,15 @@ test('layout section and data preview stay compact for multi-column readability'
   const code = readPluginCode();
   expect(code).toMatch(/body\.layoutMode = "VERTICAL"/);
   expect(code).toMatch(/toDataSectionPreview/);
-  expect(code).toMatch(/chunk_manifest/);
-  expect(code).toMatch(/textChunks = chunks\.slice\(0, 2\)/);
+  expect(code).toMatch(/chunks\[\]\.node_ids/);
+  expect(code).toMatch(/textChunks = chunks\.slice\(0, LIMITS/);
 });
 
 test('agent payload supports compact low-token schema mode', async () => {
   const code = readPluginCode();
   expect(code).toMatch(/aiCompactMode/);
   expect(code).toMatch(/compact_mode/);
-  expect(code).toMatch(/specs-plugin\.agent_pack\.v2\.compact/);
+  expect(code).toMatch(/specs-plugin\.agent_pack\.v1[12]\.yaml\.compact/);
 });
 
 test('text nodes collect explicit text fill attribute in specs data', async () => {

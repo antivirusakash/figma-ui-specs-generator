@@ -59,6 +59,7 @@ type Settings = {
   showRawValues: boolean;
   valuePreference: 'variable' | 'token';
   framework: Framework;
+  schemaVersion: 'v11' | 'v12';
 };
 
 type PluginMessage =
@@ -101,7 +102,8 @@ const DEFAULT_SETTINGS: Settings = {
   valuePrecision: 2,
   showRawValues: false,
   valuePreference: 'variable',
-  framework: 'auto'
+  framework: 'auto',
+  schemaVersion: 'v11'
 };
 
 const panelClass = 'rounded-xl border border-border bg-card/95 p-4 shadow-sm';
@@ -896,6 +898,25 @@ ${fwLine}
                 onCheckedChange={onToggle('showOuterLayout')}
               />
             </div>
+            {settings.agentReadyData && settings.aiCompactMode ? (
+              <div className="mt-3 space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground" htmlFor="schemaVersion">
+                  Schema version
+                </Label>
+                <Select value={settings.schemaVersion} onValueChange={onSelect('schemaVersion')}>
+                  <SelectTrigger id="schemaVersion" className={inputTriggerClass}>
+                    <SelectValue placeholder="v11" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="v11">v11 (stable)</SelectItem>
+                    <SelectItem value="v12">v12 (compact)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  v12 reduces payload size by ~30% with indexed diffs and path field removal.
+                </p>
+              </div>
+            ) : null}
             <div className="mt-3 space-y-1">
               <Label className="text-xs font-medium text-muted-foreground" htmlFor="framework">
                 Target framework

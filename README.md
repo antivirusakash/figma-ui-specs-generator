@@ -40,6 +40,59 @@ Specs was built with AI-assisted development in mind. The workflow:
 
 This closes the loop between design and code. The designer generates specs, the agent reads them, and the engineer reviews the output. No screenshots, no Zeplin exports, no "what's the padding here?" in Slack.
 
+## Schema Versions (v11 → v12)
+
+The YAML data payload uses versioned schemas. **v11** is the default and stable schema. **v12** is an opt-in compact schema that reduces payload size by ~30%.
+
+### How to select v12
+
+In the plugin UI: **Output & AI options → Schema version → v12 (compact)**. Only available when both "AI-ready JSON" and "Compact mode" are enabled.
+
+### What changed in v12
+
+| Feature | v11 | v12 |
+|---------|-----|-----|
+| `path_key` on anatomy items | Present | Removed |
+| `template_path_key` on repeats | Present | Removed |
+| `path_key` on repeat items | Present | Removed |
+| `path_range` on anatomy chunks | Present | Removed |
+| `text_index` section | Present | Removed (text in `children_text`) |
+| Repeat `diffs` format | `Record<string, string>` | Indexed tuple array |
+| Anatomy/repeat node overlap | Allowed | Excluded (O1) |
+| Width cascade diffs | All included | Deduplicated |
+
+### Decoding v12 indexed diffs
+
+v12 encodes repeat diffs as `[keyIndex, value, keyIndex, value, ...]` against the `varying_keys` array:
+
+```yaml
+# v11
+diffs:
+  Card/Title/text: "New Title"
+  Card/width: "300"
+
+# v12
+varying_keys: [Card/Title/text, Card/width]
+diffs: [0, "New Title", 1, "300"]
+```
+
+To decode in JavaScript:
+
+```js
+function decodeDiffs(encoded, varyingKeys) {
+  const result = {};
+  for (let i = 0; i < encoded.length - 1; i += 2) {
+    result[varyingKeys[encoded[i]]] = encoded[i + 1];
+  }
+  return result;
+}
+```
+
+### Extraction strategy
+
+- **v11**: Use `path_key` or `node_id` to locate elements
+- **v12**: Use `node_id` exclusively — pass to MCP tools (`get_metadata`, `get_design_context`, `get_screenshot`)
+
 ## Install
 
 ```bash

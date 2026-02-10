@@ -507,7 +507,7 @@ function renderLayoutMarkers(
   const limitedSpecs = specs.slice(0, showOuter ? 8 : 5);
 
   for (let i = 0; i < limitedSpecs.length; i++) {
-    const spec = limitedSpecs[i];
+    const spec = limitedSpecs[i]!;
     if (!spec.bounds) continue;
 
     const bx = cloneOffsetX + spec.bounds.x * cloneScale;
