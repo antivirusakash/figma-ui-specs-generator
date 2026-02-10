@@ -378,6 +378,65 @@ describe("v12 contract", () => {
   });
 });
 
+// ─── Attribute → payload field mapping ────────────────────────
+
+describe("attribute field mapping", () => {
+  function makeModelWithAttr(attr: { key: string; value: string; format: string }): DataModel {
+    return {
+      anatomy: [
+        {
+          name: "Box",
+          type: "FRAME",
+          nodeId: "2:1",
+          pathKey: "root/Box",
+          attributes: [attr],
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+          textContent: undefined,
+          childrenText: undefined,
+        },
+      ],
+      properties: [],
+      instanceTemplates: [],
+    };
+  }
+
+  it("text_align attribute maps to text_align field", () => {
+    const model = makeModelWithAttr({ key: "Text align", value: "center", format: "HARDCODED" });
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
+    expect(item.text_align).toBe("center");
+  });
+
+  it("shadow attribute with rgba maps to shadow field", () => {
+    const model = makeModelWithAttr({ key: "Shadow", value: "0px 4px 8px rgba(0,0,0,0.25)", format: "HARDCODED" });
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
+    expect(item.shadow).toBe("0px 4px 8px rgba(0,0,0,0.25)");
+  });
+
+  it("stroke_sides attribute with border-* maps to stroke_sides field", () => {
+    const model = makeModelWithAttr({ key: "Stroke sides", value: "border-bottom: 1px", format: "HARDCODED" });
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
+    expect(item.stroke_sides).toBe("border-bottom: 1px");
+  });
+});
+
 // ─── Non-compact mode ─────────────────────────────────────────
 
 describe("non-compact mode", () => {

@@ -6,7 +6,7 @@ beforeAll(() => {
   (globalThis as any).figma = { mixed: FIGMA_MIXED };
 });
 
-const { collectLayoutData } = await import('../../src/plugin/sections/layout-section');
+const { collectLayoutData, inferAlignment } = await import('../../src/plugin/sections/layout-section');
 
 // Helper to create mock nodes with layout properties
 function createMockLayoutNode(overrides: Partial<{
@@ -373,7 +373,7 @@ describe('collectLayoutData', () => {
     expect(result.map(r => r.name)).toEqual(['Root']);
   });
 
-  it('sets alignment to INFERRED for inferred layouts', () => {
+  it('computes actual alignment for inferred layouts instead of INFERRED', () => {
     const child1 = createMockLayoutNode({
       name: 'A', id: 'a', layoutMode: 'NONE' as any,
       absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
@@ -386,12 +386,102 @@ describe('collectLayoutData', () => {
     });
     const root = createMockLayoutNode({
       name: 'InferAlign', layoutMode: 'NONE' as any,
-      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 110 },
+      absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 200 },
       children: [child1, child2],
     });
     const result = collectLayoutData(root);
     const spec = result.find((r) => r.name === 'InferAlign');
-    expect(spec?.primaryAxisAlignItems).toBe('INFERRED');
-    expect(spec?.counterAxisAlignItems).toBe('INFERRED');
+    // Children start at top-left with extra space at bottom, so primary=MIN
+    expect(spec?.primaryAxisAlignItems).toBe('MIN');
+    expect(spec?.counterAxisAlignItems).toBe('MIN');
+    expect(spec?.inferred).toBe(true);
+  });
+});
+
+describe('inferAlignment', () => {
+  const parent = { x: 0, y: 0, width: 200, height: 200 };
+
+  it('detects MIN/MIN for top-left aligned children', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 60, y: 0, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.primary).toBe('MIN');
+    expect(result.counter).toBe('MIN');
+  });
+
+  it('detects CENTER primary for horizontally centered children', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 50, y: 0, width: 40, height: 30 } },
+      { absoluteBoundingBox: { x: 110, y: 0, width: 40, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.primary).toBe('CENTER');
+  });
+
+  it('detects MAX primary for right-aligned children', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 100, y: 0, width: 40, height: 30 } },
+      { absoluteBoundingBox: { x: 150, y: 0, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.primary).toBe('MAX');
+  });
+
+  it('detects SPACE_BETWEEN when children span full width', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 0, y: 0, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 150, y: 0, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.primary).toBe('SPACE_BETWEEN');
+  });
+
+  it('detects CENTER counter for vertically centered child in horizontal layout', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 0, y: 85, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 60, y: 85, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.counter).toBe('CENTER');
+  });
+
+  it('detects MAX counter for bottom-aligned child in horizontal layout', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 0, y: 170, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 60, y: 170, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.counter).toBe('MAX');
+  });
+
+  it('works for VERTICAL mode', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 75, y: 0, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 75, y: 170, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, parent, 'VERTICAL');
+    expect(result.primary).toBe('SPACE_BETWEEN');
+    expect(result.counter).toBe('CENTER');
+  });
+
+  it('handles non-zero parent origin correctly', () => {
+    const offsetParent = { x: 100, y: 50, width: 200, height: 200 };
+    const kids = [
+      { absoluteBoundingBox: { x: 100, y: 50, width: 50, height: 30 } },
+      { absoluteBoundingBox: { x: 210, y: 50, width: 50, height: 30 } },
+    ];
+    const result = inferAlignment(kids, offsetParent, 'HORIZONTAL');
+    expect(result.primary).toBe('MIN');
+    expect(result.counter).toBe('MIN');
+  });
+
+  it('single child never returns SPACE_BETWEEN', () => {
+    const kids = [
+      { absoluteBoundingBox: { x: 0, y: 0, width: 200, height: 200 } },
+    ];
+    const result = inferAlignment(kids, parent, 'HORIZONTAL');
+    expect(result.primary).not.toBe('SPACE_BETWEEN');
   });
 });

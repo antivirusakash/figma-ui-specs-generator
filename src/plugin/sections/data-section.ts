@@ -229,6 +229,8 @@ export function toAgentReadyDataPayload(
     if (lineHeight && lineHeight.value !== "Auto") {
       record.line_height = lineHeight.rawValue ?? lineHeight.value;
     }
+    const textAlign = findAttr("Text align");
+    if (textAlign) record.text_align = textAlign.value;
     const radius = findAttr("Corner radius");
     if (radius && radius.rawValue !== 0) {
       record.radius = radius.rawValue ?? radius.value;

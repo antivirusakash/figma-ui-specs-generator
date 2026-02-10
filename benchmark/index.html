@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440">
+  <title>Untitled UI - Pricing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; width: 1440px; margin: 0 auto; background: #fff; }
+    a { text-decoration: none; color: inherit; cursor: pointer; }
+
+    /* ===== HEADER ===== */
+    .header {
+      width: 1440px; height: 80px;
+      background: #F9F5FF;
+      border-bottom: 1px solid #F2F4F7;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .header-container {
+      width: 1280px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-content {
+      display: flex; align-items: center; gap: 40px;
+    }
+    .logo {
+      width: 142px; height: 32px; display: flex; align-items: center; gap: 10px;
+    }
+    .logo-mark {
+      width: 32px; height: 32px; background: #7F56D9; border-radius: 8px;
+      box-shadow: 0px 1px 2px rgba(16,24,40,0.06);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark svg { width: 20px; height: 20px; }
+    .logo-text { font-size: 18px; font-weight: 600; color: #101828; }
+    .nav { display: flex; align-items: center; gap: 32px; }
+    .nav-link { font-size: 16px; font-weight: 600; color: #667085; line-height: 24px; }
+    .nav-dropdown { display: flex; align-items: center; gap: 8px; padding: 4px; }
+    .nav-dropdown .ph { font-size: 20px; color: #667085; }
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-tertiary {
+      height: 44px; padding: 10px 18px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; color: #667085; background: transparent; border: none; cursor: pointer;
+    }
+    .btn-primary {
+      height: 44px; padding: 10px 18px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; color: #fff; background: #7F56D9; border: 1px solid #7F56D9;
+      box-shadow: 0px 1px 2px rgba(16,24,40,0.05); cursor: pointer;
+    }
+    .btn-primary-xl {
+      height: 48px; padding: 12px 20px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; color: #fff; background: #7F56D9; border: 1px solid #7F56D9;
+      box-shadow: 0px 1px 2px rgba(16,24,40,0.05); cursor: pointer;
+    }
+    .btn-secondary-gray {
+      height: 48px; padding: 12px 20px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; color: #344054; background: #fff; border: 1px solid #D0D5DD;
+      box-shadow: 0px 1px 2px rgba(16,24,40,0.05); cursor: pointer;
+    }
+
+    /* ===== PRICING HEADER ===== */
+    .pricing-header {
+      width: 1440px; background: #fff;
+      display: flex; flex-direction: column; align-items: center;
+      overflow: hidden;
+    }
+    .pricing-top {
+      width: 1440px; background: #F9F5FF;
+      padding: 96px 0; display: flex; flex-direction: column; align-items: center;
+      position: relative;
+    }
+    .pricing-top-container {
+      width: 1280px; display: flex; flex-direction: column; align-items: center; gap: 32px;
+    }
+    .pricing-top-content {
+      width: 1216px; display: flex; flex-direction: column; align-items: center; gap: 40px;
+    }
+    .heading-supporting {
+      width: 1024px; display: flex; flex-direction: column; align-items: center; gap: 24px;
+    }
+    .heading-badge { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 12px; border-radius: 16px; background: #F9F5FF;
+      font-size: 14px; font-weight: 500; color: #6941C6; line-height: 20px;
+    }
+    .badge-success {
+      padding: 2px 8px; border-radius: 16px; background: #ECFDF3;
+      font-size: 14px; font-weight: 500; color: #027A48; line-height: 20px;
+    }
+    .pricing-heading {
+      font-size: 48px; font-weight: 600; color: #42307D; line-height: 60px; text-align: center;
+    }
+    .pricing-supporting {
+      font-size: 20px; font-weight: 400; color: #6941C6; line-height: 30px; text-align: center;
+    }
+    .toggle-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .toggle-track {
+      width: 44px; height: 24px; background: #7F56D9; border-radius: 12px;
+      padding: 2px; display: flex; justify-content: flex-end; align-items: center; cursor: pointer;
+    }
+    .toggle-knob {
+      width: 20px; height: 20px; background: #fff; border-radius: 50%;
+      box-shadow: 0px 1px 3px rgba(16,24,40,0.1);
+    }
+    .toggle-label { font-size: 16px; font-weight: 500; line-height: 24px; }
+    .toggle-label-dark { color: #42307D; }
+    .toggle-label-light { color: #6941C6; }
+
+    /* Background pattern */
+    .bg-pattern {
+      width: 1440px; height: 96px; position: relative; overflow: hidden;
+      background: #F9F5FF;
+    }
+    .bg-pattern::before {
+      content: ''; position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 200px; border-radius: 50%;
+      background: radial-gradient(ellipse, #D6BBFB 0%, #E9D7FE 30%, #F4EBFF 60%, #F9F5FF 100%);
+      opacity: 0.6;
+    }
+
+    /* Pricing cards */
+    .pricing-cards-section {
+      width: 1440px; display: flex; flex-direction: column; align-items: center;
+    }
+    .pricing-cards-container {
+      width: 1280px; display: flex; flex-direction: column; align-items: flex-start;
+    }
+    .pricing-cards-content {
+      width: 1216px; display: flex; gap: 32px; justify-content: center;
+    }
+    .pricing-card {
+      width: 384px; background: #fff; border: 1px solid #EAECF0;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0px 4px 6px -2px rgba(16,24,40,0.03), 0px 12px 16px -4px rgba(16,24,40,0.08);
+      display: flex; flex-direction: column;
+    }
+    .card-header {
+      padding: 32px; display: flex; flex-direction: column; gap: 24px;
+    }
+    .card-heading-price {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .card-heading-icon {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    .featured-icon-md {
+      width: 40px; height: 40px; border-radius: 28px;
+      background: #F4EBFF; border: 8px solid #F9F5FF;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .featured-icon-md .ph { font-size: 20px; color: #7F56D9; }
+    .featured-icon-lg {
+      width: 48px; height: 48px; border-radius: 28px;
+      background: #F4EBFF; border: 8px solid #F9F5FF;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .featured-icon-lg .ph { font-size: 24px; color: #7F56D9; }
+    .card-plan-name {
+      font-size: 20px; font-weight: 600; color: #6941C6; line-height: 30px; text-align: center;
+      width: 320px;
+    }
+    .card-price {
+      font-size: 48px; font-weight: 600; color: #101828; line-height: 60px; text-align: center;
+      width: 320px;
+    }
+    .card-billed {
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px; text-align: center;
+      width: 320px;
+    }
+    .card-content {
+      padding: 32px; display: flex; flex-direction: column; gap: 24px;
+    }
+    .check-items {
+      display: flex; flex-direction: column; gap: 16px; width: 320px;
+    }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .check-icon {
+      width: 24px; height: 24px; border-radius: 12px;
+      background: #F4EBFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .check-icon .ph { font-size: 14px; color: #7F56D9; }
+    .check-text {
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px;
+    }
+    .card-footer {
+      padding: 32px; background: #F9FAFB;
+    }
+    .card-footer .btn-primary-xl { width: 320px; display: block; text-align: center; }
+
+    /* ===== CTA SECTION (LIGHT) ===== */
+    .cta-section {
+      width: 1440px; padding: 48px 80px;
+      display: flex; justify-content: center; background: #fff;
+    }
+    .cta-container { width: 1280px; }
+    .cta-content {
+      width: 1216px; background: #F9F5FF; border-radius: 16px;
+      padding: 64px; display: flex; justify-content: space-between; align-items: center; gap: 32px;
+    }
+    .cta-heading-text {
+      display: flex; flex-direction: column; gap: 16px; flex: 1;
+    }
+    .cta-heading {
+      font-size: 30px; font-weight: 600; color: #42307D; line-height: 38px;
+    }
+    .cta-supporting {
+      font-size: 20px; font-weight: 400; color: #6941C6; line-height: 30px;
+    }
+    .cta-actions { display: flex; gap: 12px; flex-shrink: 0; }
+
+    /* ===== FEATURES SECTION ===== */
+    .features-section {
+      width: 1440px; background: #fff; padding: 96px 80px;
+      display: flex; flex-direction: column; align-items: center; gap: 64px;
+    }
+    .features-header-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 32px;
+    }
+    .features-header-content {
+      width: 1216px; display: flex; flex-direction: column; gap: 48px;
+    }
+    .features-heading-supporting {
+      width: 768px; display: flex; flex-direction: column; gap: 20px;
+    }
+    .features-subheading-heading {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .subheading {
+      font-size: 16px; font-weight: 600; color: #6941C6; line-height: 24px;
+    }
+    .section-heading {
+      font-size: 36px; font-weight: 600; color: #101828; line-height: 44px;
+    }
+    .section-supporting {
+      font-size: 20px; font-weight: 400; color: #667085; line-height: 30px;
+    }
+    .features-grid-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 64px;
+    }
+    .features-row {
+      width: 1216px; display: flex; gap: 32px;
+    }
+    .feature-card {
+      width: 384px; display: flex; flex-direction: column; gap: 20px;
+    }
+    .feature-text-supporting {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .feature-title {
+      font-size: 20px; font-weight: 500; color: #101828; line-height: 30px;
+    }
+    .feature-desc {
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px;
+    }
+    .learn-more-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 600; color: #6941C6; line-height: 24px;
+    }
+    .learn-more-link .ph { font-size: 20px; color: #6941C6; }
+
+    /* ===== SOCIAL PROOF ===== */
+    .social-proof {
+      width: 1440px; background: #F9F5FF; padding: 96px 0;
+      display: flex; justify-content: center;
+    }
+    .social-proof-container {
+      width: 1280px; display: flex; flex-direction: column; align-items: center; gap: 32px;
+    }
+    .social-proof-text {
+      font-size: 16px; font-weight: 500; color: #6941C6; line-height: 24px; text-align: center;
+      width: 1216px;
+    }
+    .logos-row {
+      width: 1216px; display: flex; gap: 32px; justify-content: center; align-items: center;
+    }
+    .company-logo {
+      height: 48px; display: flex; align-items: center;
+      font-size: 22px; font-weight: 600; color: #6941C6; gap: 10px;
+    }
+    .company-logo .logo-dot {
+      width: 32px; height: 32px; background: #7F56D9; border-radius: 50%;
+    }
+
+    /* ===== FAQ SECTION ===== */
+    .faq-section {
+      width: 1440px; background: #fff; padding: 96px 80px;
+      display: flex; flex-direction: column; align-items: center; gap: 64px;
+    }
+    .faq-header-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 32px;
+    }
+    .faq-header-content {
+      width: 1216px; display: flex; flex-direction: column; gap: 48px;
+    }
+    .faq-body-container {
+      width: 1280px; display: flex; gap: 96px;
+    }
+    .faq-items {
+      width: 560px; display: flex; flex-direction: column; gap: 48px;
+    }
+    .faq-item {
+      display: flex; gap: 16px;
+    }
+    .faq-item-text {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .faq-question {
+      font-size: 20px; font-weight: 500; color: #101828; line-height: 30px;
+    }
+    .faq-answer {
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px;
+    }
+    .faq-image {
+      width: 560px; height: 560px; border-radius: 12px; overflow: hidden;
+      background: #D0D5DD;
+    }
+    .faq-image img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ===== CTA SECTION (DARK) ===== */
+    .cta-dark {
+      width: 1440px; background: #53389E; padding: 96px 80px;
+      display: flex; justify-content: center;
+    }
+    .cta-dark-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 32px;
+    }
+    .cta-dark-content {
+      width: 1216px; display: flex; justify-content: space-between; align-items: center; gap: 32px;
+    }
+    .cta-dark-heading-text {
+      display: flex; flex-direction: column; gap: 20px; flex: 1;
+    }
+    .cta-dark-heading {
+      font-size: 36px; font-weight: 600; color: #fff; line-height: 44px;
+    }
+    .cta-dark-supporting {
+      font-size: 20px; font-weight: 400; color: #E9D7FE; line-height: 30px;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      width: 1440px; background: #fff; padding: 64px 0;
+      display: flex; flex-direction: column; align-items: center; gap: 64px;
+    }
+    .footer-top-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 64px;
+    }
+    .footer-top-content {
+      width: 1216px; display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .footer-text-supporting {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .footer-newsletter-title {
+      font-size: 20px; font-weight: 500; color: #101828; line-height: 30px;
+    }
+    .footer-newsletter-desc {
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px;
+    }
+    .email-capture {
+      display: flex; gap: 16px; align-items: center;
+    }
+    .email-input {
+      width: 280px; height: 44px; padding: 10px 14px;
+      border: 1px solid #D0D5DD; border-radius: 8px; background: #fff;
+      font-size: 16px; font-weight: 400; color: #667085; line-height: 24px;
+      box-shadow: 0px 1px 2px rgba(16,24,40,0.05);
+      font-family: 'Inter', sans-serif;
+    }
+    .email-input::placeholder { color: #667085; }
+    .btn-subscribe {
+      height: 44px; padding: 10px 18px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; color: #fff; background: #7F56D9;
+      border: 1px solid #7F56D9; box-shadow: 0px 1px 2px rgba(16,24,40,0.05);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .footer-divider {
+      width: 1216px; height: 1px; background: #EAECF0;
+    }
+    .footer-links-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 48px;
+    }
+    .footer-links-content {
+      width: 1216px; display: flex; gap: 32px;
+    }
+    .footer-column {
+      width: 176px; display: flex; flex-direction: column; gap: 16px;
+    }
+    .footer-column-heading {
+      font-size: 14px; font-weight: 600; color: #98A2B3; line-height: 20px;
+    }
+    .footer-links {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .footer-link {
+      font-size: 16px; font-weight: 600; color: #667085; line-height: 24px;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .footer-bottom-container {
+      width: 1280px; display: flex; flex-direction: column; gap: 32px;
+    }
+    .footer-bottom-content {
+      width: 1216px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-copyright {
+      font-size: 16px; font-weight: 400; color: #98A2B3; line-height: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-container">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7F56D9"/><path d="M8 8h7v7H8V8zm9 0h7v7h-7V8zm-9 9h7v7H8v-7zm9 2h7v5h-7v-5z" fill="#fff"/></svg>
+        </div>
+        <span class="logo-text">Untitled UI</span>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="#">Home</a>
+        <a class="nav-link nav-dropdown" href="#">Products <i class="ph ph-caret-down"></i></a>
+        <a class="nav-link nav-dropdown" href="#">Resources <i class="ph ph-caret-down"></i></a>
+        <a class="nav-link" href="#">Pricing</a>
+      </nav>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-tertiary">Log in</button>
+      <button class="btn-primary">Sign up</button>
+    </div>
+  </div>
+</header>
+
+<!-- PRICING HEADER -->
+<section class="pricing-header">
+  <!-- Top section with purple bg -->
+  <div class="pricing-top">
+    <div class="pricing-top-container">
+      <div class="pricing-top-content">
+        <div class="heading-supporting">
+          <div class="heading-badge">
+            <span class="badge">Pricing plans</span>
+            <h1 class="pricing-heading">Plans for all sizes</h1>
+          </div>
+          <p class="pricing-supporting">Simple, transparent pricing that grows with you. Try any plan free for 30 days.</p>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-track"><div class="toggle-knob"></div></div>
+          <span class="toggle-label"><span class="toggle-label-dark">Annual pricing</span><span class="toggle-label-light"> (save 20%)</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background pattern area -->
+  <div class="bg-pattern"></div>
+
+  <!-- Pricing cards -->
+  <div class="pricing-cards-section">
+    <div class="pricing-cards-container">
+      <div class="pricing-cards-content" style="margin-top: -96px; position: relative; z-index: 1;">
+
+        <!-- Basic Plan -->
+        <div class="pricing-card">
+          <div class="card-header">
+            <div class="card-heading-price">
+              <div class="card-heading-icon">
+                <div class="featured-icon-md"><i class="ph ph-lightning"></i></div>
+                <div class="card-plan-name">Basic plan</div>
+              </div>
+              <div class="card-price">$10/mth</div>
+              <div class="card-billed">Billed annually.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="check-items">
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Access to all basic features</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Basic reporting and analytics</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Up to 10 individual users</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">20GB individual data each user</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Basic chat and email support</span></div>
+            </div>
+          </div>
+          <div class="card-footer"><button class="btn-primary-xl" style="width:320px">Get started</button></div>
+        </div>
+
+        <!-- Business Plan -->
+        <div class="pricing-card">
+          <div class="card-header">
+            <div class="card-heading-price">
+              <div class="card-heading-icon">
+                <div class="featured-icon-md"><i class="ph ph-lightning"></i></div>
+                <div class="card-plan-name">Business plan</div>
+              </div>
+              <div class="card-price">$20/mth</div>
+              <div class="card-billed">Billed annually.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="check-items">
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">200+ integrations</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Advanced reporting and analytics</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Up to 20 individual users</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">40GB individual data each user</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Priority chat and email support</span></div>
+            </div>
+          </div>
+          <div class="card-footer"><button class="btn-primary-xl" style="width:320px">Get started</button></div>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="pricing-card">
+          <div class="card-header">
+            <div class="card-heading-price">
+              <div class="card-heading-icon">
+                <div class="featured-icon-md"><i class="ph ph-lightning"></i></div>
+                <div class="card-plan-name">Enterprise plan</div>
+              </div>
+              <div class="card-price">$40/mth</div>
+              <div class="card-billed">Billed annually.</div>
+            </div>
+          </div>
+          <div class="card-content">
+            <div class="check-items">
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Advanced custom fields</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Audit log and data history</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Unlimited individual users</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Unlimited individual data</span></div>
+              <div class="check-item"><div class="check-icon"><i class="ph ph-check"></i></div><span class="check-text">Personalised+priotity service</span></div>
+            </div>
+          </div>
+          <div class="card-footer"><button class="btn-primary-xl" style="width:320px">Get started</button></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION 1 -->
+<section class="cta-section">
+  <div class="cta-container">
+    <div class="cta-content">
+      <div class="cta-heading-text">
+        <h2 class="cta-heading">Start your 30-day free trial</h2>
+        <p class="cta-supporting">Join over 4,000+ startups already growing with Untitled.</p>
+      </div>
+      <div class="cta-actions">
+        <button class="btn-secondary-gray">Learn more</button>
+        <button class="btn-primary-xl">Get started</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES SECTION -->
+<section class="features-section">
+  <div class="features-header-container">
+    <div class="features-header-content">
+      <div class="features-heading-supporting">
+        <div class="features-subheading-heading">
+          <p class="subheading">Features</p>
+          <h2 class="section-heading">Beautiful analytics to grow smarter</h2>
+        </div>
+        <p class="section-supporting">Powerful, self-serve product and growth analytics to help you convert, engage, and retain more users. Trusted by over 4,000 startups.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="features-grid-container">
+    <div class="features-row">
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-tray"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Share team inboxes</h3>
+          <p class="feature-desc">Whether you have a team of 2 or 200, our shared team inboxes keep everyone on the same page and in the loop.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-lightning"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Deliver instant answers</h3>
+          <p class="feature-desc">An all-in-one customer service platform that helps you balance everything your customers need to be happy.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-chart-bar"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Manage your team with reports</h3>
+          <p class="feature-desc">Measure what matters with Untitled's easy-to-use reports. You can filter, export, and drilldown on the data in a couple clicks.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+    </div>
+    <div class="features-row">
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-chat-circle-dots"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Connect with customers</h3>
+          <p class="feature-desc">Solve a problem or close a sale in real-time with chat. If no one is available, customers are seamlessly routed to email without confusion.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-puzzle-piece"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Connect the tools you already use</h3>
+          <p class="feature-desc">Explore 100+ integrations that make your day-to-day workflow more efficient and familiar. Plus, our extensive developer tools.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+      <div class="feature-card">
+        <div class="featured-icon-lg"><i class="ph ph-heart-half"></i></div>
+        <div class="feature-text-supporting">
+          <h3 class="feature-title">Our people make the difference</h3>
+          <p class="feature-desc">We're an extension of your customer service team, and all of our resources are free. Chat to our friendly team 24/7 when you need help.</p>
+        </div>
+        <a class="learn-more-link" href="#">Learn more <i class="ph ph-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL PROOF -->
+<section class="social-proof">
+  <div class="social-proof-container">
+    <p class="social-proof-text">Join 4,000+ companies already growing</p>
+    <div class="logos-row">
+      <div class="company-logo"><div class="logo-dot"></div>Layers</div>
+      <div class="company-logo"><div class="logo-dot"></div>Sisyphus</div>
+      <div class="company-logo"><div class="logo-dot"></div>Circooles</div>
+      <div class="company-logo"><div class="logo-dot"></div>Catalog</div>
+      <div class="company-logo"><div class="logo-dot"></div>Quotient</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ SECTION -->
+<section class="faq-section">
+  <div class="faq-header-container">
+    <div class="faq-header-content">
+      <div class="features-heading-supporting">
+        <div class="features-subheading-heading">
+          <p class="subheading">Support</p>
+          <h2 class="section-heading">Frequently asked questions</h2>
+        </div>
+        <p class="section-supporting">Everything you need to know about the product and billing. Can't find the answer you're looking for? Please chat to our friendly team.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="faq-body-container">
+    <div class="faq-items">
+      <div class="faq-item">
+        <div class="featured-icon-lg"><i class="ph ph-chat-circle-dots"></i></div>
+        <div class="faq-item-text">
+          <h3 class="faq-question">Is there a free trial available?</h3>
+          <p class="faq-answer">Yes, you can try us for free for 30 days. Our friendly team will work with you to get you up and running as soon as possible.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="featured-icon-lg"><i class="ph ph-arrows-clockwise"></i></div>
+        <div class="faq-item-text">
+          <h3 class="faq-question">Can I change my plan later?</h3>
+          <p class="faq-answer">Of course. Our pricing scales with your company. Chat to our friendly team to find a solution that works for you.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="featured-icon-lg"><i class="ph ph-x-circle"></i></div>
+        <div class="faq-item-text">
+          <h3 class="faq-question">What is your cancellation policy?</h3>
+          <p class="faq-answer">We understand that things change. You can cancel your plan at any time and we'll refund you the difference already paid.</p>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="featured-icon-lg"><i class="ph ph-file-text"></i></div>
+        <div class="faq-item-text">
+          <h3 class="faq-question">Can other info be added to an invoice?</h3>
+          <p class="faq-answer">At the moment, the only way to add additional information to invoices is to add the information to the workspace's name.</p>
+        </div>
+      </div>
+    </div>
+    <div class="faq-image">
+      <div style="width:100%;height:100%;background:linear-gradient(135deg,#667085 0%,#344054 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600;">
+        Image
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA SECTION 2 (DARK) -->
+<section class="cta-dark">
+  <div class="cta-dark-container">
+    <div class="cta-dark-content">
+      <div class="cta-dark-heading-text">
+        <h2 class="cta-dark-heading">Start your free trial</h2>
+        <p class="cta-dark-supporting">Join over 4,000+ startups already growing with Untitled.</p>
+      </div>
+      <div class="cta-actions">
+        <button class="btn-secondary-gray">Learn more</button>
+        <button class="btn-primary-xl">Get started</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <!-- Newsletter row -->
+  <div class="footer-top-container">
+    <div class="footer-top-content">
+      <div class="footer-text-supporting">
+        <h3 class="footer-newsletter-title">Join our newsletter</h3>
+        <p class="footer-newsletter-desc">We'll send you a nice letter once per week. No spam.</p>
+      </div>
+      <div class="email-capture">
+        <input type="email" class="email-input" placeholder="Enter your email">
+        <button class="btn-subscribe">Subscribe</button>
+      </div>
+    </div>
+    <div class="footer-divider"></div>
+  </div>
+
+  <!-- Footer links -->
+  <div class="footer-links-container">
+    <div class="footer-links-content">
+      <div class="footer-column">
+        <span class="footer-column-heading">Product</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">Overview</a>
+          <a class="footer-link" href="#">Features</a>
+          <a class="footer-link" href="#">Solutions <span class="badge-success">New</span></a>
+          <a class="footer-link" href="#">Tutorials</a>
+          <a class="footer-link" href="#">Pricing</a>
+          <a class="footer-link" href="#">Releases</a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-column-heading">Company</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">About us</a>
+          <a class="footer-link" href="#">Careers</a>
+          <a class="footer-link" href="#">Press</a>
+          <a class="footer-link" href="#">News</a>
+          <a class="footer-link" href="#">Media kit</a>
+          <a class="footer-link" href="#">Contact</a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-column-heading">Resources</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">Blog</a>
+          <a class="footer-link" href="#">Newsletter</a>
+          <a class="footer-link" href="#">Events</a>
+          <a class="footer-link" href="#">Help centre</a>
+          <a class="footer-link" href="#">Tutorials</a>
+          <a class="footer-link" href="#">Support</a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-column-heading">Use cases</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">Startups</a>
+          <a class="footer-link" href="#">Enterprise</a>
+          <a class="footer-link" href="#">Government</a>
+          <a class="footer-link" href="#">SaaS</a>
+          <a class="footer-link" href="#">Marketplaces</a>
+          <a class="footer-link" href="#">Ecommerce</a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-column-heading">Social</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">Twitter</a>
+          <a class="footer-link" href="#">LinkedIn</a>
+          <a class="footer-link" href="#">Facebook</a>
+          <a class="footer-link" href="#">GitHub</a>
+          <a class="footer-link" href="#">AngelList</a>
+          <a class="footer-link" href="#">Dribbble</a>
+        </div>
+      </div>
+      <div class="footer-column">
+        <span class="footer-column-heading">Legal</span>
+        <div class="footer-links">
+          <a class="footer-link" href="#">Terms</a>
+          <a class="footer-link" href="#">Privacy</a>
+          <a class="footer-link" href="#">Cookies</a>
+          <a class="footer-link" href="#">Licenses</a>
+          <a class="footer-link" href="#">Settings</a>
+          <a class="footer-link" href="#">Contact</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer bottom -->
+  <div class="footer-bottom-container">
+    <div class="footer-divider"></div>
+    <div class="footer-bottom-content">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7F56D9"/><path d="M8 8h7v7H8V8zm9 0h7v7h-7V8zm-9 9h7v7H8v-7zm9 2h7v5h-7v-5z" fill="#fff"/></svg>
+        </div>
+        <span class="logo-text">Untitled UI</span>
+      </div>
+      <span class="footer-copyright">&copy; 2077 Untitled UI. All rights reserved.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

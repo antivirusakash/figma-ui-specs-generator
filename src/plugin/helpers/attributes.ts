@@ -134,10 +134,10 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
     const allSame = top === right && right === bottom && bottom === left;
     if (!allSame) {
       const sides: string[] = [];
-      if (top > 0) sides.push(`top: ${formatSpacing(top, settings)}`);
-      if (right > 0) sides.push(`right: ${formatSpacing(right, settings)}`);
-      if (bottom > 0) sides.push(`bottom: ${formatSpacing(bottom, settings)}`);
-      if (left > 0) sides.push(`left: ${formatSpacing(left, settings)}`);
+      if (top > 0) sides.push(`border-top: ${formatSpacing(top, settings)}`);
+      if (right > 0) sides.push(`border-right: ${formatSpacing(right, settings)}`);
+      if (bottom > 0) sides.push(`border-bottom: ${formatSpacing(bottom, settings)}`);
+      if (left > 0) sides.push(`border-left: ${formatSpacing(left, settings)}`);
       if (sides.length > 0) {
         attributes.push({
           key: "Stroke sides",
@@ -171,11 +171,14 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
         if (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW") {
           const { r, g, b } = effect.color;
           const a = effect.color.a;
-          const hex = `#${[r, g, b].map(c => Math.round(c * 255).toString(16).padStart(2, "0")).join("")}`;
+          const ri = Math.round(r * 255);
+          const gi = Math.round(g * 255);
+          const bi = Math.round(b * 255);
+          const hex = `#${[ri, gi, bi].map(c => c.toString(16).padStart(2, "0")).join("")}`;
           const parts = [
             `${effect.offset.x}px ${effect.offset.y}px ${effect.radius}px`,
             effect.spread ? `${effect.spread}px` : null,
-            a < 1 ? `${hex}/${Math.round(a * 100)}%` : hex,
+            a < 1 ? `rgba(${ri},${gi},${bi},${parseFloat(a.toFixed(2))})` : hex,
           ].filter(Boolean).join(" ");
           const label = effect.type === "INNER_SHADOW" ? "Inner shadow" : "Shadow";
           attributes.push({
@@ -358,6 +361,14 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
         findTokenValue(tokens, ["letterspacing"])
       ))
     });
+
+    if (textNode.textAlignHorizontal && textNode.textAlignHorizontal !== "LEFT") {
+      attributes.push({
+        key: "Text align",
+        value: textNode.textAlignHorizontal.toLowerCase(),
+        format: "HARDCODED" as AttributeFormat,
+      });
+    }
 
     if (textNode.textStyleId && !isMixed(textNode.textStyleId)) {
       const style = await figma.getStyleByIdAsync(textNode.textStyleId as string);

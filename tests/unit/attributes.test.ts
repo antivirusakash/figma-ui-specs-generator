@@ -109,3 +109,197 @@ describe("mergeAdjacentSameFill", () => {
     expect(result[2].fill).toBe("#0000FF");
   });
 });
+
+// ─── collectAttributes: shadow rgba format (Fix 3) ───
+
+// Minimal inventory stub
+function stubInventory(): any {
+  return {
+    add: () => {},
+    trackVariable: () => {},
+  };
+}
+
+const defaultSettings: any = {
+  spacingUnit: "px",
+  remBase: 16,
+  valuePrecision: 0,
+  colorFormat: "hex",
+  showRawValues: false,
+  valuePreference: "variable",
+};
+
+// Build a minimal SceneNode mock for collectAttributes
+function mockSceneNode(overrides: Record<string, any> = {}): any {
+  return {
+    name: "test-node",
+    type: "RECTANGLE",
+    id: "mock-1",
+    width: 100,
+    height: 50,
+    opacity: 1,
+    fills: [],
+    strokes: [],
+    effects: [],
+    boundVariables: {},
+    getSharedPluginDataKeys: () => [],
+    getSharedPluginData: () => "",
+    ...overrides,
+  };
+}
+
+describe("collectAttributes – shadow rgba (Fix 3)", () => {
+  it("shadow with alpha < 1 outputs rgba() format", async () => {
+    const node = mockSceneNode({
+      effects: [
+        {
+          type: "DROP_SHADOW",
+          visible: true,
+          offset: { x: 0, y: 4 },
+          radius: 8,
+          spread: 0,
+          color: { r: 0, g: 0, b: 0, a: 0.25 },
+        },
+      ],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const shadow = attrs.find((a: any) => a.key === "Shadow");
+    expect(shadow).toBeDefined();
+    expect(shadow!.value).toContain("rgba(0,0,0,0.25)");
+  });
+
+  it("shadow with alpha = 1 outputs hex format (no rgba)", async () => {
+    const node = mockSceneNode({
+      effects: [
+        {
+          type: "DROP_SHADOW",
+          visible: true,
+          offset: { x: 2, y: 2 },
+          radius: 4,
+          spread: 0,
+          color: { r: 1, g: 0, b: 0, a: 1 },
+        },
+      ],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const shadow = attrs.find((a: any) => a.key === "Shadow");
+    expect(shadow).toBeDefined();
+    expect(shadow!.value).toContain("#ff0000");
+    expect(shadow!.value).not.toContain("rgba");
+  });
+
+  it("shadow with spread includes spread pixel value", async () => {
+    const node = mockSceneNode({
+      effects: [
+        {
+          type: "DROP_SHADOW",
+          visible: true,
+          offset: { x: 0, y: 0 },
+          radius: 10,
+          spread: 5,
+          color: { r: 0, g: 0, b: 0, a: 0.5 },
+        },
+      ],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const shadow = attrs.find((a: any) => a.key === "Shadow");
+    expect(shadow).toBeDefined();
+    expect(shadow!.value).toContain("5px");
+  });
+});
+
+// ─── collectAttributes: stroke border-* format (Fix 4) ───
+
+describe("collectAttributes – stroke sides border-* (Fix 4)", () => {
+  it("single side (bottom only) outputs border-bottom", async () => {
+    const node = mockSceneNode({
+      strokeTopWeight: 0,
+      strokeRightWeight: 0,
+      strokeBottomWeight: 1,
+      strokeLeftWeight: 0,
+      strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: true, opacity: 1 }],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const sides = attrs.find((a: any) => a.key === "Stroke sides");
+    expect(sides).toBeDefined();
+    expect(sides!.value).toBe("border-bottom: 1px");
+  });
+
+  it("all sides equal outputs 'all'", async () => {
+    const node = mockSceneNode({
+      strokeTopWeight: 2,
+      strokeRightWeight: 2,
+      strokeBottomWeight: 2,
+      strokeLeftWeight: 2,
+      strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: true, opacity: 1 }],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const sides = attrs.find((a: any) => a.key === "Stroke sides");
+    expect(sides).toBeDefined();
+    expect(sides!.value).toBe("all");
+  });
+
+  it("multiple sides outputs comma-separated border-* values", async () => {
+    const node = mockSceneNode({
+      strokeTopWeight: 1,
+      strokeRightWeight: 0,
+      strokeBottomWeight: 2,
+      strokeLeftWeight: 0,
+      strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: true, opacity: 1 }],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const sides = attrs.find((a: any) => a.key === "Stroke sides");
+    expect(sides).toBeDefined();
+    expect(sides!.value).toBe("border-top: 1px, border-bottom: 2px");
+  });
+});
+
+// ─── collectAttributes: text_align (Fix 2) ───
+
+describe("collectAttributes – text align (Fix 2)", () => {
+  function mockTextSceneNode(textAlignHorizontal: string): any {
+    return {
+      name: "text-node",
+      type: "TEXT",
+      id: "text-1",
+      width: 200,
+      height: 24,
+      opacity: 1,
+      fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: true, opacity: 1 }],
+      strokes: [],
+      effects: [],
+      boundVariables: {},
+      getSharedPluginDataKeys: () => [],
+      getSharedPluginData: () => "",
+      fontName: { family: "Inter", style: "Regular" },
+      fontSize: 14,
+      lineHeight: { unit: "AUTO" },
+      letterSpacing: { unit: "PIXELS", value: 0 },
+      textAlignHorizontal,
+      textStyleId: "",
+    };
+  }
+
+  it("CENTER text emits text align attribute with value 'center'", async () => {
+    const node = mockTextSceneNode("CENTER");
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const align = attrs.find((a: any) => a.key === "Text align");
+    expect(align).toBeDefined();
+    expect(align!.value).toBe("center");
+  });
+
+  it("LEFT text does NOT emit text align attribute (default skipped)", async () => {
+    const node = mockTextSceneNode("LEFT");
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const align = attrs.find((a: any) => a.key === "Text align");
+    expect(align).toBeUndefined();
+  });
+
+  it("RIGHT text emits text align attribute with value 'right'", async () => {
+    const node = mockTextSceneNode("RIGHT");
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    const align = attrs.find((a: any) => a.key === "Text align");
+    expect(align).toBeDefined();
+    expect(align!.value).toBe("right");
+  });
+});

@@ -112,14 +112,27 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
         nameCounts.set(baseKey, count);
         const pathKey = count > 1 ? `${baseKey}[${count}]` : baseKey;
 
+        // Sort kids spatially along primary axis before computing alignment
+        const sortedKids = [...kids].sort((c1: any, c2: any) => {
+          const bb1 = c1.absoluteBoundingBox;
+          const bb2 = c2.absoluteBoundingBox;
+          return inferredMode === "HORIZONTAL" ? bb1.x - bb2.x : bb1.y - bb2.y;
+        });
+
+        // Compute actual alignment from child positions
+        const parentBounds = node.absoluteBoundingBox;
+        const inferredAlign = parentBounds
+          ? inferAlignment(sortedKids, parentBounds, inferredMode)
+          : { primary: "MIN", counter: "MIN" };
+
         data.push({
           nodeId: node.id,
           name: node.name,
           type: node.type,
           clipsContent: "clipsContent" in node ? node.clipsContent : undefined,
           layoutMode: inferredMode,
-          primaryAxisAlignItems: "INFERRED",
-          counterAxisAlignItems: "INFERRED",
+          primaryAxisAlignItems: inferredAlign.primary,
+          counterAxisAlignItems: inferredAlign.counter,
           primaryAxisSizingMode: "FIXED",
           counterAxisSizingMode: "FIXED",
           itemSpacing: estGap,
@@ -139,6 +152,55 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
 
   walk(root, "root");
   return data;
+}
+
+const ALIGN_THRESHOLD = 2; // px tolerance for edge alignment
+
+/**
+ * Classify alignment along one axis.
+ * startGap = distance from parent edge to first child edge
+ * endGap   = distance from last child edge to parent edge
+ * count    = number of children (SPACE_BETWEEN requires >= 2)
+ */
+function classifyAxis(startGap: number, endGap: number, count: number): string {
+  const atStart = startGap <= ALIGN_THRESHOLD;
+  const atEnd = endGap <= ALIGN_THRESHOLD;
+  if (atStart && atEnd && count >= 2) return "SPACE_BETWEEN";
+  if (atStart && !atEnd) return "MIN";
+  if (atEnd && !atStart) return "MAX";
+  // Both near edge with single child, or equal gaps
+  if (Math.abs(startGap - endGap) <= ALIGN_THRESHOLD) {
+    return atStart ? "MIN" : "CENTER";
+  }
+  // Asymmetric, neither edge flush — default to MIN
+  return "MIN";
+}
+
+export function inferAlignment(
+  kids: Array<{ absoluteBoundingBox: { x: number; y: number; width: number; height: number } }>,
+  parent: { x: number; y: number; width: number; height: number },
+  mode: "HORIZONTAL" | "VERTICAL"
+): { primary: string; counter: string } {
+  const first = kids[0]!.absoluteBoundingBox;
+  const last = kids[kids.length - 1]!.absoluteBoundingBox;
+
+  // Primary axis: uses first + last child
+  let primary: string;
+  if (mode === "HORIZONTAL") {
+    primary = classifyAxis(first.x - parent.x, (parent.x + parent.width) - (last.x + last.width), kids.length);
+  } else {
+    primary = classifyAxis(first.y - parent.y, (parent.y + parent.height) - (last.y + last.height), kids.length);
+  }
+
+  // Counter axis: uses first child only
+  let counter: string;
+  if (mode === "HORIZONTAL") {
+    counter = classifyAxis(first.y - parent.y, (parent.y + parent.height) - (first.y + first.height), 1);
+  } else {
+    counter = classifyAxis(first.x - parent.x, (parent.x + parent.width) - (first.x + first.width), 1);
+  }
+
+  return { primary, counter };
 }
 
 function computeGapLine(node: SceneNode, rootBounds: Rect | null | undefined) {
