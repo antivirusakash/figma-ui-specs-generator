@@ -190,10 +190,10 @@ describe("v11 contract", () => {
     }
   });
 
-  it("includes path on text_index entries", () => {
+  it("includes path on text_index entries (non-compact)", () => {
     const payload = toAgentReadyDataPayload(
       makeDataModel(), false, makeTarget(),
-      { ...baseSettings, schemaVersion: "v11" },
+      { ...baseSettings, aiCompactMode: false, schemaVersion: "v11" },
       makeInventory(), makeDeps()
     );
     expect(payload.text_index).toBeDefined();
@@ -235,16 +235,17 @@ describe("v11 contract", () => {
     expect(payload.mcp_playbook.preferred_keys).toContain("path_key");
   });
 
-  it("anatomy chunks include repeat node_ids in v11", () => {
+  it("anatomy chunks exclude repeat node_ids in v11", () => {
     const payload = toAgentReadyDataPayload(
       makeDataModel(), false, makeTarget(),
       { ...baseSettings, schemaVersion: "v11" },
       makeInventory(), makeDeps()
     );
     const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
-    // 1:4 is a repeat node and should be in anatomy in v11
+    // 1:4 is a repeat item, 1:3 is a repeat template — both excluded from anatomy
     const allNodeIds = anatomyChunk.items.map((i: any) => i.node_id);
-    expect(allNodeIds).toContain("1:4");
+    expect(allNodeIds).not.toContain("1:4");
+    expect(allNodeIds).not.toContain("1:3");
   });
 });
 
@@ -335,8 +336,10 @@ describe("v12 contract", () => {
     const varyingKeys = repeatsChunk.varying_keys;
     for (const item of repeatsChunk.items) {
       const decoded = decodeDiffs(item.diffs, varyingKeys);
-      // Should contain the original diff values (possibly fewer due to width dedup)
+      // No cascade in this fixture (Card/width has no child width), both survive
       expect(decoded["Card/text"]).toBe("Item 2");
+      expect(decoded["Card/width"]).toBe("300");
+      expect(Object.keys(decoded)).toHaveLength(2);
     }
   });
 
@@ -375,6 +378,168 @@ describe("v12 contract", () => {
     const keys = repeatsChunk.varying_keys;
     const sorted = [...keys].sort();
     expect(keys).toEqual(sorted);
+  });
+});
+
+// ─── v13 Contract Tests ───────────────────────────────────────
+
+describe("v13 contract", () => {
+  function makeV13DataModel(): DataModel {
+    const model = makeDataModel();
+    model.componentDefinition = {
+      componentSetName: "Button",
+      baseNodeId: "1:1",
+      properties: [
+        { name: "Size", type: "VARIANT", default: "Medium", options: ["Small", "Medium", "Large"] },
+        { name: "Show Icon", type: "BOOLEAN", default: true, options: ["true", "false"] },
+      ],
+      variantDiffs: [
+        {
+          config: { Size: "Small" },
+          changes: { "1:1": { h: 36, Fill: "#CCCCCC" } },
+        },
+        {
+          config: { Size: "Large" },
+          changes: { "1:1": { h: 72 } },
+        },
+        {
+          config: { "Show Icon": false },
+          changes: { "1:3": { visible: false } },
+          removed: ["1:99"],
+        },
+      ],
+    };
+    return model;
+  }
+
+  it("emits v13 schema string", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.schema).toBe("specs-plugin.agent_pack.v13.yaml.compact");
+  });
+
+  it("includes component_definition chunk", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk).toBeDefined();
+    expect(defChunk.component_set).toBe("Button");
+    expect(defChunk.base_node_id).toBe("1:1");
+  });
+
+  it("component_definition has property schema", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk.properties).toHaveLength(2);
+    expect(defChunk.properties[0].name).toBe("Size");
+    expect(defChunk.properties[0].type).toBe("VARIANT");
+    expect(defChunk.properties[0].default).toBe("Medium");
+    expect(defChunk.properties[0].options).toEqual(["Small", "Medium", "Large"]);
+  });
+
+  it("component_definition has variant_diffs", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk.variant_diffs).toHaveLength(3);
+    // First diff: Size=Small
+    expect(defChunk.variant_diffs[0].config).toEqual({ Size: "Small" });
+    expect(defChunk.variant_diffs[0].changes["1:1"].h).toBe(36);
+    expect(defChunk.variant_diffs[0].changes["1:1"].Fill).toBe("#CCCCCC");
+  });
+
+  it("variant_diffs include added/removed when present", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    const iconDiff = defChunk.variant_diffs.find((d: any) => d.config["Show Icon"] === false);
+    expect(iconDiff).toBeDefined();
+    expect(iconDiff.removed).toEqual(["1:99"]);
+  });
+
+  it("skips properties chunks when component_definition exists", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const propChunks = payload.chunks.filter((c: any) => c.kind === "properties");
+    expect(propChunks).toHaveLength(0);
+  });
+
+  it("still includes anatomy chunks (filtered like v12)", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    expect(anatomyChunk).toBeDefined();
+    // Repeat node 1:4 should be excluded (v12/v13 O1)
+    const nodeIds = anatomyChunk.items.map((i: any) => i.node_id);
+    expect(nodeIds).not.toContain("1:4");
+  });
+
+  it("still includes repeats chunks", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk).toBeDefined();
+  });
+
+  it("inherits v12 optimizations (no path_key)", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    for (const item of anatomyChunk.items) {
+      expect(item).not.toHaveProperty("path_key");
+    }
+    expect(payload.text_index).toBeUndefined();
+  });
+
+  it("summary includes component_definition flag", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.summary.component_definition).toBe(true);
+    expect(payload.summary.variant_diffs_total).toBe(3);
+  });
+
+  it("no component_definition chunk when dataModel lacks it", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk).toBeUndefined();
+    // Properties should be included when no component_definition
+    const propChunks = payload.chunks.filter((c: any) => c.kind === "properties");
+    expect(propChunks.length).toBeGreaterThan(0);
   });
 });
 
@@ -457,5 +622,366 @@ describe("non-compact mode", () => {
     );
     // isV12 = compact && schemaVersion === "v12", so with compact off it should be v11
     expect(payload.schema).toBe("specs-plugin.agent_pack.v11.yaml");
+  });
+});
+
+// ─── Width dedup in v11 ───────────────────────────────────────
+
+describe("width dedup applies to all schema versions", () => {
+  function makeModelWithWidthCascade(): DataModel {
+    return {
+      anatomy: [
+        {
+          name: "Outer",
+          type: "FRAME",
+          nodeId: "3:1",
+          pathKey: "root/Outer",
+          attributes: [],
+          bounds: { x: 0, y: 0, width: 200, height: 100 },
+        },
+      ],
+      properties: [],
+      instanceTemplates: [
+        {
+          templateNodeId: "3:1",
+          templatePathKey: "root/Outer",
+          fingerprint: "fp2",
+          instanceOf: "OuterComponent",
+          repeatCount: 1,
+          varyingKeys: ["Outer/width", "Outer/Inner/width", "Outer/Inner/Deep/width", "Outer/text"],
+          repeats: [
+            {
+              nodeId: "3:2",
+              pathKey: "root/Outer[2]",
+              bounds: { x: 0, y: 100, width: 200, height: 100 },
+              childrenText: [],
+              diffs: {
+                "Outer/width": "86",
+                "Outer/Inner/width": "86",
+                "Outer/Inner/Deep/width": "86",
+                "Outer/text": "Hello",
+              },
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  it("v11 deduplicates cascading width diffs", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithWidthCascade(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    const item = repeatsChunk.items[0];
+    // Only outermost width should survive
+    expect(item.diffs["Outer/width"]).toBe("86");
+    expect(item.diffs["Outer/Inner/width"]).toBeUndefined();
+    expect(item.diffs["Outer/Inner/Deep/width"]).toBeUndefined();
+    expect(item.diffs["Outer/text"]).toBe("Hello");
+  });
+
+  it("varying_keys are pruned after width dedup in v11", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithWidthCascade(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk.varying_keys).toContain("Outer/width");
+    expect(repeatsChunk.varying_keys).toContain("Outer/text");
+    expect(repeatsChunk.varying_keys).not.toContain("Outer/Inner/width");
+    expect(repeatsChunk.varying_keys).not.toContain("Outer/Inner/Deep/width");
+  });
+
+  it("does not dedup sibling widths with same value", () => {
+    const model: DataModel = {
+      anatomy: [
+        {
+          name: "Container",
+          type: "FRAME",
+          nodeId: "6:1",
+          pathKey: "root/Container",
+          attributes: [],
+          bounds: { x: 0, y: 0, width: 200, height: 100 },
+        },
+      ],
+      properties: [],
+      instanceTemplates: [
+        {
+          templateNodeId: "6:1",
+          templatePathKey: "root/Container",
+          fingerprint: "fp3",
+          instanceOf: "ContainerComponent",
+          repeatCount: 1,
+          varyingKeys: ["A/width", "B/width"],
+          repeats: [
+            {
+              nodeId: "6:2",
+              pathKey: "root/Container[2]",
+              bounds: { x: 0, y: 100, width: 200, height: 100 },
+              childrenText: [],
+              diffs: { "A/width": "86", "B/width": "86" },
+            },
+          ],
+        },
+      ],
+    };
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    const item = repeatsChunk.items[0];
+    // Siblings (not parent-child) should both survive
+    expect(item.diffs["A/width"]).toBe("86");
+    expect(item.diffs["B/width"]).toBe("86");
+  });
+
+  it("varying_keys are pruned after width dedup in v12", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithWidthCascade(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v12" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk.varying_keys).toContain("Outer/text");
+    expect(repeatsChunk.varying_keys).toContain("Outer/width");
+    expect(repeatsChunk.varying_keys).not.toContain("Outer/Inner/width");
+    expect(repeatsChunk.varying_keys).not.toContain("Outer/Inner/Deep/width");
+  });
+});
+
+// ─── Padding zero filter ──────────────────────────────────────
+
+describe("padding zero filter", () => {
+  function makeModelWithPadding(paddingValue: string): DataModel {
+    return {
+      anatomy: [
+        {
+          name: "Box",
+          type: "FRAME",
+          nodeId: "4:1",
+          pathKey: "root/Box",
+          attributes: [{ key: "Padding", value: paddingValue, rawValue: paddingValue, format: "HARDCODED" }],
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+        },
+      ],
+      properties: [],
+      instanceTemplates: [],
+    };
+  }
+
+  it("filters padding '0' after simplification", () => {
+    // "0 0 0 0" is already filtered by the pre-check, but "0" (simplified from e.g. "0 0 0 0" rawValue)
+    // could slip through. Test with a value that simplifies to "0".
+    const model = makeModelWithPadding("0");
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "4:1");
+    expect(item.padding).toBeUndefined();
+  });
+
+  it("keeps non-zero padding", () => {
+    const model = makeModelWithPadding("16 24 16 24");
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "4:1");
+    expect(item.padding).toBeDefined();
+  });
+});
+
+// ─── Template attributes on repeats ───────────────────────────
+
+describe("template_attributes on repeats chunks", () => {
+  it("includes template_attributes with w/h from template element", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk).toBeDefined();
+    expect(repeatsChunk.template_attributes).toBeDefined();
+    // Template node 1:3 has bounds 375×200
+    expect(repeatsChunk.template_attributes.w).toBe(375);
+    expect(repeatsChunk.template_attributes.h).toBe(200);
+  });
+
+  it("template_attributes does not include identity fields", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    const attrs = repeatsChunk.template_attributes;
+    // Identity fields are on the chunk itself, not duplicated in template_attributes
+    expect(attrs.node_id).toBeUndefined();
+    expect(attrs.name).toBeUndefined();
+    expect(attrs.type).toBeUndefined();
+    expect(attrs.instance_of).toBeUndefined();
+  });
+
+  it("template_attributes includes children_text from template element", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk.template_attributes.children_text).toEqual(["Item 1", "Description"]);
+  });
+});
+
+// ─── Empty repeats chunk filtering ────────────────────────────
+
+describe("empty repeats chunk filtering", () => {
+  function makeModelWithEmptyRepeats(): DataModel {
+    return {
+      anatomy: [
+        {
+          name: "Logo",
+          type: "INSTANCE",
+          nodeId: "5:1",
+          pathKey: "root/Logo",
+          instanceOf: "LogoComponent",
+          attributes: [],
+          bounds: { x: 0, y: 0, width: 100, height: 40 },
+        },
+        {
+          name: "Logo",
+          type: "INSTANCE",
+          nodeId: "5:2",
+          pathKey: "root/Logo[2]",
+          instanceOf: "LogoComponent",
+          attributes: [],
+          bounds: { x: 0, y: 100, width: 100, height: 40 },
+        },
+      ],
+      properties: [],
+      instanceTemplates: [
+        {
+          templateNodeId: "5:1",
+          templatePathKey: "root/Logo",
+          fingerprint: "fp_logo",
+          instanceOf: "LogoComponent",
+          repeatCount: 1,
+          varyingKeys: [],
+          repeats: [
+            {
+              nodeId: "5:2",
+              pathKey: "root/Logo[2]",
+              bounds: { x: 0, y: 100, width: 100, height: 40 },
+              childrenText: [],
+              diffs: {},
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  it("skips repeats chunks with empty varying_keys and empty diffs", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithEmptyRepeats(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunks = payload.chunks.filter((c: any) => c.kind === "repeats");
+    expect(repeatsChunks).toHaveLength(0);
+  });
+
+  it("keeps repeats chunks with non-empty diffs", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunks = payload.chunks.filter((c: any) => c.kind === "repeats");
+    expect(repeatsChunks.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Compact mode size reductions (Phase 2) ───────────────────
+
+describe("compact mode size reductions", () => {
+  it("text_index omitted in v11 compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: true, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.text_index).toBeUndefined();
+  });
+
+  it("text_index present in v11 non-compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: false, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.text_index).toBeDefined();
+    expect(payload.text_index.length).toBeGreaterThan(0);
+  });
+
+  it("node_ids omitted from anatomy chunks in compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: true, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    expect(anatomyChunk).toBeDefined();
+    expect(anatomyChunk).not.toHaveProperty("node_ids");
+  });
+
+  it("node_ids present on anatomy chunks in non-compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: false, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    expect(anatomyChunk).toBeDefined();
+    expect(anatomyChunk).toHaveProperty("node_ids");
+    expect(Array.isArray(anatomyChunk.node_ids)).toBe(true);
+  });
+
+  it("children_text omitted from repeat items in compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: true, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk).toBeDefined();
+    for (const item of repeatsChunk.items) {
+      expect(item).not.toHaveProperty("children_text");
+    }
+  });
+
+  it("children_text present on repeat items in non-compact mode", () => {
+    const payload = toAgentReadyDataPayload(
+      makeDataModel(), false, makeTarget(),
+      { ...baseSettings, aiCompactMode: false, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk).toBeDefined();
+    const itemWithText = repeatsChunk.items.find((i: any) => i.children_text);
+    expect(itemWithText).toBeDefined();
+    expect(itemWithText.children_text).toEqual(["Item 2", "Other desc"]);
   });
 });

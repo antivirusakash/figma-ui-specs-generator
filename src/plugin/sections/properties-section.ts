@@ -4,13 +4,17 @@ import type { Inventory } from "../inventory";
 import type {
   AnatomyElement,
   Attribute,
+  ComponentDefinition,
+  ComponentPropertyDef,
   LayoutSpec,
   PropertyOption,
   PropertySpec,
   Settings,
   SpecTextRole,
   Theme,
-  TwoWaySpec
+  TwoWaySpec,
+  VariantChange,
+  VariantDiff
 } from "../types";
 import { LIMITS } from "../limits";
 
@@ -196,6 +200,236 @@ function diffElements(baseElements: AnatomyElement[], variantElements: AnatomyEl
   }
 
   return diffs.slice(0, 24);
+}
+
+/**
+ * v13: Compute a structured diff between base and variant anatomy.
+ * Returns a VariantChange mapping node_id → {attributeKey: newValue} for changed attributes,
+ * plus lists of added/removed node_ids.
+ */
+export function computeStructuredDiff(
+  baseElements: AnatomyElement[],
+  variantElements: AnatomyElement[]
+): { changes: VariantChange; added: string[]; removed: string[] } {
+  const baseMap = mapElementsByPath(baseElements);
+  const variantMap = mapElementsByPath(variantElements);
+  const changes: VariantChange = {};
+  const added: string[] = [];
+  const removed: string[] = [];
+
+  for (const [key, baseEl] of baseMap.entries()) {
+    const variantEl = variantMap.get(key);
+    if (!variantEl) {
+      removed.push(key);
+      continue;
+    }
+    // Use pathKey (stable across clones) as the diff key, not nodeId (unique per clone)
+    const diffKey = key;
+    const nodeChanges: Record<string, string | number | boolean> = {};
+
+    // Compare promoted fields
+    if (baseEl.bounds && variantEl.bounds) {
+      const bw = Math.round(baseEl.bounds.width);
+      const vw = Math.round(variantEl.bounds.width);
+      if (bw !== vw) nodeChanges.w = vw;
+      const bh = Math.round(baseEl.bounds.height);
+      const vh = Math.round(variantEl.bounds.height);
+      if (bh !== vh) nodeChanges.h = vh;
+    }
+
+    // Compare attributes by key
+    const baseAttrs = attributeMap(baseEl.attributes);
+    const variantAttrs = attributeMap(variantEl.attributes);
+    for (const [attrKey, baseValue] of baseAttrs.entries()) {
+      const variantValue = variantAttrs.get(attrKey);
+      if (variantValue === undefined) {
+        // Attribute removed — record as empty string
+        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = "";
+      } else if (baseValue !== variantValue) {
+        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = variantValue;
+      }
+    }
+    for (const [attrKey, variantValue] of variantAttrs.entries()) {
+      if (!baseAttrs.has(attrKey)) {
+        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = variantValue;
+      }
+    }
+
+    // Compare text content
+    if (baseEl.textContent !== variantEl.textContent) {
+      nodeChanges.text = variantEl.textContent ?? "";
+    }
+
+    // Compare visibility (element present in both but type changes suggest hidden)
+    // (visibility is typically handled through attribute differences)
+
+    if (Object.keys(nodeChanges).length > 0) {
+      changes[diffKey] = nodeChanges;
+    }
+  }
+
+  for (const [key] of variantMap.entries()) {
+    if (!baseMap.has(key)) {
+      added.push(key);
+    }
+  }
+
+  return { changes, added, removed };
+}
+
+/**
+ * v13: Collect a ComponentDefinition from a component set.
+ * Defines the structure once (base variant) and records only diffs per variant option.
+ */
+export async function collectComponentDefinition(
+  target: SceneNode,
+  inventory: Inventory,
+  settings: Settings,
+  deps: PropertiesSectionDeps
+): Promise<ComponentDefinition | null> {
+  let baseInstance: InstanceNode | null = null;
+  let componentSet: ComponentSetNode | null = null;
+
+  if (target.type === "INSTANCE") {
+    const source = target as InstanceNode;
+    baseInstance = source.clone();
+    const main = await deps.getMainComponentSafe(source);
+    if (main?.parent?.type === "COMPONENT_SET") {
+      componentSet = main.parent as ComponentSetNode;
+    }
+  } else if (target.type === "COMPONENT_SET") {
+    componentSet = target as ComponentSetNode;
+    if (componentSet.defaultVariant) {
+      baseInstance = componentSet.defaultVariant.createInstance();
+    }
+  } else if (target.type === "COMPONENT") {
+    const component = target as ComponentNode;
+    baseInstance = component.createInstance();
+    if (component.parent?.type === "COMPONENT_SET") {
+      componentSet = component.parent as ComponentSetNode;
+    }
+  }
+
+  if (!baseInstance || !componentSet) {
+    return null;
+  }
+
+  const tempFrame = figma.createFrame();
+  tempFrame.name = "__specs_v13_def__";
+  tempFrame.visible = false;
+  tempFrame.locked = true;
+  figma.currentPage.appendChild(tempFrame);
+  tempFrame.appendChild(baseInstance);
+
+  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+
+  // Build property definitions from component set
+  const propDefs: ComponentPropertyDef[] = [];
+  const properties = baseInstance.componentProperties;
+  const variantGroupProps = componentSet.variantGroupProperties ?? {};
+
+  for (const [propName, prop] of Object.entries(properties)) {
+    if (!prop) continue;
+    const cleanName = propName.replace(/#[\d:]+$/, "");
+    if (prop.type === "VARIANT") {
+      const allOptions = variantGroupProps[propName]?.values ?? [];
+      propDefs.push({
+        name: cleanName,
+        type: "VARIANT",
+        default: String(prop.value),
+        options: allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS)
+      });
+    } else if (prop.type === "BOOLEAN") {
+      propDefs.push({
+        name: cleanName,
+        type: "BOOLEAN",
+        default: Boolean(prop.value),
+        options: ["true", "false"]
+      });
+    } else if (prop.type === "TEXT") {
+      propDefs.push({
+        name: cleanName,
+        type: "TEXT",
+        default: String(prop.value)
+      });
+    } else if (prop.type === "INSTANCE_SWAP") {
+      propDefs.push({
+        name: cleanName,
+        type: "INSTANCE_SWAP",
+        default: String(prop.value)
+      });
+    }
+  }
+
+  // Collect variant diffs for each non-default option
+  const variantDiffs: VariantDiff[] = [];
+
+  for (const [propName, prop] of Object.entries(properties)) {
+    if (!prop) continue;
+    const cleanName = propName.replace(/#[\d:]+$/, "");
+
+    if (prop.type === "VARIANT") {
+      const allOptions = variantGroupProps[propName]?.values ?? [];
+      const options = allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS);
+      for (const option of options) {
+        if (option === String(prop.value)) continue; // skip default
+        const variantInstance = baseInstance.clone();
+        tempFrame.appendChild(variantInstance);
+        try {
+          variantInstance.setProperties({ [propName]: option });
+        } catch {
+          variantInstance.remove();
+          continue;
+        }
+        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+        const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
+        if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
+          const diff: VariantDiff = {
+            config: { [cleanName]: option },
+            changes
+          };
+          if (added.length > 0) diff.added = added;
+          if (removed.length > 0) diff.removed = removed;
+          variantDiffs.push(diff);
+        }
+        variantInstance.remove();
+      }
+    } else if (prop.type === "BOOLEAN") {
+      // Only collect the non-default value
+      const nonDefault = !Boolean(prop.value);
+      const variantInstance = baseInstance.clone();
+      tempFrame.appendChild(variantInstance);
+      try {
+        variantInstance.setProperties({ [propName]: nonDefault });
+      } catch {
+        variantInstance.remove();
+        continue;
+      }
+      const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+      const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
+      if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
+        const diff: VariantDiff = {
+          config: { [cleanName]: nonDefault },
+          changes
+        };
+        if (added.length > 0) diff.added = added;
+        if (removed.length > 0) diff.removed = removed;
+        variantDiffs.push(diff);
+      }
+      variantInstance.remove();
+    }
+    // TEXT and INSTANCE_SWAP don't produce structural diffs
+  }
+
+  const baseNodeId = baseInstance.id ?? target.id;
+  tempFrame.remove();
+
+  return {
+    componentSetName: componentSet.name,
+    baseNodeId,
+    properties: propDefs,
+    variantDiffs
+  };
 }
 
 function mapElementsByPath(elements: AnatomyElement[]) {

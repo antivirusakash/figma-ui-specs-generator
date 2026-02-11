@@ -24,6 +24,7 @@ import { createInventorySection as createInventorySectionModule } from "./plugin
 import {
   buildElementKey as buildElementKeyModule,
   buildLayoutKey as buildLayoutKeyModule,
+  collectComponentDefinition as collectComponentDefinitionModule,
   collectPropertySpecs as collectPropertySpecsModule,
   collectTwoWaySpec as collectTwoWaySpecModule,
   createPropertiesSection as createPropertiesSectionModule,
@@ -36,6 +37,7 @@ import {
 import { clamp, getTheme } from "./plugin/theme";
 import type {
   AnatomyElement,
+  ComponentDefinition,
   DataModel,
   Framework,
   LayoutSpec,
@@ -259,6 +261,8 @@ async function handleCopyAiSpecs(settings: Settings) {
 
     const { elements: anatomyElements, instanceTemplates, dedupedNodeIds } = await collectAnatomyElements(target, inventory, copySettings);
     const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
+    const copyIsV13 = copySettings.aiCompactMode && copySettings.schemaVersion === "v13";
+    const copyComponentDef = copyIsV13 ? await collectComponentDefinition(target, inventory, copySettings) : null;
     const layoutData = collectLayoutData(target, dedupedNodeIds);
 
     // Merge layout data into anatomy elements
@@ -296,7 +300,8 @@ async function handleCopyAiSpecs(settings: Settings) {
     const dataModel: DataModel = {
       anatomy: anatomyElements,
       properties: propertySpecs,
-      instanceTemplates: instanceTemplates.length > 0 ? instanceTemplates : undefined
+      instanceTemplates: instanceTemplates.length > 0 ? instanceTemplates : undefined,
+      componentDefinition: copyComponentDef ?? undefined
     };
 
     const dataDeps = {
@@ -466,12 +471,21 @@ async function generateSpecs(settings: Settings) {
       variantSections.forEach((section) => appendSection(section));
     }
 
+    const isV13 = settings.aiCompactMode && settings.schemaVersion === "v13";
     const propertySpecs =
       settings.properties || settings.data ? await collectPropertySpecs(target, inventory, settings) : [];
+    const componentDefinition = isV13 && settings.data
+      ? await collectComponentDefinition(target, inventory, settings)
+      : null;
     const twoWaySpec = settings.twoWay ? await collectTwoWaySpec(target, settings, inventory) : null;
 
-    if (settings.properties) {
+    if (settings.properties || settings.data) {
       dataModel.properties = propertySpecs.map((spec) => ({ ...spec }));
+      if (componentDefinition) {
+        dataModel.componentDefinition = componentDefinition;
+      }
+    }
+    if (settings.properties) {
       const propertiesSection = await createPropertiesSection(
         target,
         propertySpecs,
@@ -778,6 +792,10 @@ async function createAnatomySection(
 
 async function collectPropertySpecs(target: SceneNode, inventory: Inventory, settings: Settings) {
   return collectPropertySpecsModule(target, inventory, settings, deps);
+}
+
+async function collectComponentDefinition(target: SceneNode, inventory: Inventory, settings: Settings): Promise<ComponentDefinition | null> {
+  return collectComponentDefinitionModule(target, inventory, settings, deps);
 }
 
 function buildElementKey(element: AnatomyElement) {

@@ -59,7 +59,7 @@ type Settings = {
   showRawValues: boolean;
   valuePreference: 'variable' | 'token';
   framework: Framework;
-  schemaVersion: 'v11' | 'v12';
+  schemaVersion: 'v11' | 'v12' | 'v13';
 };
 
 type PluginMessage =
@@ -103,7 +103,7 @@ const DEFAULT_SETTINGS: Settings = {
   showRawValues: false,
   valuePreference: 'variable',
   framework: 'auto',
-  schemaVersion: 'v11'
+  schemaVersion: 'v13'
 };
 
 const panelClass = 'rounded-xl border border-border bg-card/95 p-4 shadow-sm';
@@ -910,10 +910,13 @@ ${fwLine}
                   <SelectContent>
                     <SelectItem value="v11">v11 (stable)</SelectItem>
                     <SelectItem value="v12">v12 (compact)</SelectItem>
+                    <SelectItem value="v13">v13 (blueprint)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  v12 reduces payload size by ~30% with indexed diffs and path field removal.
+                  {settings.schemaVersion === 'v13'
+                    ? 'v13 defines component structure once with variant diffs — ideal for components.'
+                    : 'v12 reduces payload size by ~30% with indexed diffs and path field removal.'}
                 </p>
               </div>
             ) : null}

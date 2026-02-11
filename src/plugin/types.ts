@@ -31,7 +31,7 @@ export type Settings = {
   showRawValues: boolean;
   valuePreference: "variable" | "token";
   framework: Framework;
-  schemaVersion: "v11" | "v12";
+  schemaVersion: "v11" | "v12" | "v13";
 };
 
 export type Theme = {
@@ -165,8 +165,40 @@ export type InstanceTemplate = {
   repeats: InstanceRepeatRow[];
 };
 
+/** v13: per-element attribute changes for a variant configuration.
+ *  Keys are element path keys (stable across clones), values are changed attributes. */
+export type VariantChange = Record<string, Record<string, string | number | boolean>>;
+
+/** v13: a single variant diff entry */
+export type VariantDiff = {
+  config: Record<string, string | boolean>;
+  changes: VariantChange;
+  /** Element path keys added in this variant but absent from base */
+  added?: string[];
+  /** Element path keys present in base but removed in this variant */
+  removed?: string[];
+};
+
+/** v13: property definition within a component blueprint */
+export type ComponentPropertyDef = {
+  name: string;
+  type: string;
+  default: string | boolean;
+  options?: string[];
+};
+
+/** v13: component blueprint — structure once, diffs per variant */
+export type ComponentDefinition = {
+  componentSetName: string;
+  baseNodeId: string;
+  properties: ComponentPropertyDef[];
+  variantDiffs: VariantDiff[];
+};
+
 export type DataModel = {
   anatomy: AnatomyElement[];
   properties: PropertySpec[];
   instanceTemplates?: InstanceTemplate[];
+  /** v13: component blueprint (populated when target is a component with variants) */
+  componentDefinition?: ComponentDefinition;
 };

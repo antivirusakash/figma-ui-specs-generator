@@ -1,6 +1,6 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import type { Inventory } from "../inventory";
-import type { DataModel, Settings, SpecTextRole, Theme } from "../types";
+import type { AnatomyElement, DataModel, Settings, SpecTextRole, Theme } from "../types";
 import { LIMITS } from "../limits";
 import { encodeDiffs, deduplicateWidthDiffs } from "../helpers/v12-repeat-diff";
 
@@ -147,32 +147,34 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const isV12 = compact && settings.schemaVersion === "v12";
+  const isV13 = compact && settings.schemaVersion === "v13";
+  const isV12 = compact && (settings.schemaVersion === "v12" || isV13);
   const maxAnatomy = LIMITS.MAX_ANATOMY_RECORDS;
   const maxProperties = LIMITS.MAX_PROPERTY_RECORDS;
   const resolvedTokens = new Map<string, string>();
 
-  // Build set of repeat node IDs early (needed for O1: anatomy chunk filtering)
+  // Build set of repeat node IDs early (anatomy chunk filtering — all versions)
   const repeatNodeIds = new Set<string>();
   (dataModel.instanceTemplates ?? []).forEach(tpl => {
+    repeatNodeIds.add(tpl.templateNodeId);
     tpl.repeats.forEach(r => repeatNodeIds.add(r.nodeId));
   });
 
-  const allAnatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
-    const record: any = {
-      node_id: element.nodeId ?? "",
-    };
-    // O2: omit path_key in v12 compact
-    if (!isV12) {
-      record.path_key = element.pathKey ?? "";
-    }
-    record.name = deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME);
-    record.type = element.type;
-    if (element.instanceOf) {
-      record.instance_of = deps.truncateText(element.instanceOf, LIMITS.TRUNC_INSTANCE_OF);
+  // Build an anatomy record from an AnatomyElement (used for anatomy chunks + template_attributes)
+  function buildAnatomyRecord(element: AnatomyElement, opts?: { skipIdentity?: boolean }) {
+    const record: any = {};
+    if (!opts?.skipIdentity) {
+      record.node_id = element.nodeId ?? "";
+      if (!isV12) {
+        record.path_key = element.pathKey ?? "";
+      }
+      record.name = deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME);
+      record.type = element.type;
+      if (element.instanceOf) {
+        record.instance_of = deps.truncateText(element.instanceOf, LIMITS.TRUNC_INSTANCE_OF);
+      }
     }
 
-    // Promoted top-level fields for AI code generation
     if (element.textContent) {
       record.text = deps.truncateText(element.textContent, LIMITS.TRUNC_TEXT_CONTENT);
     }
@@ -190,7 +192,6 @@ export function toAgentReadyDataPayload(
       element.attributes.find(a => a.key === key);
 
     const fill = findAttr("Fill") ?? findAttr("Text fill");
-    // Skip misleading white default fill on INSTANCE containers with children
     const skipWhiteFill = fill
       && element.type === "INSTANCE"
       && String(fill.rawValue ?? fill.value) === "#FFFFFF"
@@ -237,7 +238,10 @@ export function toAgentReadyDataPayload(
     }
     const padding = findAttr("Padding");
     if (padding && padding.value !== "0 0 0 0") {
-      record.padding = simplifyPadding(String(padding.rawValue ?? padding.value));
+      const paddingVal = simplifyPadding(String(padding.rawValue ?? padding.value));
+      if (paddingVal !== 0 && paddingVal !== "0") {
+        record.padding = paddingVal;
+      }
     }
     const gap = findAttr("Item spacing");
     if (gap && gap.rawValue !== 0) {
@@ -285,7 +289,6 @@ export function toAgentReadyDataPayload(
       record.opacity = opacity.rawValue ?? opacity.value;
     }
 
-    // Layout fields (inline on anatomy items)
     if (element.layoutDirection) {
       record.direction = element.layoutDirection === "HORIZONTAL" ? "row" : "column";
     }
@@ -295,6 +298,18 @@ export function toAgentReadyDataPayload(
     if (element.layoutHSizing) record.h_sizing = mapFigmaSizing(element.layoutHSizing);
     if (element.layoutClips) record.clips = true;
     if (element.layoutInferred) record.inferred = true;
+
+    return record;
+  }
+
+  // Build index of anatomy elements by nodeId (for template_attributes lookup)
+  const anatomyByNodeId = new Map<string, AnatomyElement>();
+  dataModel.anatomy.forEach(el => {
+    if (el.nodeId) anatomyByNodeId.set(el.nodeId, el);
+  });
+
+  const allAnatomyRecords = dataModel.anatomy.slice(0, maxAnatomy).map((element) => {
+    const record = buildAnatomyRecord(element);
 
     if (includeAttributes) {
       record.attributes = element.attributes.map((attribute) => {
@@ -344,10 +359,8 @@ export function toAgentReadyDataPayload(
   });
   const limitedPropertyRecords = propertyRecords.slice(0, maxProperties);
 
-  // O1: In v12, exclude repeat node_ids from anatomy records
-  const anatomyRecords = isV12
-    ? allAnatomyRecords.filter(r => !repeatNodeIds.has(r.node_id))
-    : allAnatomyRecords;
+  // Exclude repeat node_ids (templates + items) from anatomy — they're in repeats chunks
+  const anatomyRecords = allAnatomyRecords.filter(r => !repeatNodeIds.has(r.node_id));
 
   const anatomyChunks = chunkArray(anatomyRecords, LIMITS.ANATOMY_CHUNK_SIZE).map((items, index) => {
     const chunk: any = {
@@ -359,7 +372,9 @@ export function toAgentReadyDataPayload(
     if (!isV12) {
       chunk.path_range = items.length > 0 ? [items[0].path_key, items[items.length - 1].path_key] : [];
     }
-    chunk.node_ids = items.map((item: any) => item.node_id).filter(Boolean);
+    if (!compact) {
+      chunk.node_ids = items.map((item: any) => item.node_id).filter(Boolean);
+    }
     chunk.items = items;
     return chunk;
   });
@@ -388,6 +403,16 @@ export function toAgentReadyDataPayload(
     }
     chunk.instance_of = tpl.instanceOf;
     chunk.repeat_count = tpl.repeatCount;
+
+    // Embed template node's own attributes (since it's excluded from anatomy)
+    const tplElement = anatomyByNodeId.get(tpl.templateNodeId);
+    if (tplElement) {
+      const tplAttrs = buildAnatomyRecord(tplElement, { skipIdentity: true });
+      if (Object.keys(tplAttrs).length > 0) {
+        chunk.template_attributes = tplAttrs;
+      }
+    }
+
     chunk.varying_keys = varyingKeys;
     chunk.items = tpl.repeats.map(row => {
       const item: any = {
@@ -397,27 +422,75 @@ export function toAgentReadyDataPayload(
       if (!isV12) {
         item.path_key = row.pathKey;
       }
-      // O3: indexed diffs in v12, width dedup
+      // O3: width dedup for all versions, indexed encoding in v12+
+      const dedupedDiffs = deduplicateWidthDiffs(row.diffs);
       if (isV12) {
-        const dedupedDiffs = deduplicateWidthDiffs(row.diffs);
         item.diffs = encodeDiffs(dedupedDiffs, varyingKeys);
       } else {
-        item.diffs = row.diffs;
+        item.diffs = dedupedDiffs;
       }
-      if (row.childrenText?.length) {
+      if (!compact && row.childrenText?.length) {
         item.children_text = row.childrenText.map(t =>
           deps.truncateText(t, LIMITS.TRUNC_REPEAT_CHILDREN_TEXT)
         );
       }
       return item;
     });
+    // Clean up varying_keys: remove keys no longer present in any item's diffs after width dedup
+    const usedKeys = new Set<string>();
+    chunk.items.forEach((item: any) => {
+      if (isV12 && Array.isArray(item.diffs)) {
+        for (let i = 0; i < item.diffs.length; i += 2) usedKeys.add(varyingKeys[item.diffs[i]]);
+      } else if (item.diffs && typeof item.diffs === 'object') {
+        Object.keys(item.diffs).forEach(k => usedKeys.add(k));
+      }
+    });
+    chunk.varying_keys = varyingKeys.filter(k => usedKeys.has(k));
     return chunk;
+  }).filter(chunk => {
+    // Skip empty repeats chunks (no varying keys, all diffs empty)
+    if (chunk.varying_keys.length > 0) return true;
+    return chunk.items.some((item: any) => {
+      if (Array.isArray(item.diffs)) return item.diffs.length > 0;
+      if (item.diffs && typeof item.diffs === 'object') return Object.keys(item.diffs).length > 0;
+      return false;
+    });
   });
 
-  const chunks = [...anatomyChunks, ...propertyChunks, ...repeatsChunks];
+  // v13: Build component_definition chunk when available
+  const componentDefChunks: any[] = [];
+  if (isV13 && dataModel.componentDefinition) {
+    const def = dataModel.componentDefinition;
+    const defChunk: any = {
+      chunk_id: "component_def_1",
+      kind: "component_definition",
+      component_set: def.componentSetName,
+      base_node_id: def.baseNodeId,
+      properties: def.properties.map(p => {
+        const prop: any = { name: p.name, type: p.type, default: p.default };
+        if (p.options && p.options.length > 0) prop.options = p.options;
+        return prop;
+      }),
+      variant_diffs: def.variantDiffs.map(vd => {
+        const entry: any = {
+          config: vd.config,
+          changes: vd.changes
+        };
+        if (vd.added && vd.added.length > 0) entry.added = vd.added;
+        if (vd.removed && vd.removed.length > 0) entry.removed = vd.removed;
+        return entry;
+      })
+    };
+    componentDefChunks.push(defChunk);
+  }
 
-  // text_index: omitted entirely in v12 (text is in children_text on anatomy/repeat items)
-  const textIndex = isV12 ? undefined : dataModel.anatomy
+  // v13: skip full property chunks when component_definition covers them
+  const effectivePropertyChunks = (isV13 && dataModel.componentDefinition) ? [] : propertyChunks;
+
+  const chunks = [...anatomyChunks, ...effectivePropertyChunks, ...componentDefChunks, ...repeatsChunks];
+
+  // text_index: omitted in compact mode (text is in children_text on anatomy/repeat items)
+  const textIndex = compact ? undefined : dataModel.anatomy
         .filter(el => (el.textContent || el.childrenText?.length) && !repeatNodeIds.has(el.nodeId ?? ""))
         .map(el => {
           const entry: any = { id: el.nodeId, path: el.pathKey };
@@ -440,11 +513,13 @@ export function toAgentReadyDataPayload(
       : ["node_id", "path_key", "kind", "items"]
   };
 
-  const schemaString = isV12
-    ? "specs-plugin.agent_pack.v12.yaml.compact"
-    : compact
-      ? "specs-plugin.agent_pack.v11.yaml.compact"
-      : "specs-plugin.agent_pack.v11.yaml";
+  const schemaString = isV13
+    ? "specs-plugin.agent_pack.v13.yaml.compact"
+    : isV12
+      ? "specs-plugin.agent_pack.v12.yaml.compact"
+      : compact
+        ? "specs-plugin.agent_pack.v11.yaml.compact"
+        : "specs-plugin.agent_pack.v11.yaml";
 
   return {
     schema: schemaString,
@@ -462,6 +537,8 @@ export function toAgentReadyDataPayload(
       variable_refs_total: inventory.getVariableIds().length,
       instance_templates: (dataModel.instanceTemplates ?? []).length,
       deduplicated_instances: (dataModel.instanceTemplates ?? []).reduce((sum, t) => sum + t.repeatCount, 0),
+      component_definition: dataModel.componentDefinition ? true : undefined,
+      variant_diffs_total: dataModel.componentDefinition?.variantDiffs.length ?? undefined,
       chunks_total: chunks.length,
       truncated: {
         anatomy: dataModel.anatomy.length > maxAnatomy,
@@ -597,6 +674,18 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
         kind: chunk.kind,
       };
       // Preserve kind-specific fields
+      if (chunk.kind === "component_definition") {
+        base.component_set = chunk.component_set;
+        base.base_node_id = chunk.base_node_id;
+        base.properties = chunk.properties;
+        base.variant_diffs = Array.isArray(chunk.variant_diffs)
+          ? chunk.variant_diffs.slice(0, sampleSize)
+          : chunk.variant_diffs;
+        if (Array.isArray(chunk.variant_diffs) && chunk.variant_diffs.length > sampleSize) {
+          base.truncated_variant_diffs = chunk.variant_diffs.length - sampleSize;
+        }
+        return base;
+      }
       if (chunk.kind === "repeats") {
         base.template_node_id = chunk.template_node_id;
         base.template_path_key = chunk.template_path_key;
@@ -606,7 +695,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
       } else {
         base.item_count = chunk.item_count;
         if (chunk.path_range) base.path_range = chunk.path_range;
-        base.node_ids = Array.isArray(chunk.node_ids) ? chunk.node_ids : [];
+        if (chunk.node_ids) base.node_ids = chunk.node_ids;
       }
       base.items = sampled;
       if (items.length > sampleSize) base.truncated_items = items.length - sampleSize;
@@ -649,7 +738,9 @@ export function createDataSection(
   if (settings.agentReadyData) {
     section.appendChild(
       deps.createText(
-        "Use chunks[].node_ids with MCP tools (get_metadata/get_design_context/get_screenshot) for precise extraction.",
+        settings.aiCompactMode
+          ? "Use items[].node_id with MCP tools (get_metadata/get_design_context/get_screenshot) for precise extraction."
+          : "Use chunks[].node_ids with MCP tools (get_metadata/get_design_context/get_screenshot) for precise extraction.",
         9,
         FONT_REGULAR,
         theme.muted,
