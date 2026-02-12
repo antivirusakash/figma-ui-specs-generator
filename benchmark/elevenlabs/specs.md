@@ -667,12 +667,16 @@ consequence…"
 
 ### Specs Data (YAML)
 ```yaml
-schema: specs-plugin.agent_pack.v13.yaml.compact
-generated_at: "2026-02-11T17:34:06.071Z"
+schema: specs-plugin.agent_pack.v14.yaml.compact
+generated_at: "2026-02-12T16:05:46.137Z"
 selection:
   node_id: "1:4"
   name: 1440w default
   type: FRAME
+defaults_omitted:
+  justify: flex-start
+  align: flex-start
+  direction: row
 summary:
   anatomy_nodes_total: 625
   property_groups_total: 0
@@ -706,8 +710,6 @@ chunks:
         h: 5373
         fill: "#FFFFFF"
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:5"
@@ -717,8 +719,6 @@ chunks:
         h: 5373
         gap: -1
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:6"
@@ -728,7 +728,6 @@ chunks:
         h: 64
         fill: "#FDFCFC"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: fixed
         h_sizing: auto
@@ -738,8 +737,6 @@ chunks:
         w: 1188
         h: 64
         gap: 36.00199890136719
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: fixed
         h_sizing: fixed
@@ -749,8 +746,6 @@ chunks:
         w: 790
         h: 36
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: auto
       - node_id: "1:9"
@@ -759,9 +754,6 @@ chunks:
         w: 790
         h: 36
         gap: 24
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: auto
       - node_id: "1:10"
@@ -770,8 +762,6 @@ chunks:
         w: 141
         h: 36
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:11"
@@ -780,8 +770,6 @@ chunks:
         w: 141
         h: 36
         radius: 9999
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: fixed
@@ -791,8 +779,6 @@ chunks:
         w: 625
         h: 36
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:17"
@@ -800,9 +786,6 @@ chunks:
         type: FRAME
         w: 625
         h: 36
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: auto
       - node_id: "1:18"
@@ -810,9 +793,6 @@ chunks:
         type: FRAME
         w: 139
         h: 36
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:19"
@@ -820,8 +800,6 @@ chunks:
         type: FRAME
         w: 139
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -833,7 +811,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -853,9 +830,6 @@ chunks:
         type: FRAME
         w: 131
         h: 36
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:23"
@@ -863,8 +837,6 @@ chunks:
         type: FRAME
         w: 131
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -876,7 +848,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -896,9 +867,6 @@ chunks:
         type: FRAME
         w: 99
         h: 36
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:27"
@@ -906,8 +874,6 @@ chunks:
         type: FRAME
         w: 99
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -919,7 +885,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -939,9 +904,6 @@ chunks:
         type: FRAME
         w: 94
         h: 36
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: auto
         h_sizing: fixed
       - node_id: "1:31"
@@ -949,8 +911,6 @@ chunks:
         type: FRAME
         w: 94
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -962,7 +922,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -982,8 +941,6 @@ chunks:
         type: FRAME
         w: 92
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: fixed
@@ -995,7 +952,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -1015,8 +971,6 @@ chunks:
         type: FRAME
         w: 70
         h: 36
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: fixed
@@ -1028,7 +982,6 @@ chunks:
         radius: 18
         padding: "8"
         direction: column
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -1049,7 +1002,6 @@ chunks:
         w: 362
         h: 28
         direction: column
-        justify: flex-start
         align: flex-end
         w_sizing: fixed
         h_sizing: auto
@@ -1058,7 +1010,6 @@ chunks:
         type: FRAME
         w: 147
         h: 28
-        direction: row
         justify: flex-end
         align: center
         w_sizing: auto
@@ -1069,8 +1020,6 @@ chunks:
         w: 147
         h: 28
         gap: 8
-        direction: row
-        justify: flex-start
         align: center
         w_sizing: auto
         h_sizing: auto
@@ -1083,7 +1032,6 @@ chunks:
         radius: 9999
         padding: "3.700000047683716"
         shadow: 0px 2px 4px rgba(0,0,0,0.04)
-        direction: row
         justify: center
         align: center
         w_sizing: auto
@@ -1108,7 +1056,6 @@ chunks:
         fill: "#000000"
         radius: 9999
         padding: "3.700000047683716"
-        direction: row
         justify: center
         align: center
         w_sizing: auto
@@ -1132,8 +1079,6 @@ chunks:
         fill: "#FDFCFC"
         padding: "1"
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:48"
@@ -1142,8 +1087,6 @@ chunks:
         w: 1440
         h: 5097
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:49"
@@ -1152,7 +1095,6 @@ chunks:
         w: 1440
         h: 327
         direction: column
-        justify: flex-start
         align: center
         w_sizing: fixed
         h_sizing: auto
@@ -1163,8 +1105,6 @@ chunks:
         h: 327
         padding: "111.5"
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:51"
@@ -1173,7 +1113,6 @@ chunks:
         w: 1176
         h: 175
         gap: 48
-        direction: row
         justify: center
         align: flex-end
         w_sizing: fixed
@@ -1185,8 +1124,6 @@ chunks:
         h: 175
         gap: 23
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: fixed
       - node_id: "1:53"
@@ -1195,8 +1132,6 @@ chunks:
         w: 564
         h: 104
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:54"
@@ -1216,9 +1151,6 @@ technology to life
         w: 564
         h: 48
         gap: 8
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:56"
@@ -1228,7 +1160,6 @@ technology to life
         h: 48
         fill: "#000000"
         radius: 9999
-        direction: row
         justify: center
         align: center
         w_sizing: auto
@@ -1256,7 +1187,6 @@ technology to life
         fill: "#FFFFFF"
         radius: 9999
         shadow: 0px 2px 4px rgba(0,0,0,0.04)
-        direction: row
         justify: center
         align: center
         w_sizing: auto
@@ -1279,8 +1209,6 @@ technology to life
         w: 564
         h: 167
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: fixed
       - node_id: "1:62"
@@ -1289,8 +1217,6 @@ technology to life
         w: 564
         h: 72
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:63"
@@ -1311,7 +1237,6 @@ content creation, to the leading AI voice generator.
         w: 1440
         h: 712
         direction: column
-        justify: flex-start
         align: center
         w_sizing: fixed
         h_sizing: auto
@@ -1321,8 +1246,6 @@ content creation, to the leading AI voice generator.
         w: 1176
         h: 712
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:67"
@@ -1331,8 +1254,6 @@ content creation, to the leading AI voice generator.
         w: 1176
         h: 592
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:68"
@@ -1345,7 +1266,6 @@ content creation, to the leading AI voice generator.
         padding: "12"
         gap: -12
         direction: column
-        justify: flex-start
         align: flex-end
         w_sizing: fixed
         h_sizing: fixed
@@ -1356,8 +1276,6 @@ content creation, to the leading AI voice generator.
         w: 1144
         h: 68
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
       - node_id: "1:70"
@@ -1367,8 +1285,6 @@ content creation, to the leading AI voice generator.
         h: 68
         padding: "12"
         direction: column
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: auto
         clips: true
@@ -5567,12 +5483,9 @@ AI-generated.
         type: FRAME
         w: 117
         h: 15
-        direction: row
-        justify: flex-start
-        align: flex-start
         w_sizing: fixed
         h_sizing: fixed
         inferred: true
 ```
 
-<!-- chars: 133439 -->
+<!-- chars: 131131 | ~tokens: 26970 -->
