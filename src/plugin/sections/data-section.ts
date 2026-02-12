@@ -147,7 +147,8 @@ export function toAgentReadyDataPayload(
   deps: DataSectionDeps
 ) {
   const compact = settings.aiCompactMode;
-  const isV13 = compact && settings.schemaVersion === "v13";
+  const isV14 = compact && settings.schemaVersion === "v14";
+  const isV13 = compact && (settings.schemaVersion === "v13" || isV14);
   const isV12 = compact && (settings.schemaVersion === "v12" || isV13);
   const maxAnatomy = LIMITS.MAX_ANATOMY_RECORDS;
   const maxProperties = LIMITS.MAX_PROPERTY_RECORDS;
@@ -298,6 +299,13 @@ export function toAgentReadyDataPayload(
     if (element.layoutHSizing) record.h_sizing = mapFigmaSizing(element.layoutHSizing);
     if (element.layoutClips) record.clips = true;
     if (element.layoutInferred) record.inferred = true;
+
+    // v14: omit CSS flexbox defaults (documented in defaults_omitted)
+    if (isV14) {
+      if (record.justify === "flex-start") delete record.justify;
+      if (record.align === "flex-start") delete record.align;
+      if (record.direction === "row") delete record.direction;
+    }
 
     return record;
   }
@@ -513,7 +521,9 @@ export function toAgentReadyDataPayload(
       : ["node_id", "path_key", "kind", "items"]
   };
 
-  const schemaString = isV13
+  const schemaString = isV14
+    ? "specs-plugin.agent_pack.v14.yaml.compact"
+    : isV13
     ? "specs-plugin.agent_pack.v13.yaml.compact"
     : isV12
       ? "specs-plugin.agent_pack.v12.yaml.compact"
@@ -530,6 +540,13 @@ export function toAgentReadyDataPayload(
       type: target.type,
       ...("clipsContent" in target && (target as any).clipsContent ? { clips_content: true } : {})
     },
+    ...(isV14 ? {
+      defaults_omitted: {
+        justify: "flex-start",
+        align: "flex-start",
+        direction: "row"
+      }
+    } : {}),
     summary: {
       anatomy_nodes_total: dataModel.anatomy.length,
       property_groups_total: dataModel.properties.length,
@@ -662,6 +679,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
     schema: payload.schema,
     generated_at: payload.generated_at,
     selection: payload.selection,
+    defaults_omitted: payload.defaults_omitted,
     summary: payload.summary,
     mcp_playbook: payload.mcp_playbook,
     resolved_tokens: payload.resolved_tokens,

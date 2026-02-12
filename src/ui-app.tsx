@@ -59,7 +59,7 @@ type Settings = {
   showRawValues: boolean;
   valuePreference: 'variable' | 'token';
   framework: Framework;
-  schemaVersion: 'v11' | 'v12' | 'v13';
+  schemaVersion: 'v11' | 'v12' | 'v13' | 'v14';
 };
 
 type PluginMessage =
@@ -103,7 +103,7 @@ const DEFAULT_SETTINGS: Settings = {
   showRawValues: false,
   valuePreference: 'variable',
   framework: 'auto',
-  schemaVersion: 'v13'
+  schemaVersion: 'v14'
 };
 
 const panelClass = 'rounded-xl border border-border bg-card/95 p-4 shadow-sm';
@@ -911,10 +911,13 @@ ${fwLine}
                     <SelectItem value="v11">v11 (stable)</SelectItem>
                     <SelectItem value="v12">v12 (compact)</SelectItem>
                     <SelectItem value="v13">v13 (blueprint)</SelectItem>
+                    <SelectItem value="v14">v14 (optimized)</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {settings.schemaVersion === 'v13'
+                  {settings.schemaVersion === 'v14'
+                    ? 'v14 omits CSS defaults (flex-start, row) — agents infer from defaults_omitted map.'
+                    : settings.schemaVersion === 'v13'
                     ? 'v13 defines component structure once with variant diffs — ideal for components.'
                     : 'v12 reduces payload size by ~30% with indexed diffs and path field removal.'}
                 </p>

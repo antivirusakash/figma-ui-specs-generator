@@ -543,6 +543,141 @@ describe("v13 contract", () => {
   });
 });
 
+// ─── v14 CSS Default Omission ─────────────────────────────────
+
+describe("v14 CSS default omission", () => {
+  function makeModelWithLayout(overrides: Partial<DataModel["anatomy"][0]> = {}): DataModel {
+    return {
+      anatomy: [
+        {
+          name: "Container",
+          type: "FRAME",
+          nodeId: "7:1",
+          pathKey: "root/Container",
+          attributes: [],
+          bounds: { x: 0, y: 0, width: 200, height: 100 },
+          layoutDirection: "HORIZONTAL",
+          layoutJustify: "MIN",
+          layoutAlignItems: "MIN",
+          layoutWSizing: "FIXED",
+          layoutHSizing: "HUG",
+          ...overrides,
+        },
+      ],
+      properties: [],
+      instanceTemplates: [],
+    };
+  }
+
+  it("omits justify: flex-start in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.justify).toBeUndefined();
+  });
+
+  it("omits align: flex-start in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.align).toBeUndefined();
+  });
+
+  it("omits direction: row in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.direction).toBeUndefined();
+  });
+
+  it("preserves non-default justify in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout({ layoutJustify: "CENTER" }), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.justify).toBe("center");
+  });
+
+  it("preserves non-default align in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout({ layoutAlignItems: "MAX" }), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.align).toBe("flex-end");
+  });
+
+  it("preserves non-default direction in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout({ layoutDirection: "VERTICAL" }), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "7:1");
+    expect(item.direction).toBe("column");
+  });
+
+  it("includes defaults_omitted map in v14", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.defaults_omitted).toBeDefined();
+    expect(payload.defaults_omitted).toEqual({
+      justify: "flex-start",
+      align: "flex-start",
+      direction: "row",
+    });
+  });
+
+  it("no defaults_omitted in v13", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    expect(payload.defaults_omitted).toBeUndefined();
+  });
+
+  it("v14 inherits v13 optimizations", () => {
+    const payload = toAgentReadyDataPayload(
+      makeModelWithLayout(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v14" },
+      makeInventory(), makeDeps()
+    );
+    // v14 schema string
+    expect(payload.schema).toBe("specs-plugin.agent_pack.v14.yaml.compact");
+    // inherits v12: no path_key
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    for (const item of anatomyChunk.items) {
+      expect(item).not.toHaveProperty("path_key");
+    }
+    // inherits v12: no text_index
+    expect(payload.text_index).toBeUndefined();
+    // inherits compact: no node_ids on chunk level
+    expect(anatomyChunk).not.toHaveProperty("node_ids");
+  });
+});
+
 // ─── Attribute → payload field mapping ────────────────────────
 
 describe("attribute field mapping", () => {

@@ -261,7 +261,7 @@ async function handleCopyAiSpecs(settings: Settings) {
 
     const { elements: anatomyElements, instanceTemplates, dedupedNodeIds } = await collectAnatomyElements(target, inventory, copySettings);
     const propertySpecs = await collectPropertySpecs(target, inventory, copySettings);
-    const copyIsV13 = copySettings.aiCompactMode && copySettings.schemaVersion === "v13";
+    const copyIsV13 = copySettings.aiCompactMode && (copySettings.schemaVersion === "v13" || copySettings.schemaVersion === "v14");
     const copyComponentDef = copyIsV13 ? await collectComponentDefinition(target, inventory, copySettings) : null;
     const layoutData = collectLayoutData(target, dedupedNodeIds);
 
@@ -471,7 +471,7 @@ async function generateSpecs(settings: Settings) {
       variantSections.forEach((section) => appendSection(section));
     }
 
-    const isV13 = settings.aiCompactMode && settings.schemaVersion === "v13";
+    const isV13 = settings.aiCompactMode && (settings.schemaVersion === "v13" || settings.schemaVersion === "v14");
     const propertySpecs =
       settings.properties || settings.data ? await collectPropertySpecs(target, inventory, settings) : [];
     const componentDefinition = isV13 && settings.data
