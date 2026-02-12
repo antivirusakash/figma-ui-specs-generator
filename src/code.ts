@@ -34,6 +34,7 @@ import {
   createModesSection as createModesSectionModule,
   createVariablesSection as createVariablesSectionModule
 } from "./plugin/sections/variables-section";
+import { estimateTokens } from "./plugin/helpers/estimate-tokens";
 import { clamp, getTheme } from "./plugin/theme";
 import type {
   AnatomyElement,
@@ -333,7 +334,7 @@ async function handleCopyAiSpecs(settings: Settings) {
     const bounds = target.absoluteBoundingBox;
     const dimensions = bounds ? { width: Math.round(bounds.width), height: Math.round(bounds.height) } : undefined;
     const block = buildCopyBlock(target.name, figmaUrl, anatomyTree, yamlData, settings.framework ?? "auto", dimensions);
-    const text = `${block}\n\n<!-- chars: ${block.length} -->`;
+    const text = `${block}\n\n<!-- chars: ${block.length} | ~tokens: ${estimateTokens(block)} -->`;
 
     figma.ui.postMessage({ type: "copy-ai-specs-result", text });
     figma.notify("AI specs copied to clipboard.");

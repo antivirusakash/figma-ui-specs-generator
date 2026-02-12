@@ -448,7 +448,10 @@ export function toAgentReadyDataPayload(
     const usedKeys = new Set<string>();
     chunk.items.forEach((item: any) => {
       if (isV12 && Array.isArray(item.diffs)) {
-        for (let i = 0; i < item.diffs.length; i += 2) usedKeys.add(varyingKeys[item.diffs[i]]);
+        for (let i = 0; i < item.diffs.length; i += 2) {
+          const key = varyingKeys[item.diffs[i]];
+          if (key !== undefined) usedKeys.add(key);
+        }
       } else if (item.diffs && typeof item.diffs === 'object') {
         Object.keys(item.diffs).forEach(k => usedKeys.add(k));
       }
