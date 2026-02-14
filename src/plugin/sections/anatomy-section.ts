@@ -1,4 +1,5 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
+import { getLimit, LIMITS } from "../limits";
 import { log } from "../logger";
 import type { AnatomyElement, Settings, SpecTextRole, Theme } from "../types";
 
@@ -84,7 +85,12 @@ export async function createAnatomySection(
         props: Math.round(sectionContentWidth * 0.28)
       };
   const nameMax = sectionContentWidth < 420 ? 20 : sectionContentWidth < 700 ? 22 : sectionContentWidth < 1100 ? 30 : 50;
-  const highlights = pickAnatomyHighlights(target, elements, compact ? 10 : settings.tabularAnatomy ? 14 : 12);
+  const highlightLimit = compact
+    ? getLimit("ANATOMY_HIGHLIGHTS_COMPACT")
+    : settings.tabularAnatomy
+    ? getLimit("ANATOMY_HIGHLIGHTS_TABULAR")
+    : getLimit("ANATOMY_HIGHLIGHTS_DEFAULT");
+  const highlights = pickAnatomyHighlights(target, elements, highlightLimit);
   const instanceHighlights = highlights.filter((element) => element.type === "INSTANCE");
   const detailHighlights = highlights.filter((element) => element.type !== "INSTANCE");
   const isTruncated = highlights.length < elements.length;
@@ -110,7 +116,7 @@ export async function createAnatomySection(
     );
   }
 
-  const skipArtwork = settings.agentReadyData && settings.aiCompactMode;
+  const skipArtwork = settings.data && settings.agentReadyData && settings.aiCompactMode;
   let artwork: FrameNode | undefined;
   if (!skipArtwork) {
     artwork = await deps.createArtworkFrame(target, 0, theme);

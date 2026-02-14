@@ -28,8 +28,8 @@ export const PresetCard = ({ title, description, selected, onClick }: PresetCard
       )}
     </div>
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-sm font-medium text-foreground">{title}</span>
-      <span className="text-xs text-muted-foreground">{description}</span>
+      <span className="text-[14px] font-medium tracking-[-0.012em] text-foreground">{title}</span>
+      <span className="text-[12px] leading-[1.42] text-muted-foreground">{description}</span>
     </div>
   </button>
 );

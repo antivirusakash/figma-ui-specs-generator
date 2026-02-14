@@ -50,7 +50,8 @@ import type {
 
 // Helpers
 import { formatColor, formatSpacing, solidFill, truncateText } from "./plugin/helpers/format";
-import { LIMITS } from "./plugin/limits";
+import { clearRuntimeLimitOverrides, getLimit, LIMITS, setRuntimeLimitOverrides } from "./plugin/limits";
+import { analyzeNodeComplexity, resolveRuntimeLimitOverrides } from "./plugin/helpers/complexity";
 import { collectAttributes } from "./plugin/helpers/attributes";
 import {
   collectAnatomyElements,
@@ -58,7 +59,7 @@ import {
   resolveComponentSet
 } from "./plugin/helpers/anatomy-collector";
 import {
-  createArtworkFrame,
+  createArtworkFrame as createArtworkFrameHelper,
   createContentCard,
   createSectionFrame as createSectionFrameHelper,
   createTableRow as createTableRowHelper
@@ -122,6 +123,10 @@ function createText(
 
 function createSectionFrame(title: string, theme: Theme) {
   return createSectionFrameHelper(title, theme, createText);
+}
+
+function createArtworkFrame(target: SceneNode, markerGutter = 0, theme: Theme) {
+  return createArtworkFrameHelper(target, markerGutter, theme);
 }
 
 function createTableRow(
@@ -194,6 +199,56 @@ function getFrameworkInstructions(framework: Framework): string {
   }
 }
 
+function isFullHandoffProfile(settings: Settings) {
+  return (
+    settings.anatomy &&
+    settings.properties &&
+    settings.layout &&
+    settings.data &&
+    settings.inventory &&
+    settings.variables &&
+    settings.modes
+  );
+}
+
+function isQuickCheckProfile(settings: Settings) {
+  return (
+    settings.anatomy &&
+    settings.layout &&
+    !settings.properties &&
+    !settings.data &&
+    !settings.inventory &&
+    !settings.variables &&
+    !settings.modes
+  );
+}
+
+function normalizeSettingsForGeneration(settings: Settings) {
+  if (!isFullHandoffProfile(settings) && !isQuickCheckProfile(settings)) return settings;
+  return {
+    ...settings,
+    tabularAnatomy: false,
+    aiCompactMode: false
+  };
+}
+
+function applyRuntimeLimitsForTarget(target: SceneNode) {
+  const complexity = analyzeNodeComplexity(target);
+  const overrides = resolveRuntimeLimitOverrides(complexity);
+  setRuntimeLimitOverrides(overrides);
+  log("Complexity profile", {
+    name: target.name,
+    tier: complexity.tier,
+    totalNodes: complexity.totalNodes,
+    visibleNodes: complexity.visibleNodes,
+    instanceNodes: complexity.instanceNodes,
+    textNodes: complexity.textNodes,
+    maxDepth: complexity.maxDepth,
+    overrideKeys: Object.keys(overrides)
+  });
+  return complexity;
+}
+
 function buildCopyBlock(name: string, figmaUrl: string, anatomyTree: string, yamlData: string, framework: Framework = "auto", dimensions?: { width: number; height: number }): string {
   const safeName = name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
   const frameworkStep = getFrameworkInstructions(framework);
@@ -250,6 +305,7 @@ async function handleCopyAiSpecs(settings: Settings) {
   }
 
   try {
+    applyRuntimeLimitsForTarget(target);
     await loadFonts();
 
     const inventory = new Inventory();
@@ -344,10 +400,13 @@ async function handleCopyAiSpecs(settings: Settings) {
     const errMsg = error instanceof Error ? error.message : String(error);
     figma.notify(`Failed to copy AI specs: ${errMsg}`);
     figma.ui.postMessage({ type: "error", message: `Copy failed: ${errMsg}` });
+  } finally {
+    clearRuntimeLimitOverrides();
   }
 }
 
 async function generateSpecs(settings: Settings) {
+  settings = normalizeSettingsForGeneration(settings);
   const selection = figma.currentPage.selection;
   log("Generate specs invoked", {
     selectionCount: selection.length,
@@ -371,6 +430,7 @@ async function generateSpecs(settings: Settings) {
 
   let specsFrame: FrameNode | null = null;
   try {
+    applyRuntimeLimitsForTarget(target);
     await loadFonts();
 
     const inventory = new Inventory();
@@ -613,9 +673,21 @@ async function generateSpecs(settings: Settings) {
     // Store specs frame ID on the target so Copy AI Specs can link to it
     target.setPluginData("specsFrameId", specsFrame.id);
 
+    const artworkExportSummary = collectArtworkExportSummary(specsFrame);
+    if (artworkExportSummary.artworkFrames > 0) {
+      log("Artwork export summary", artworkExportSummary);
+    }
+
     figma.currentPage.selection = [specsFrame];
     figma.viewport.scrollAndZoomIntoView([specsFrame]);
-    figma.notify("Specs generated.");
+    if (artworkExportSummary.fallbackFrames > 0) {
+      const suffix = artworkExportSummary.downscaledFrames > 0
+        ? ` Preview auto-scaled to ${artworkExportSummary.usedScales.join(", ")}x for ${artworkExportSummary.fallbackFrames} artwork frame(s).`
+        : ` Preview export retried successfully for ${artworkExportSummary.fallbackFrames} artwork frame(s).`;
+      figma.notify(`Specs generated.${suffix}`);
+    } else {
+      figma.notify("Specs generated.");
+    }
     figma.ui.postMessage({ type: "generate-success" });
     log("Specs generation complete", { sectionCount });
   } catch (error) {
@@ -628,6 +700,8 @@ async function generateSpecs(settings: Settings) {
       type: "error",
       message: error instanceof Error ? error.message : "Specs failed to generate."
     });
+  } finally {
+    clearRuntimeLimitOverrides();
   }
 }
 
@@ -772,6 +846,36 @@ function createColumnFrames(parent: FrameNode, count: number, width: number) {
   return columns;
 }
 
+function collectArtworkExportSummary(root: BaseNode) {
+  let artworkFrames = 0;
+  let fallbackFrames = 0;
+  let downscaledFrames = 0;
+  const usedScales = new Set<string>();
+  const walk = (node: BaseNode) => {
+    const usedScale = node.getPluginData("artworkExportScaleUsed");
+    if (usedScale) {
+      artworkFrames += 1;
+      usedScales.add(usedScale);
+      if (node.getPluginData("artworkExportFallback") === "1") {
+        fallbackFrames += 1;
+      }
+      if (Number(usedScale) < 1) {
+        downscaledFrames += 1;
+      }
+    }
+    if ("children" in node) {
+      node.children.forEach((child) => walk(child));
+    }
+  };
+  walk(root);
+  return {
+    artworkFrames,
+    fallbackFrames,
+    downscaledFrames,
+    usedScales: [...usedScales].sort((a, b) => Number(b) - Number(a))
+  };
+}
+
 // Section delegate wrappers
 async function createAnatomySection(
   target: SceneNode,
@@ -889,7 +993,7 @@ async function createCompleteVariantSections(
   const allVariants = componentSet.children.filter(
     (child): child is ComponentNode => child.type === "COMPONENT"
   );
-  const variants = allVariants.slice(0, LIMITS.MAX_ANATOMY_VARIANTS);
+  const variants = allVariants.slice(0, getLimit("MAX_ANATOMY_VARIANTS"));
 
   for (const variant of variants) {
     if (variant.id === baseComponent.id) continue;
@@ -961,7 +1065,7 @@ async function createNestedComponentSections(
     const key = main?.id ?? instance.name;
     if (!seen.has(key)) seen.set(key, instance);
   }
-  const uniqueInstances = [...seen.values()].slice(0, LIMITS.MAX_NESTED_COMPONENTS);
+  const uniqueInstances = [...seen.values()].slice(0, getLimit("MAX_NESTED_COMPONENTS"));
 
   const sections: FrameNode[] = [];
   for (const instance of uniqueInstances) {

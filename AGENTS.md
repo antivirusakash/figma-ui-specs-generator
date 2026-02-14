@@ -116,6 +116,7 @@ src/plugin/
   helpers/
     anatomy-collector.ts — collectAnatomyElements, instance fingerprint dedup, repeat diffs
     attributes.ts        — collectAttributes, mergeAdjacentSameFill, token/variable resolution
+    complexity.ts        — complexity snapshot + runtime tier resolution (standard/large/enterprise)
     format.ts            — solidFill, hexToRgb, formatColor, truncateText, etc.
     tokens.ts            — Tokens Studio integration (extractTokensStudioMap, findTokenValue)
     text-helpers.ts      — createTextNode, fitTextToWidth, text wrapping
@@ -128,13 +129,17 @@ src/plugin/
     layout-section.ts    — Auto-layout specs
     inventory-section.ts — Design inventory
     variables-section.ts — Figma variables/tokens
-scripts/build.js         — esbuild bundler (~84kb output)
-tests/unit/              — 10 test files, 201 tests (vitest)
+scripts/build.js         — esbuild bundler
+tests/unit/              — 15 test files, 289 tests (vitest)
 ```
 
 ### Key Patterns
 - Section modules receive deps via injection object from code.ts (createText, solidFill, etc.)
-- `limits.ts` centralizes all numeric caps — change one file to tune output size
+- `limits.ts` centralizes all numeric caps and stress tuning knobs:
+  - base limits
+  - complexity thresholds
+  - complexity tier runtime override profiles
+  - artwork export scale plans/thresholds
 - Instance dedup: fingerprint (componentSet + childSignature) → template + repeat diffs
 - Layout fields inline on AnatomyElement (no separate layout chunks)
 - YAML output: `v11.yaml.compact` (default) or `v12.yaml.compact` (opt-in, ~30% smaller); `resolved_tokens` map; chunked anatomy/properties
@@ -142,9 +147,10 @@ tests/unit/              — 10 test files, 201 tests (vitest)
 
 ### Build & Test
 - `npm run build` — esbuild bundle
-- `npm run test:unit` — vitest (201 tests)
+- `npm run test:unit` — vitest (289 tests)
 - `npm run test:ui` — playwright
 - `npm run typecheck` — tsc --noEmit
+- `benchmark/stress-sanity-todo.md` — current stress/sanity checklist with pass criteria
 
 ## Figma-to-Code Workflow
 

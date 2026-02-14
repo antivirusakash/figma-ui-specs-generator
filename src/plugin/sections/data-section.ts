@@ -1,7 +1,7 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import type { Inventory } from "../inventory";
 import type { AnatomyElement, DataModel, Settings, SpecTextRole, Theme } from "../types";
-import { LIMITS } from "../limits";
+import { getActiveLimits, getLimit, LIMITS } from "../limits";
 import { encodeDiffs, deduplicateWidthDiffs } from "../helpers/v12-repeat-diff";
 
 type CreateTextFn = (
@@ -77,7 +77,7 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
-function splitText(value: string, maxChars: number = LIMITS.CANVAS_SPLIT_TEXT_CHARS) {
+function splitText(value: string, maxChars: number = getLimit("CANVAS_SPLIT_TEXT_CHARS")) {
   const lines = value.split("\n");
   const chunks: string[] = [];
   let current = "";
@@ -150,8 +150,8 @@ export function toAgentReadyDataPayload(
   const isV14 = compact && settings.schemaVersion === "v14";
   const isV13 = compact && (settings.schemaVersion === "v13" || isV14);
   const isV12 = compact && (settings.schemaVersion === "v12" || isV13);
-  const maxAnatomy = LIMITS.MAX_ANATOMY_RECORDS;
-  const maxProperties = LIMITS.MAX_PROPERTY_RECORDS;
+  const maxAnatomy = getLimit("MAX_ANATOMY_RECORDS");
+  const maxProperties = getLimit("MAX_PROPERTY_RECORDS");
   const resolvedTokens = new Map<string, string>();
 
   // Build set of repeat node IDs early (anatomy chunk filtering — all versions)
@@ -370,7 +370,7 @@ export function toAgentReadyDataPayload(
   // Exclude repeat node_ids (templates + items) from anatomy — they're in repeats chunks
   const anatomyRecords = allAnatomyRecords.filter(r => !repeatNodeIds.has(r.node_id));
 
-  const anatomyChunks = chunkArray(anatomyRecords, LIMITS.ANATOMY_CHUNK_SIZE).map((items, index) => {
+  const anatomyChunks = chunkArray(anatomyRecords, getLimit("ANATOMY_CHUNK_SIZE")).map((items, index) => {
     const chunk: any = {
       chunk_id: `anatomy_${index + 1}`,
       kind: "anatomy",
@@ -387,7 +387,7 @@ export function toAgentReadyDataPayload(
     return chunk;
   });
 
-  const propertyChunks = chunkArray(limitedPropertyRecords, LIMITS.PROPERTY_CHUNK_SIZE).map((items, index) => ({
+  const propertyChunks = chunkArray(limitedPropertyRecords, getLimit("PROPERTY_CHUNK_SIZE")).map((items, index) => ({
     chunk_id: `properties_${index + 1}`,
     kind: "properties",
     item_count: items.length,
@@ -560,6 +560,18 @@ export function toAgentReadyDataPayload(
       component_definition: dataModel.componentDefinition ? true : undefined,
       variant_diffs_total: dataModel.componentDefinition?.variantDiffs.length ?? undefined,
       chunks_total: chunks.length,
+      runtime_budget: (() => {
+        const active = getActiveLimits();
+        return {
+          max_anatomy_elements: active.MAX_ANATOMY_ELEMENTS,
+          max_anatomy_records: active.MAX_ANATOMY_RECORDS,
+          max_property_records: active.MAX_PROPERTY_RECORDS,
+          max_layout_specs: active.MAX_LAYOUT_SPECS,
+          max_variant_options: active.MAX_VARIANT_OPTIONS,
+          max_anatomy_variants: active.MAX_ANATOMY_VARIANTS,
+          max_canvas_text_chunks: active.CANVAS_MAX_TEXT_CHUNKS
+        };
+      })(),
       truncated: {
         anatomy: dataModel.anatomy.length > maxAnatomy,
         anatomy_included: Math.min(dataModel.anatomy.length, maxAnatomy),
@@ -676,7 +688,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
   }
 
   const compact = Boolean(payload.compact_mode ?? payload.schema?.includes("compact"));
-  const sampleSize = LIMITS.SAMPLE_SIZE;
+  const sampleSize = getLimit("SAMPLE_SIZE");
   const chunks = Array.isArray(payload.chunks) ? payload.chunks : [];
   return stripNulls({
     schema: payload.schema,
@@ -773,8 +785,8 @@ export function createDataSection(
   const serialized = settings.agentReadyData
     ? toYaml(stripNulls(previewPayload))
     : JSON.stringify(previewPayload, null, 2);
-  const chunks = splitText(serialized, LIMITS.CANVAS_TEXT_CHUNK_CHARS);
-  const textChunks = chunks.slice(0, LIMITS.CANVAS_MAX_TEXT_CHUNKS);
+  const chunks = splitText(serialized, getLimit("CANVAS_TEXT_CHUNK_CHARS"));
+  const textChunks = chunks.slice(0, getLimit("CANVAS_MAX_TEXT_CHUNKS"));
   deps.log("Data section payload", {
     mode: settings.agentReadyData ? "agent-pack-preview" : "legacy",
     chars: serialized.length,

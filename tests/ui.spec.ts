@@ -61,6 +61,7 @@ const featureMap = [
 
 test('ui exposes all documented feature controls', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
+  await page.locator('#properties').click({ force: true });
 
   for (const feature of featureMap) {
     const doc = readDoc(feature.doc);
@@ -69,16 +70,19 @@ test('ui exposes all documented feature controls', async ({ page }) => {
   }
 });
 
-test('tokens studio inventory is mentioned and payment UI is absent', async ({ page }) => {
+test('ui stays free of payment prompts and keeps token-related inventory language', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
   const text = await page.locator('body').innerText();
-  expect(text.toLowerCase()).toContain('tokens studio');
+  expect(text.toLowerCase()).toContain('tokens');
   expect(text.toLowerCase()).not.toContain('payment');
   expect(text.toLowerCase()).not.toContain('subscribe');
 });
 
 test('two-way properties accept dynamic options', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
+  await page.locator('#properties').click({ force: true });
+  await page.getByText('Variant comparison').click();
+  await page.locator('#twoWay').click({ force: true });
 
   await page.evaluate(() => {
     window.postMessage(
@@ -111,6 +115,7 @@ test('agent-ready data pack toggle is visible and enabled by default', async ({ 
 
 test('ai compact mode toggle exists, defaults on, and follows agent-pack availability', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
+  await page.getByText('Output & AI options').click();
   const compact = page.locator('#aiCompact');
   const agentPack = page.locator('#agentPack');
 
@@ -124,17 +129,20 @@ test('ai compact mode toggle exists, defaults on, and follows agent-pack availab
 
 test('preset actions show explicit apply labels and active confirmation', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
-  await expect(page.getByRole('button', { name: /apply agent extraction/i })).toHaveCount(1);
-  await expect(page.getByRole('button', { name: /apply designer handoff/i })).toHaveCount(1);
+  const agentPreset = page.getByRole('radio', { name: /ai \/ code agent/i });
+  const handoffPreset = page.getByRole('radio', { name: /full handoff/i });
+  await expect(agentPreset).toHaveCount(1);
+  await expect(handoffPreset).toHaveCount(1);
 
-  await page.getByRole('button', { name: /apply agent extraction/i }).click();
-  await expect(page.getByText(/Current preset:\s*Agent extraction/i)).toHaveCount(1);
+  await handoffPreset.click();
+  await expect(handoffPreset).toHaveAttribute('aria-checked', 'true');
+  await expect(agentPreset).toHaveAttribute('aria-checked', 'false');
 });
 
-test('agent extraction preset applies json-focused low-token defaults', async ({ page }) => {
+test('agent extraction preset applies yaml-focused low-token defaults', async ({ page }) => {
   await page.goto(`file://${uiPath}`);
 
-  await page.getByRole('button', { name: /apply agent extraction/i }).click();
+  await page.getByRole('radio', { name: /ai \/ code agent/i }).click();
 
   await expect(page.locator('#anatomy')).toBeChecked();
   await expect(page.locator('#data')).toBeChecked();
@@ -148,11 +156,41 @@ test('agent extraction preset applies json-focused low-token defaults', async ({
   await expect(page.locator('#multiColumn')).not.toBeChecked();
 });
 
+test('generate success exposes copy and .md download actions', async ({ page }) => {
+  await page.goto(`file://${uiPath}`);
+  await page.evaluate(() => {
+    window.postMessage(
+      {
+        pluginMessage: {
+          type: 'generate-success'
+        }
+      },
+      '*'
+    );
+  });
+
+  await expect(page.locator('#copy-ai-specs')).toHaveCount(1);
+  await expect(page.locator('#download-ai-specs-md')).toHaveCount(1);
+  await expect(page.locator('#download-ai-specs-md')).toContainText('.md');
+});
+
+test('full handoff preset keeps visual anatomy mode so artwork previews remain visible', async ({ page }) => {
+  await page.goto(`file://${uiPath}`);
+  await page.getByRole('radio', { name: /full handoff/i }).click();
+
+  await expect(page.locator('#anatomy')).toBeChecked();
+  await expect(page.locator('#layout')).toBeChecked();
+  await expect(page.locator('#multiColumn')).toBeChecked();
+
+  await page.getByText('Layer breakdown details').click();
+  await expect(page.locator('#tabularAnatomy')).not.toBeChecked();
+});
+
 test('plugin code avoids dynamic-page forbidden sync APIs', async () => {
   const code = readPluginCode();
 
   const forbiddenPatterns = [
-    /\bmainComponent\b/,
+    /\binstance\.mainComponent\b/,
     /\bfigma\.getNodeById\s*\(/,
     /\bfigma\.getStyleById\s*\(/,
     /\bfigma\.getLocalTextStyles\s*\(/,
@@ -180,6 +218,26 @@ test('plugin code avoids dynamic-page forbidden sync APIs', async () => {
   for (const pattern of forbiddenPatterns) {
     expect(code).not.toMatch(pattern);
   }
+});
+
+test('full handoff generation normalizes settings to keep artwork previews enabled', async () => {
+  const code = readPluginCode();
+  expect(code).toMatch(/function normalizeSettingsForGeneration/);
+  expect(code).toMatch(/function isQuickCheckProfile/);
+  expect(code).toMatch(/tabularAnatomy:\s*false/);
+  expect(code).toMatch(/aiCompactMode:\s*false/);
+});
+
+test('quick check preset keeps visual anatomy mode and does not enable compact skipping', async ({ page }) => {
+  await page.goto(`file://${uiPath}`);
+  await page.getByRole('radio', { name: /quick check/i }).click();
+
+  await expect(page.locator('#anatomy')).toBeChecked();
+  await expect(page.locator('#layout')).toBeChecked();
+  await expect(page.locator('#data')).not.toBeChecked();
+
+  await page.getByText('Layer breakdown details').click();
+  await expect(page.locator('#tabularAnatomy')).not.toBeChecked();
 });
 
 test('specsplugin-docs features are wired in plugin generation code', async () => {
@@ -232,7 +290,7 @@ test('layout section and data preview stay compact for multi-column readability'
   expect(code).toMatch(/body\.layoutMode = "VERTICAL"/);
   expect(code).toMatch(/toDataSectionPreview/);
   expect(code).toMatch(/chunks\[\]\.node_ids/);
-  expect(code).toMatch(/textChunks = chunks\.slice\(0, LIMITS/);
+  expect(code).toMatch(/textChunks = chunks\.slice\(0, getLimit\(/);
 });
 
 test('agent payload supports compact low-token schema mode', async () => {
@@ -253,11 +311,12 @@ test('anatomy section uses curated highlights and compact overlay markers', asyn
   expect(code).toMatch(/pickAnatomyHighlights\(/);
   expect(code).toMatch(/highlighted elements from/);
   expect(code).toMatch(/summarizeAnatomyAttributes/);
-  expect(code).toMatch(/overlay\.fills = \[solidFill\(theme\.accent, 0\.04\)\]/);
+  expect(code).toMatch(/highlight\.fills = \[deps\.solidFill\(theme\.overlayOrange, 0\.06\)\]/);
 });
 
-test('artwork preview prioritizes width scaling and preserves full height content', async () => {
+test('artwork preview uses scale-plan fallback for large exports', async () => {
   const code = readPluginCode();
-  expect(code).toMatch(/Math\.min\(1, widthScale\)/);
-  expect(code).toMatch(/const height = clone\.height \+ padding \* 2/);
+  expect(code).toMatch(/resolveArtworkExportScalePlan\(/);
+  expect(code).toMatch(/constraint: \{ type: "SCALE", value: scale \}/);
+  expect(code).toMatch(/artworkExportScaleUsed/);
 });

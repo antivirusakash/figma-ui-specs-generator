@@ -30,6 +30,12 @@ Implemented in `src/app/`:
 - `page.tsx`
   - JSON-LD structured data (`Organization`, `WebSite`, `SoftwareApplication`)
 
+### Visual Assets
+
+- Plugin UI captures are stored in `public/plugin-shots/`
+- Landing-ready crops are stored in `public/plugin-shots/crops/`
+- Current homepage image blocks use plugin-related crops, while `Sample spec: Blog Page` intentionally keeps `public/blog-landing-page.jpg`
+
 ### Local Run
 
 ```bash
@@ -42,4 +48,15 @@ npm run dev
 ```bash
 npm run lint
 npm run build
+```
+
+### Remotion Demo
+
+A standalone Remotion project is available at `../demo`.
+
+```bash
+cd ../demo
+npm install
+npm run dev
+npm run render
 ```

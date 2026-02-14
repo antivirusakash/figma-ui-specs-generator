@@ -16,7 +16,7 @@ import type {
   VariantChange,
   VariantDiff
 } from "../types";
-import { LIMITS } from "../limits";
+import { getLimit } from "../limits";
 
 type CreateTextFn = (
   text: string,
@@ -96,7 +96,7 @@ export async function collectPropertySpecs(
     if (!prop) continue;
     if (prop.type === "VARIANT") {
       const allOptions = componentSet.variantGroupProperties[propName]?.values ?? [];
-      const options = allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS);
+      const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
       const optionSpecs: PropertyOption[] = [];
       for (const option of options) {
         const variantInstance = baseInstance.clone();
@@ -337,7 +337,7 @@ export async function collectComponentDefinition(
         name: cleanName,
         type: "VARIANT",
         default: String(prop.value),
-        options: allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS)
+        options: allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"))
       });
     } else if (prop.type === "BOOLEAN") {
       propDefs.push({
@@ -370,7 +370,7 @@ export async function collectComponentDefinition(
 
     if (prop.type === "VARIANT") {
       const allOptions = variantGroupProps[propName]?.values ?? [];
-      const options = allOptions.slice(0, LIMITS.MAX_VARIANT_OPTIONS);
+      const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
       for (const option of options) {
         if (option === String(prop.value)) continue; // skip default
         const variantInstance = baseInstance.clone();
@@ -523,9 +523,9 @@ export async function collectTwoWaySpec(
   const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
   const combinations: TwoWaySpec["combinations"] = [];
   for (const a of optionsA) {
-    if (combinations.length >= LIMITS.MAX_TWO_WAY_COMBOS) break;
+    if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
     for (const b of optionsB) {
-      if (combinations.length >= LIMITS.MAX_TWO_WAY_COMBOS) break;
+      if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
       const variantInstance = baseInstance.clone();
       tempFrame.appendChild(variantInstance);
       try {

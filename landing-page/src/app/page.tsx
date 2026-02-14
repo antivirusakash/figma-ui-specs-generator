@@ -78,17 +78,17 @@ const storyBeats = [
   {
     title: "Scene 1 · The handoff bottleneck",
     body: "A designer shares a polished frame, but the coding agent receives too much raw detail and loses focus.",
-    image: "https://placehold.co/640x360/F5F3F1/57534E/png?text=Large+Raw+Context",
+    image: "/placeholders/feature-card.svg",
   },
   {
     title: "Scene 2 · Translation friction",
     body: "The team keeps translating design intent by hand, retry after retry, while momentum slows down.",
-    image: "https://placehold.co/640x360/F5F3F1/57534E/png?text=Handoff+Gap",
+    image: "/placeholders/feature-card.svg",
   },
   {
     title: "Scene 3 · Clear brief, faster shipping",
     body: "figma-specs turns the same screen into a compact brief, so Claude or OpenAI Codex can build with fewer retries.",
-    image: "https://placehold.co/640x360/F5F3F1/57534E/png?text=Compact+Spec+Pack",
+    image: "/placeholders/feature-card.svg",
   },
 ];
 
@@ -129,21 +129,21 @@ const workflowBlocks = [
     title: "Select in Figma",
     caption: "Frame + intent",
     icon: Stack,
-    image: "https://placehold.co/520x320/F5F3F1/57534E/png?text=Select+Frame",
+    image: "/placeholders/workflow-step.svg",
   },
   {
     step: "02",
     title: "Generate specs",
     caption: "Compact agent brief",
     icon: FileCode,
-    image: "https://placehold.co/520x320/F5F3F1/57534E/png?text=Specs+Output",
+    image: "/placeholders/workflow-step.svg",
   },
   {
     step: "03",
     title: "Build in agent",
     caption: "Claude or OpenAI Codex",
     icon: BracketsAngle,
-    image: "https://placehold.co/520x320/F5F3F1/57534E/png?text=Ship+UI",
+    image: "/placeholders/workflow-step.svg",
   },
 ];
 
@@ -158,25 +158,25 @@ const codingLanguages = [
 
 const showcaseCards = [
   {
-    title: "Plugin Panel",
-    subtitle: "Selection + options + compact mode",
-    image: "https://placehold.co/900x520/F5F3F1/57534E/png?text=Plugin+Panel+UI",
+    title: "Generate Tab",
+    subtitle: "Presets and configuration for structured spec output.",
+    image: "/placeholders/feature-card.svg",
   },
   {
-    title: "Generated Spec Frames",
-    subtitle: "Annotated anatomy and layout visuals",
-    image: "https://placehold.co/900x520/F5F3F1/57534E/png?text=Spec+Frames+on+Canvas",
+    title: "Learn Tab",
+    subtitle: "Built-in usage guidance so teams ramp quickly.",
+    image: "/placeholders/feature-card.svg",
   },
   {
-    title: "Agent Payload",
-    subtitle: "Chunked YAML and playbook metadata",
-    image: "https://placehold.co/900x520/F5F3F1/57534E/png?text=Agent+Ready+YAML",
+    title: "AGENTS Tab",
+    subtitle: "Snippet + framework-aware setup for coding agents.",
+    image: "/placeholders/feature-card.svg",
   },
   {
     title: "Agent Rules Snippet",
     subtitle:
       "Ready-to-paste CLAUDE.md / AGENTS.md rules so your coding agent knows how to consume specs output.",
-    image: "https://placehold.co/900x520/F5F3F1/57534E/png?text=CLAUDE.md+%2B+AGENTS.md+Rules",
+    image: "/placeholders/feature-card.svg",
   },
 ];
 
@@ -378,7 +378,7 @@ export default function Home() {
         Skip to content
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-brand-hairline bg-brand-canvas/95 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-hairline bg-brand-canvas/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[1188px] items-center justify-between px-4 sm:px-6 lg:px-0">
           <a
             href="#top"
@@ -458,7 +458,7 @@ export default function Home() {
         ) : null}
       </header>
 
-      <main id="top">
+      <main id="top" className="pt-16">
         <section className="mx-auto w-full max-w-[1188px] px-4 pb-16 pt-12 sm:px-6 lg:px-0 lg:pb-24 lg:pt-16">
           <div className="grid items-start gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
             <div data-reveal>
@@ -466,14 +466,14 @@ export default function Home() {
                 <Sparkle size={12} />
                 Open-source Figma plugin for agent-ready specs
               </p>
-              <h1 className="mt-5 max-w-[720px] text-[28px] font-light leading-[1.02] tracking-[-0.036em] sm:text-[40px] lg:text-[54px]">
+              <h1 className="mt-5 max-w-[720px] text-[24px] font-light leading-[1.06] tracking-[-0.03em] sm:text-[40px] sm:leading-[1.02] lg:text-[54px]">
                 Generate Figma specs for{" "}
-                <span className="inline-flex items-center gap-1.5 align-baseline whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 align-baseline">
                   <Image src="/claude.svg" alt="" aria-hidden width={28} height={28} className="h-[0.85em] w-[0.85em] object-contain" />
                   <span>Claude Code</span>
                 </span>{" "}
                 and{" "}
-                <span className="inline-flex items-center gap-1.5 align-baseline whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 align-baseline">
                   <Image
                     src="/chatgpt.svg"
                     alt=""
@@ -507,6 +507,19 @@ export default function Home() {
                 </a>
               </div>
 
+              <div className="relative mt-6 rounded-3xl border border-brand-hairline bg-brand-surface p-3 lg:hidden">
+                <Image
+                  src="/placeholders/hero-workbench.svg"
+                  alt="Figma canvas with Specs plugin open"
+                  width={920}
+                  height={560}
+                  className="h-auto w-full rounded-2xl border border-brand-border bg-[#1f2126] object-contain"
+                />
+                <div className="absolute bottom-6 left-6 rounded-xl border border-brand-border bg-brand-panel px-3 py-2 text-xs text-brand-text-muted shadow-sm">
+                  Plugin panel + live options
+                </div>
+              </div>
+
               <div className="mt-7 max-w-[620px] rounded-2xl border border-brand-hairline bg-brand-surface p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand-text-subtle">
                   Built for coding agents
@@ -533,8 +546,8 @@ export default function Home() {
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand-text-subtle">
                   Works for coding languages
                 </p>
-                <div className="mt-3 overflow-x-auto">
-                  <div className="flex w-max min-w-full items-center gap-5 whitespace-nowrap">
+                <div className="mt-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:flex-nowrap sm:gap-5">
                   {codingLanguages.map((item) => (
                     <span key={item.label} className="inline-flex items-center gap-2 text-sm font-medium text-brand-text">
                       <item.icon size={16} className="text-brand-text-subtle" />
@@ -547,13 +560,13 @@ export default function Home() {
             </div>
 
             <div data-reveal className="space-y-4">
-              <div className="relative overflow-hidden rounded-3xl border border-brand-hairline bg-brand-surface p-3">
+              <div className="relative hidden rounded-3xl border border-brand-hairline bg-brand-surface p-3 lg:block">
                 <Image
-                  src="https://placehold.co/920x560/F5F3F1/57534E/png?text=Plugin+UI+%28Placeholder%29"
-                  alt="Plugin UI placeholder"
+                  src="/placeholders/hero-workbench.svg"
+                  alt="Figma canvas with Specs plugin open"
                   width={920}
                   height={560}
-                  className="h-auto w-full rounded-2xl border border-brand-border object-cover"
+                  className="h-auto w-full rounded-2xl border border-brand-border bg-[#1f2126] object-contain"
                 />
                 <div className="absolute bottom-6 left-6 rounded-xl border border-brand-border bg-brand-panel px-3 py-2 text-xs text-brand-text-muted shadow-sm">
                   Plugin panel + live options
@@ -641,7 +654,7 @@ export default function Home() {
                     alt={`${card.title} placeholder`}
                     width={900}
                     height={520}
-                    className="h-auto w-full border-b border-brand-border object-cover"
+                    className="h-[220px] w-full border-b border-brand-border bg-brand-canvas/80 object-contain p-2"
                   />
                   <div className="p-4">
                     <h3 className="text-lg tracking-[-0.01em]">{card.title}</h3>
@@ -689,7 +702,7 @@ export default function Home() {
                         alt="Blog landing page sample"
                         width={576}
                         height={1080}
-                        className="h-auto w-full object-cover"
+                        className="h-auto w-full bg-white object-contain"
                       />
                     </div>
                   </div>
@@ -730,7 +743,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="problem" className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="problem" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal>
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
               The problem, backed by docs
@@ -757,11 +770,11 @@ export default function Home() {
               </div>
               <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
                 <Image
-                  src="/figma.png"
-                  alt="Token burn flow placeholder"
+                  src="/placeholders/feature-card.svg"
+                  alt="Plugin UI evidence snapshot"
                   width={760}
                   height={520}
-                  className="h-auto w-full rounded-xl border border-brand-border object-cover"
+                  className="h-[300px] w-full rounded-xl border border-brand-border bg-brand-panel object-contain p-2"
                 />
                 <div className="mt-3 rounded-xl border border-brand-border bg-brand-panel p-3 text-sm text-brand-text-muted">
                   Visualizing the real cost: large raw context + retries + repeated extraction.
@@ -771,7 +784,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="story" className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="story" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal>
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
               The story behind better handoff
@@ -787,7 +800,7 @@ export default function Home() {
                     alt={`${beat.title} placeholder`}
                     width={640}
                     height={360}
-                    className="h-auto w-full border-b border-brand-border object-cover"
+                    className="h-[208px] w-full border-b border-brand-border bg-brand-panel object-contain p-2"
                   />
                   <div className="p-5">
                     <h3 className="text-xl tracking-[-0.02em]">{beat.title}</h3>
@@ -799,7 +812,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="workflow" className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="workflow" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal>
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
               Workflow: from selected frame to shipped UI
@@ -834,7 +847,7 @@ export default function Home() {
                           alt={`${block.title} workflow panel`}
                           width={520}
                           height={320}
-                          className="mt-2 h-[98px] w-full rounded-lg border border-brand-border object-cover"
+                          className="mt-2 h-[98px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-contain p-1"
                         />
                       </article>
                     );
@@ -872,7 +885,7 @@ export default function Home() {
                           alt={`${block.title} workflow panel`}
                           width={520}
                           height={320}
-                          className="mt-2 h-[86px] w-full rounded-lg border border-brand-border object-cover"
+                          className="mt-2 h-[86px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-contain p-1"
                         />
                       </article>
                     </div>
@@ -883,9 +896,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="architecture" className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="architecture" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
                 Specs Plugin architecture in the repo
               </h2>
@@ -895,27 +908,27 @@ export default function Home() {
               </div>
             </div>
             <div className="mt-6 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 {architecturePillars.map((pillar) => (
                   <article key={pillar.title} className="rounded-2xl border border-brand-hairline bg-brand-surface p-5">
                     <div className="inline-flex rounded-full bg-brand-panel p-2">
                       <pillar.icon size={18} />
                     </div>
                     <h3 className="mt-3 text-lg tracking-[-0.01em]">{pillar.title}</h3>
-                    <p className="mt-1 break-all font-mono text-xs text-brand-text-subtle">{pillar.file}</p>
+                    <p className="mt-1 break-words font-mono text-xs leading-5 text-brand-text-subtle">{pillar.file}</p>
                     <p className="mt-2 text-sm leading-6 text-brand-text-muted">{pillar.detail}</p>
                   </article>
                 ))}
               </div>
               <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
                 <Image
-                  src="https://placehold.co/900x620/F5F3F1/57534E/png?text=Plugin+Architecture+Map+%28Placeholder%29"
-                  alt="Plugin architecture map placeholder"
+                  src="/placeholders/feature-card.svg"
+                  alt="Plugin architecture and learn tab preview"
                   width={900}
                   height={620}
-                  className="h-auto w-full rounded-xl border border-brand-border object-cover"
+                  className="h-[220px] w-full rounded-xl border border-brand-border bg-brand-panel object-contain p-2 sm:h-[320px]"
                 />
-                <pre className="mt-3 overflow-x-auto rounded-xl border border-brand-border bg-brand-panel p-3 text-[11px] leading-4 text-brand-text-muted">
+                <pre className="mt-3 whitespace-pre-wrap break-words rounded-xl border border-brand-border bg-brand-panel p-3 text-[11px] leading-4 text-brand-text-muted">
 {`src/
   code.ts                 orchestration
   plugin/helpers/*        anatomy + tokens + dedup
@@ -927,7 +940,7 @@ tests/unit/*              contracts + regression coverage`}
           </div>
         </section>
 
-        <section id="opensource" className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="opensource" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal className="rounded-3xl border border-brand-hairline bg-brand-surface p-6 sm:p-8">
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
               Open source, so every claim is auditable
@@ -952,24 +965,24 @@ tests/unit/*              contracts + regression coverage`}
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <Image
-                src="https://placehold.co/760x420/F5F3F1/57534E/png?text=Repo+README+Preview+%28Placeholder%29"
-                alt="Repository preview placeholder"
+                src="/placeholders/feature-card.svg"
+                alt="Open source learn tab preview"
                 width={760}
                 height={420}
-                className="h-auto w-full rounded-2xl border border-brand-border object-cover"
+                className="h-[240px] w-full rounded-2xl border border-brand-border bg-brand-panel object-contain p-2"
               />
               <Image
-                src="https://placehold.co/760x420/F5F3F1/57534E/png?text=Plugin+Demo+Flow+%28Placeholder%29"
-                alt="Plugin demo flow placeholder"
+                src="/placeholders/feature-card.svg"
+                alt="Open source agents tab preview"
                 width={760}
                 height={420}
-                className="h-auto w-full rounded-2xl border border-brand-border object-cover"
+                className="h-[240px] w-full rounded-2xl border border-brand-border bg-brand-panel object-contain p-2"
               />
             </div>
           </div>
         </section>
 
-        <section id="faq" className="mx-auto w-full max-w-[1188px] px-4 pb-18 sm:px-6 lg:px-0 lg:pb-24">
+        <section id="faq" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-18 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal>
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">FAQ</h2>
             <p className="mt-3 max-w-[860px] text-base leading-7 text-brand-text-muted">
@@ -992,12 +1005,22 @@ tests/unit/*              contracts + regression coverage`}
       </main>
 
       <footer className="border-t border-brand-hairline py-6">
-        <div className="mx-auto flex w-full max-w-[1188px] flex-wrap items-center justify-between gap-3 px-4 text-sm text-brand-text-subtle sm:px-6 lg:px-0">
-          <p>figma-specs · Open-source Figma specs for agentic coding workflows.</p>
+        <div className="mx-auto flex w-full max-w-[1188px] flex-col items-center gap-2 px-4 text-center text-sm text-brand-text-subtle sm:px-6 lg:px-0">
           <div className="flex items-center gap-2">
             <BracketsAngle size={15} />
             <span>Built with Next.js, shadcn/ui, GSAP, and Phosphor Icons</span>
           </div>
+          <p>
+            Created by designer for designer & developer by{" "}
+            <a
+              href="https://www.linkedin.com/in/antivirusakash/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              Akash Solanki
+            </a>
+          </p>
         </div>
       </footer>
     </div>

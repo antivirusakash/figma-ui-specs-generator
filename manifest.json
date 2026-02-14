@@ -1,6 +1,6 @@
 {
-  "name": "Specs Plugin (Local Inline)",
-  "id": "specs-plugin-local-inline",
+  "name": "Specs - Prompt for Design to Code for Claude Code & Codex",
+  "id": "1604491843373484782",
   "api": "1.0.0",
   "editorType": ["figma"],
   "main": "dist/code.js",

@@ -1,7 +1,7 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import { log } from "../logger";
 import type { LayoutSpec, Settings, SpecTextRole, Theme } from "../types";
-import { LIMITS } from "../limits";
+import { getLimit } from "../limits";
 type CreateTextFn = (
   text: string,
   size?: number,
@@ -30,11 +30,12 @@ type LayoutSectionDeps = {
 
 export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSpec[] {
   const data: LayoutSpec[] = [];
+  const maxLayoutSpecs = getLimit("MAX_LAYOUT_SPECS");
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
   const walk = (node: SceneNode, path: string) => {
-    if (data.length >= LIMITS.MAX_LAYOUT_SPECS) return;
+    if (data.length >= maxLayoutSpecs) return;
     if (skipNodeIds?.has(node.id)) return;
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
       const bounds = node.absoluteBoundingBox;
@@ -145,7 +146,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
       }
     }
 
-    if ("children" in node && data.length < LIMITS.MAX_LAYOUT_SPECS) {
+    if ("children" in node && data.length < maxLayoutSpecs) {
       node.children.forEach((child) => walk(child, `${path}/${node.name}`));
     }
   };
@@ -342,7 +343,7 @@ export async function createLayoutSection(
   metricsPanel.appendChild(cards);
   body.appendChild(metricsPanel);
 
-  const skipArtwork = settings.agentReadyData && settings.aiCompactMode;
+  const skipArtwork = settings.data && settings.agentReadyData && settings.aiCompactMode;
   if (!skipArtwork) {
     const artworkPanel = figma.createFrame();
     artworkPanel.name = "Layout Artwork";

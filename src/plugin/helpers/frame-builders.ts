@@ -1,4 +1,5 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
+import { ARTWORK_EXPORT_SCALE_PLAN, LIMITS } from "../limits";
 import type { SpecTextRole, Theme } from "../types";
 import { solidFill } from "./format";
 
@@ -9,6 +10,34 @@ type CreateTextFn = (
   color?: string,
   role?: SpecTextRole
 ) => TextNode;
+
+function normalizeExportError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+export function isArtworkExportTooLargeError(error: unknown) {
+  const message = normalizeExportError(error).toLowerCase();
+  return (
+    message.includes("too large to export as an image") ||
+    message.includes("image is too large") ||
+    (message.includes("too large") && (message.includes("createimage") || message.includes("image")))
+  );
+}
+
+export function resolveArtworkExportScalePlan(
+  targetWidth: number,
+  targetHeight: number
+) {
+  const area = Math.max(1, targetWidth) * Math.max(1, targetHeight);
+  if (area >= LIMITS.ARTWORK_EXPORT_AUTO_AREA_START_AT_05X) {
+    return [...ARTWORK_EXPORT_SCALE_PLAN.huge];
+  }
+  if (area >= LIMITS.ARTWORK_EXPORT_AUTO_AREA_START_AT_1X) {
+    return [...ARTWORK_EXPORT_SCALE_PLAN.large];
+  }
+  return [...ARTWORK_EXPORT_SCALE_PLAN.default];
+}
 
 export function createSectionFrame(title: string, theme: Theme, createTextFn: CreateTextFn) {
   const frame = figma.createFrame();
@@ -164,29 +193,49 @@ export async function createArtworkFrame(
 
   // Export target as PNG instead of .clone() to avoid Figma bugs where
   // cloned component instances lose their connection, reset widths, and
-  // break text wrapping. Try 2x first for retina, fall back to 1x for
-  // large targets that exceed Figma's image size limit.
-  let image: Image;
-  for (const scale of [2, 1]) {
-    const pngBytes = await (target as ExportMixin).exportAsync({
-      format: 'PNG',
-      constraint: { type: 'SCALE', value: scale }
-    });
+  // break text wrapping. Scale plan auto-falls back on size-limit errors.
+  const exportScales = resolveArtworkExportScalePlan(targetWidth, targetHeight);
+  let image: Image | null = null;
+  let usedScale: number | null = null;
+  let tooLargeErrorSeen = false;
+  let attemptCount = 0;
+
+  for (const scale of exportScales) {
+    attemptCount += 1;
     try {
+      const pngBytes = await (target as ExportMixin).exportAsync({
+        format: "PNG",
+        constraint: { type: "SCALE", value: scale }
+      });
       image = figma.createImage(pngBytes);
+      usedScale = scale;
       break;
-    } catch {
-      if (scale === 1) throw new Error("Target is too large to export as an image");
+    } catch (error) {
+      if (!isArtworkExportTooLargeError(error)) {
+        throw error;
+      }
+      tooLargeErrorSeen = true;
     }
   }
-  image = image!;
+
+  if (!image || !usedScale) {
+    throw new Error(`Target is too large to export as an image. Tried scales: ${exportScales.join(", ")}`);
+  }
+
+  if (usedScale !== exportScales[0]) {
+    console.info("[SpecsPlugin] artwork export fallback applied", {
+      target: target.name,
+      usedScale,
+      attempts: attemptCount
+    });
+  }
 
   const rect = figma.createRectangle();
   rect.resize(targetWidth, targetHeight);
   rect.fills = [{
-    type: 'IMAGE',
+    type: "IMAGE",
     imageHash: image.hash,
-    scaleMode: 'FILL'
+    scaleMode: "FILL"
   }];
 
   const frameWidth = targetWidth + padding * 2 + markerGutter;
@@ -200,6 +249,10 @@ export async function createArtworkFrame(
   frame.setPluginData("cloneOffsetX", String(padding));
   frame.setPluginData("cloneOffsetY", String(padding));
   frame.setPluginData("cloneScale", "1");
+  frame.setPluginData("artworkExportScaleRequested", "auto");
+  frame.setPluginData("artworkExportScaleUsed", String(usedScale));
+  frame.setPluginData("artworkExportAttempts", String(attemptCount));
+  frame.setPluginData("artworkExportFallback", tooLargeErrorSeen || usedScale !== exportScales[0] ? "1" : "0");
   frame.setPluginData("ai-skip", "true");
 
   return frame;

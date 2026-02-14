@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" fill="none">
+  <rect width="900" height="520" rx="20" fill="#ECEAE8"/>
+  <rect x="28" y="28" width="844" height="464" rx="16" fill="#F8F7F5" stroke="#DDDBD8"/>
+  <rect x="58" y="62" width="784" height="22" rx="8" fill="#D7D3CE"/>
+  <rect x="58" y="104" width="516" height="14" rx="7" fill="#DFDBD6"/>
+  <rect x="58" y="144" width="784" height="142" rx="12" fill="#E6E2DD"/>
+  <rect x="58" y="306" width="380" height="156" rx="12" fill="#E3DFDA"/>
+  <rect x="462" y="306" width="380" height="156" rx="12" fill="#E3DFDA"/>
+  <text x="58" y="456" fill="#8A847D" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="28" font-weight="700">Placeholder preview</text>
+</svg>

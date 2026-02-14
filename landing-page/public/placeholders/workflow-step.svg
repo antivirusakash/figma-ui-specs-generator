@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="320" viewBox="0 0 520 320" fill="none">
+  <rect width="520" height="320" rx="16" fill="#F3F1EE"/>
+  <rect x="20" y="20" width="480" height="48" rx="10" fill="#E3DFDA"/>
+  <rect x="20" y="84" width="230" height="216" rx="12" fill="#EAE6E1"/>
+  <rect x="266" y="84" width="234" height="100" rx="12" fill="#EAE6E1"/>
+  <rect x="266" y="200" width="234" height="100" rx="12" fill="#EAE6E1"/>
+  <text x="32" y="54" fill="#7D7770" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="18" font-weight="700">Placeholder workflow</text>
+</svg>

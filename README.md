@@ -51,10 +51,24 @@ This creates a cleaner handoff loop for both designers and coders.
 ## Architecture Highlights
 
 - `src/code.ts` orchestrates plugin flow and dependency wiring.
-- `src/plugin/limits.ts` centralizes payload limits and truncation caps.
+- `src/plugin/limits.ts` is the single configuration page for tunables:
+  - base caps/truncation limits
+  - complexity tier thresholds (`standard` / `large` / `enterprise`)
+  - per-tier runtime override profiles
+  - artwork export auto-scale plans and area thresholds
+- Complexity-aware runtime budgets auto-scale anatomy/layout/data limits per selection (`standard` / `large` / `enterprise`) without exposing manual UI controls.
+- Artwork preview export is stress-safe: auto scale fallback (`2x/1x/0.5x/0.25x`) retries only when Figma hits image-size limits, so large landing pages still finish spec generation.
 - `src/plugin/helpers/anatomy-collector.ts` handles repeat fingerprinting and diff logic.
 - `src/plugin/sections/data-section.ts` builds chunked agent payload YAML.
 - `src/ui-app.tsx` provides the plugin UI, including `CLAUDE.md / AGENTS.md` helper tab.
+- `src/ui.css` maps plugin theme tokens to the same light palette used by `landing-page/src/app/globals.css`.
+
+## Stress Readiness Notes
+
+- Full Handoff and Quick Check force visual anatomy mode (`tabularAnatomy: false`) so UI previews remain visible.
+- Compact mode only skips artwork when Data + Agent Pack + Compact are all enabled.
+- Agent YAML summary includes `runtime_budget` and truncation metadata to make stress behavior observable in generated specs.
+- Operational checklist for repeatable validation: `benchmark/stress-sanity-todo.md`.
 
 ## Quick Start
 

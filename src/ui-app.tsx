@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ArrowsOutCardinalIcon,
@@ -6,6 +6,7 @@ import {
   CheckCircleIcon,
   CopyIcon,
   CubeIcon,
+  DownloadSimpleIcon,
   FadersHorizontalIcon,
   FlowArrowIcon,
   GridFourIcon,
@@ -72,8 +73,53 @@ type PluginMessage =
 
 type Preset = 'handoff' | 'agent' | 'compact';
 type AppTab = 'generate' | 'learn' | 'agents';
+type AiSpecsAction = 'copy' | 'download';
 
 const AUTO_VALUE = '__auto__';
+
+function copyTextToClipboard(value: string) {
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeArtboardName(name: string) {
+  return name
+    .trim()
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^\.+|\.+$/g, '');
+}
+
+function getSpecsFileName(specText: string) {
+  const match = specText.match(/^## Figma Component:\s*(.+)$/m);
+  const rawName = match?.[1]?.trim() ?? 'artboard';
+  const safeName = sanitizeArtboardName(rawName) || 'artboard';
+  return `${safeName}-specs.md`;
+}
+
+function downloadMarkdownFile(content: string, fileName: string) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
 
 const DEFAULT_SETTINGS: Settings = {
   anatomy: true,
@@ -106,11 +152,14 @@ const DEFAULT_SETTINGS: Settings = {
   schemaVersion: 'v14'
 };
 
-const panelClass = 'rounded-xl border border-border bg-card/95 p-4 shadow-sm';
+const panelClass =
+  'rounded-2xl border border-border bg-card p-4 shadow-[0_1px_0_rgba(0,0,0,0.03)]';
 const controlLabelClass =
-  'group flex min-h-11 items-start gap-3 rounded-lg border border-border bg-background/60 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent/40';
-const controlTitleClass = 'text-sm font-medium text-foreground';
-const controlHintClass = 'text-pretty text-xs text-muted-foreground';
+  'group flex min-h-11 items-start gap-3 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted/70';
+const controlTitleClass = 'text-[14px] font-medium tracking-[-0.012em] text-foreground';
+const controlHintClass = 'text-pretty text-[12px] leading-[1.42] text-muted-foreground';
+const sectionTitleClass = 'text-[15px] font-semibold tracking-[-0.015em] text-foreground';
+const sectionHintClass = 'text-[12px] leading-[1.45] text-muted-foreground';
 const inputTriggerClass = 'h-11 w-full';
 
 type ToggleFieldProps = {
@@ -146,9 +195,13 @@ const App = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [lastAiSpecsText, setLastAiSpecsText] = useState('');
+  const [lastAiSpecsFileName, setLastAiSpecsFileName] = useState('artboard-specs.md');
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const [snippetCopied, setSnippetCopied] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>('agent');
+  const pendingAiActionRef = useRef<AiSpecsAction | null>(null);
 
   useEffect(() => {
     console.log('[SpecsPlugin UI] mounted');
@@ -169,21 +222,23 @@ const App = () => {
         setErrorMessage(message.message || 'Something went wrong.');
       }
       if (message.type === 'copy-ai-specs-result') {
-        try {
-          const textarea = document.createElement('textarea');
-          textarea.value = message.text;
-          textarea.style.position = 'fixed';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textarea);
-          setCopySuccess(true);
+        const fileName = getSpecsFileName(message.text);
+        setLastAiSpecsText(message.text);
+        setLastAiSpecsFileName(fileName);
+        if (pendingAiActionRef.current === 'download') {
+          downloadMarkdownFile(message.text, fileName);
+          setDownloadSuccess(true);
+          setTimeout(() => setDownloadSuccess(false), 2000);
           setIsCopying(false);
-          setTimeout(() => setCopySuccess(false), 2000);
-        } catch {
-          setIsCopying(false);
+          pendingAiActionRef.current = null;
+          return;
         }
+        if (copyTextToClipboard(message.text)) {
+          setCopySuccess(true);
+          setTimeout(() => setCopySuccess(false), 2000);
+        }
+        setIsCopying(false);
+        pendingAiActionRef.current = null;
       }
     };
     window.addEventListener('message', handler);
@@ -276,6 +331,7 @@ ${fwLine}
         setSettings((prev) => ({
           ...prev,
           anatomy: true,
+          tabularAnatomy: false,
           properties: true,
           layout: true,
           data: true,
@@ -321,6 +377,7 @@ ${fwLine}
       setSettings((prev) => ({
         ...prev,
         anatomy: true,
+        tabularAnatomy: false,
         properties: false,
         layout: true,
         data: false,
@@ -328,7 +385,7 @@ ${fwLine}
         variables: false,
         modes: false,
         agentReadyData: true,
-        aiCompactMode: true,
+        aiCompactMode: false,
         twoWay: false,
         includeNestedComponents: false,
         showOuterLayout: true,
@@ -344,6 +401,10 @@ ${fwLine}
     setErrorMessage(null);
     setIsGenerating(true);
     setGenerateSuccess(false);
+    setCopySuccess(false);
+    setDownloadSuccess(false);
+    setLastAiSpecsText('');
+    setLastAiSpecsFileName('artboard-specs.md');
     const normalizedSettings = {
       ...settings,
       multiColumn: settings.agentReadyData && settings.aiCompactMode ? false : settings.multiColumn
@@ -364,9 +425,11 @@ ${fwLine}
     );
   }, [settings]);
 
-  const copyAiSpecs = useCallback(() => {
+  const requestAiSpecs = useCallback((action: AiSpecsAction) => {
     setIsCopying(true);
     setCopySuccess(false);
+    setDownloadSuccess(false);
+    pendingAiActionRef.current = action;
     console.log('[SpecsPlugin UI] copy-ai-specs clicked');
     parent.postMessage(
       {
@@ -381,18 +444,37 @@ ${fwLine}
       },
       '*'
     );
-    setTimeout(() => setIsCopying(false), 5000);
+    setTimeout(() => {
+      setIsCopying(false);
+      if (pendingAiActionRef.current === action) {
+        pendingAiActionRef.current = null;
+      }
+    }, 5000);
   }, [settings]);
 
+  const copyAiSpecs = useCallback(() => {
+    requestAiSpecs('copy');
+  }, [requestAiSpecs]);
+
+  const downloadAiSpecs = useCallback(() => {
+    if (lastAiSpecsText) {
+      downloadMarkdownFile(lastAiSpecsText, lastAiSpecsFileName);
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 2000);
+      return;
+    }
+    requestAiSpecs('download');
+  }, [lastAiSpecsFileName, lastAiSpecsText, requestAiSpecs]);
+
   return (
-    <div className="min-h-dvh pb-20">
+    <div className="min-h-dvh bg-background pb-20">
       {/* Compact Header */}
       <header className="space-y-1 p-4 pb-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-[11px] font-medium tracking-[-0.01em] text-muted-foreground">
           <SparkleIcon size={14} />
-          Specs Plugin
+          Specs
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[14px] leading-5 tracking-[-0.01em] text-muted-foreground">
           Generate visual specs from any selected component.
         </p>
       </header>
@@ -402,7 +484,7 @@ ${fwLine}
         <div
           role="tablist"
           aria-label="Specs plugin sections"
-          className="inline-flex w-full gap-2 rounded-xl border border-border bg-muted/40 p-1"
+          className="inline-flex w-full gap-2 rounded-xl border border-border bg-muted/70 p-1"
         >
           <Button
             id="tab-generate"
@@ -428,7 +510,7 @@ ${fwLine}
             variant={activeTab === 'learn' ? 'default' : 'secondary'}
             onClick={() => setActiveTab('learn')}
           >
-            Learn
+            How to Use
           </Button>
           <Button
             id="tab-agents"
@@ -446,25 +528,28 @@ ${fwLine}
         </div>
       </div>
 
-      {/* Learn Tab */}
+      {/* How to Use Tab */}
       {activeTab === 'learn' ? (
         <div id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" className="space-y-4 px-4">
           {/* How to use — timeline steps */}
           <section className={panelClass}>
-            <h2 className="mb-3 text-sm font-semibold text-foreground">How to use</h2>
+            <h2 className={`mb-3 ${sectionTitleClass}`}>How to use</h2>
             <div className="relative ml-2.5 border-l-2 border-border pl-5">
               {[
-                { n: '1', title: 'Select a component', hint: 'Click any component, instance, or frame on your canvas.' },
-                { n: '2', title: 'Choose a preset', hint: 'Pick Full handoff, AI agent, or Quick check. Fine-tune settings below.' },
-                { n: '3', title: 'Generate', hint: 'Hit Generate. The button turns green when your spec is ready.' },
-                { n: '4', title: 'Copy for AI', hint: 'Tap Copy Prompt + Specs to grab structured YAML for your coding tool.' }
-              ].map((step, i) => (
-                <div key={step.n} className={`relative ${i < 3 ? 'pb-4' : ''}`}>
+                { n: '1', title: 'Select a frame', hint: 'Click the frame you want to build from on your canvas.' },
+                { n: '2', title: 'Choose a preset', hint: 'Pick Full handoff, AI / code agent, or Quick check.' },
+                { n: '3', title: 'Generate specs', hint: 'Hit Generate and wait for the success state.' },
+                { n: '4', title: 'Setup AGENTS.md / CLAUDE.md', hint: 'Open the AGENTS.md tab and copy the snippet for your coding agent.' },
+                { n: '5', title: 'Download / copy specs', hint: 'Use Download .md or Copy Prompt + Specs to export YAML specs.' },
+                { n: '6', title: 'Add to IDE and update frame link', hint: 'Paste the snippet + specs into your IDE workflow and update the frame URL if needed.' },
+                { n: '7', title: 'Start building', hint: 'Run your coding agent using the exported YAML and reference screenshot.' }
+              ].map((step, i, steps) => (
+                <div key={step.n} className={`relative ${i < steps.length - 1 ? 'pb-4' : ''}`}>
                   <div className="absolute -left-[1.625rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {step.n}
                   </div>
-                  <p className="text-sm font-medium leading-5 text-foreground">{step.title}</p>
-                  <p className="text-xs text-muted-foreground">{step.hint}</p>
+                  <p className="text-[14px] font-medium leading-5 tracking-[-0.01em] text-foreground">{step.title}</p>
+                  <p className={sectionHintClass}>{step.hint}</p>
                 </div>
               ))}
             </div>
@@ -472,7 +557,7 @@ ${fwLine}
 
           {/* What each section does — compact icon rows */}
           <section className={panelClass}>
-            <h2 className="mb-3 text-sm font-semibold text-foreground">What each section does</h2>
+            <h2 className={`mb-3 ${sectionTitleClass}`}>What each section does</h2>
             <div className="grid gap-1.5">
               {[
                 { icon: <RowsIcon size={14} />, title: 'Layer breakdown', hint: 'Every layer with its key visual details.' },
@@ -485,7 +570,7 @@ ${fwLine}
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-2.5 rounded-md px-1 py-1.5">
                   <span className="mt-0.5 shrink-0 text-muted-foreground">{item.icon}</span>
-                  <span className="text-xs">
+                  <span className="text-[12px] leading-[1.45]">
                     <span className="font-medium text-foreground">{item.title}</span>
                     <span className="text-muted-foreground"> — {item.hint}</span>
                   </span>
@@ -496,11 +581,11 @@ ${fwLine}
 
           {/* AI workflow tips — single callout */}
           <section className={`${panelClass} bg-primary/5`}>
-            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <h2 className={`mb-2 flex items-center gap-1.5 ${sectionTitleClass}`}>
               <SparkleIcon size={14} className="text-primary" />
               Tips for AI workflows
             </h2>
-            <ul className="grid gap-1.5 text-xs text-muted-foreground">
+            <ul className="grid gap-1.5 text-[12px] leading-[1.45] text-muted-foreground">
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
                 Use the AI / code agent preset for the smallest output.
@@ -529,11 +614,11 @@ ${fwLine}
 
           {/* Intro */}
           <section className={panelClass}>
-            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <h2 className={`mb-2 flex items-center gap-1.5 ${sectionTitleClass}`}>
               <CubeIcon size={14} className="text-primary" />
               CLAUDE.md / AGENTS.md
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className={sectionHintClass}>
               Add this snippet to your project's <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">CLAUDE.md</code> or <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">AGENTS.md</code> so
               your AI coding agent knows how to consume Specs plugin output.
             </p>
@@ -542,7 +627,7 @@ ${fwLine}
           {/* Framework selector (mirrors Generate tab) */}
           <section className={panelClass}>
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-muted-foreground" htmlFor="agents-framework">
+              <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="agents-framework">
                 Target framework
               </Label>
               <Select value={settings.framework} onValueChange={onSelect('framework')}>
@@ -560,7 +645,7 @@ ${fwLine}
                   <SelectItem value="react-native">React Native</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p className={sectionHintClass}>
                 The snippet adapts its framework-specific line based on this selection.
               </p>
             </div>
@@ -569,7 +654,7 @@ ${fwLine}
           {/* Snippet preview + copy */}
           <section className={panelClass}>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">Snippet</h2>
+              <h2 className={sectionTitleClass}>Snippet</h2>
               <Button
                 size="sm"
                 variant="outline"
@@ -596,8 +681,8 @@ ${fwLine}
 
           {/* How to use it */}
           <section className={panelClass}>
-            <h2 className="mb-2 text-sm font-semibold text-foreground">How to use</h2>
-            <div className="grid gap-1.5 text-xs text-muted-foreground">
+            <h2 className={`mb-2 ${sectionTitleClass}`}>How to use</h2>
+            <div className="grid gap-1.5 text-[12px] leading-[1.45] text-muted-foreground">
               <div className="flex items-start gap-2.5 rounded-md px-1 py-1">
                 <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
                 <span>Copy the snippet above.</span>
@@ -617,39 +702,13 @@ ${fwLine}
             </div>
           </section>
 
-          {/* Supported agents */}
-          <section className={`${panelClass} bg-primary/5`}>
-            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <SparkleIcon size={14} className="text-primary" />
-              Supported agents
-            </h2>
-            <ul className="grid gap-1.5 text-xs text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
-                <strong>Claude Code</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">CLAUDE.md</code>
-              </li>
-              <li className="flex items-start gap-2">
-                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
-                <strong>OpenAI Codex</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">AGENTS.md</code>
-              </li>
-              <li className="flex items-start gap-2">
-                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
-                <strong>Cursor / Windsurf</strong> — place snippet in <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium">.cursorrules</code> or project instructions
-              </li>
-              <li className="flex items-start gap-2">
-                <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
-                Works with any agent that reads project-level instruction files.
-              </li>
-            </ul>
-          </section>
-
           {/* Suggested skills */}
           <section className={`${panelClass} bg-primary/5`}>
-            <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <h2 className={`mb-2 flex items-center gap-1.5 ${sectionTitleClass}`}>
               <SparkleIcon size={14} className="text-primary" />
               Suggested skills for best output
             </h2>
-            <ul className="grid gap-1.5 text-xs text-muted-foreground">
+            <ul className="grid gap-1.5 text-[12px] leading-[1.45] text-muted-foreground">
               <li className="flex items-start gap-2">
                 <InfoIcon size={12} className="mt-0.5 shrink-0 text-primary/70" />
                 <span><strong>Agent Browser</strong> by Vercel — <a href="https://github.com/vercel-labs/agent-browser" target="_blank" rel="noopener noreferrer" className="text-primary underline">github.com/vercel-labs/agent-browser</a></span>
@@ -674,8 +733,8 @@ ${fwLine}
           {/* Quick Start — Preset Cards */}
           <section className={panelClass}>
             <div className="mb-3 space-y-1">
-              <h2 className="text-sm font-semibold text-foreground">Quick start</h2>
-              <p className="text-xs text-muted-foreground">Pick a starting point. Adjust settings below if needed.</p>
+              <h2 className={sectionTitleClass}>Quick start</h2>
+              <p className={sectionHintClass}>Pick a starting point. Adjust settings below if needed.</p>
             </div>
             <div className="grid gap-2" role="radiogroup" aria-label="Preset selection">
               <PresetCard
@@ -686,7 +745,7 @@ ${fwLine}
               />
               <PresetCard
                 title="AI / code agent"
-                description="Compact JSON for AI tools and code generators."
+                description="Compact YAML for AI tools and code generators."
                 selected={selectedPreset === 'agent'}
                 onClick={() => applyPreset('agent')}
               />
@@ -709,8 +768,8 @@ ${fwLine}
           {/* What to Include — Section Toggles */}
           <section className={panelClass}>
             <div className="mb-3 space-y-1">
-              <h2 className="text-sm font-semibold text-foreground">What to include</h2>
-              <p className="text-xs text-muted-foreground">Toggle what appears in the generated spec.</p>
+              <h2 className={sectionTitleClass}>What to include</h2>
+              <p className={sectionHintClass}>Toggle what appears in the generated spec.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <ToggleField
@@ -737,7 +796,7 @@ ${fwLine}
               <ToggleField
                 id="data"
                 title="Data export"
-                hint="Structured JSON for dev tools and AI agents."
+                hint="Structured YAML for dev tools and AI agents."
                 checked={settings.data}
                 onCheckedChange={onToggle('data')}
               />
@@ -812,7 +871,7 @@ ${fwLine}
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="twoWayPropA">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="twoWayPropA">
                     First property
                   </Label>
                   <Select
@@ -833,7 +892,7 @@ ${fwLine}
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="twoWayPropB">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="twoWayPropB">
                     Second property
                   </Label>
                   <Select
@@ -854,7 +913,7 @@ ${fwLine}
                   </Select>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className={sectionHintClass}>
                 {variantProps.length > 0
                   ? `Found ${variantProps.length} properties in your selection.`
                   : 'Select a variant component to auto-detect property axes.'}
@@ -871,13 +930,13 @@ ${fwLine}
               <ToggleField
                 id="dataAttributes"
                 title="Detailed data attributes"
-                hint="Include fill, stroke, and effect details in JSON."
+                hint="Include fill, stroke, and effect details in YAML."
                 checked={settings.includeDataAttributes}
                 onCheckedChange={onToggle('includeDataAttributes')}
               />
               <ToggleField
                 id="agentPack"
-                title="AI-ready JSON"
+                title="AI-ready YAML"
                 hint="Add metadata AI tools (Codex, MCP, Claude) can use."
                 checked={settings.agentReadyData}
                 onCheckedChange={onToggle('agentReadyData')}
@@ -898,33 +957,8 @@ ${fwLine}
                 onCheckedChange={onToggle('showOuterLayout')}
               />
             </div>
-            {settings.agentReadyData && settings.aiCompactMode ? (
-              <div className="mt-3 space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground" htmlFor="schemaVersion">
-                  Schema version
-                </Label>
-                <Select value={settings.schemaVersion} onValueChange={onSelect('schemaVersion')}>
-                  <SelectTrigger id="schemaVersion" className={inputTriggerClass}>
-                    <SelectValue placeholder="v11" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="v11">v11 (stable)</SelectItem>
-                    <SelectItem value="v12">v12 (compact)</SelectItem>
-                    <SelectItem value="v13">v13 (blueprint)</SelectItem>
-                    <SelectItem value="v14">v14 (optimized)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {settings.schemaVersion === 'v14'
-                    ? 'v14 omits CSS defaults (flex-start, row) — agents infer from defaults_omitted map.'
-                    : settings.schemaVersion === 'v13'
-                    ? 'v13 defines component structure once with variant diffs — ideal for components.'
-                    : 'v12 reduces payload size by ~30% with indexed diffs and path field removal.'}
-                </p>
-              </div>
-            ) : null}
             <div className="mt-3 space-y-1">
-              <Label className="text-xs font-medium text-muted-foreground" htmlFor="framework">
+              <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="framework">
                 Target framework
               </Label>
               <Select value={settings.framework} onValueChange={onSelect('framework')}>
@@ -942,7 +976,7 @@ ${fwLine}
                   <SelectItem value="react-native">React Native</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p className={sectionHintClass}>
                 Tailors Copy Prompt + Specs instructions to this framework.
               </p>
             </div>
@@ -963,7 +997,7 @@ ${fwLine}
                   onCheckedChange={onToggle('multiColumn')}
                 />
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="columnCount">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="columnCount">
                     Columns
                   </Label>
                   <Select
@@ -985,7 +1019,7 @@ ${fwLine}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="colorFormat">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="colorFormat">
                     Color format
                   </Label>
                   <Select value={settings.colorFormat} onValueChange={onSelect('colorFormat')}>
@@ -1000,7 +1034,7 @@ ${fwLine}
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="spacingUnit">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="spacingUnit">
                     Spacing unit
                   </Label>
                   <Select value={settings.spacingUnit} onValueChange={onSelect('spacingUnit')}>
@@ -1017,7 +1051,7 @@ ${fwLine}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="remBase">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="remBase">
                     Base font size (for rem)
                   </Label>
                   <Input
@@ -1031,7 +1065,7 @@ ${fwLine}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground" htmlFor="precision">
+                  <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="precision">
                     Decimal places
                   </Label>
                   <Input
@@ -1047,7 +1081,7 @@ ${fwLine}
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground" htmlFor="valuePreference">
+                <Label className="text-[11px] font-medium tracking-[-0.01em] text-muted-foreground" htmlFor="valuePreference">
                   Prefer variables or tokens
                 </Label>
                 <Select value={settings.valuePreference} onValueChange={onSelect('valuePreference')}>
@@ -1083,7 +1117,7 @@ ${fwLine}
       ) : null}
 
       {/* Sticky Footer */}
-      <footer className="sticky-footer z-10 mt-4 border-t border-border bg-background px-4 py-3">
+      <footer className="sticky-footer z-10 mt-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div className="flex gap-2">
           <Button
             id="generate"
@@ -1103,22 +1137,44 @@ ${fwLine}
             )}
           </Button>
           {generateSuccess && (
-            <div className={`rounded-md ${copySuccess ? '' : 'pulse-ring-wrap'}`}>
+            <div className="flex shrink-0 gap-2">
+              <div className={`rounded-md ${copySuccess ? '' : 'pulse-ring-wrap'}`}>
+                <Button
+                  id="copy-ai-specs"
+                  onClick={copyAiSpecs}
+                  disabled={isCopying}
+                  className={`h-11 shrink-0 w-full ${copySuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                >
+                  {copySuccess ? (
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircleIcon size={16} weight="bold" />
+                      Copied!
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <CopyIcon size={16} />
+                      Copy Prompt + Specs
+                    </span>
+                  )}
+                </Button>
+              </div>
               <Button
-                id="copy-ai-specs"
-                onClick={copyAiSpecs}
+                id="download-ai-specs-md"
+                title="Download .md"
+                variant="outline"
+                onClick={downloadAiSpecs}
                 disabled={isCopying}
-                className={`h-11 shrink-0 w-full ${copySuccess ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                className={`h-11 shrink-0 ${downloadSuccess ? 'border-green-600 text-green-700' : ''}`}
               >
-                {copySuccess ? (
+                {downloadSuccess ? (
                   <span className="flex items-center gap-1.5">
                     <CheckCircleIcon size={16} weight="bold" />
-                    Copied!
+                    Downloaded
                   </span>
                 ) : (
                   <span className="flex items-center gap-1.5">
-                    <CopyIcon size={16} />
-                    Copy Prompt + Specs
+                    <DownloadSimpleIcon size={16} />
+                    .md
                   </span>
                 )}
               </Button>
