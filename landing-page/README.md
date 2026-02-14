@@ -1,6 +1,6 @@
 ## Figma Specs Landing Page
 
-Marketing site for **Figma Specs** (`figma-specs.dev`) built with Next.js + shadcn/ui.
+Marketing site for **Figma Specs** (`figmaspecs.dev`) built with Next.js + shadcn/ui.
 
 ### Stack
 
@@ -14,7 +14,7 @@ Marketing site for **Figma Specs** (`figma-specs.dev`) built with Next.js + shad
 Implemented in `src/app/`:
 
 - `layout.tsx`
-  - canonical metadata base (`https://figma-specs.dev`)
+  - canonical metadata base (`https://figmaspecs.dev`)
   - title template + description + keywords
   - Open Graph metadata
   - Twitter metadata

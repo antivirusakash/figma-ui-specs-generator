@@ -62,7 +62,7 @@ export default function OpenGraphImage() {
         </div>
 
         <div style={{ display: "flex", gap: "12px", fontSize: "22px", color: "#57534e" }}>
-          <div style={{ borderRadius: "999px", border: "1px solid #e7e5e4", padding: "8px 14px" }}>figma-specs.dev</div>
+          <div style={{ borderRadius: "999px", border: "1px solid #e7e5e4", padding: "8px 14px" }}>figmaspecs.dev</div>
           <div style={{ borderRadius: "999px", border: "1px solid #e7e5e4", padding: "8px 14px" }}>
             github.com/antivirusakash/figma-ui-specs-generator
           </div>

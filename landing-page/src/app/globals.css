@@ -212,6 +212,15 @@
   body {
     @apply bg-background text-foreground;
   }
+  a:hover,
+  button:hover,
+  [role="button"]:hover {
+    cursor: pointer;
+  }
+  button:disabled:hover,
+  [aria-disabled="true"]:hover {
+    cursor: not-allowed;
+  }
 }
 
 @keyframes terminal-blink {

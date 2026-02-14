@@ -32,7 +32,6 @@ import {
 
 const navItems = [
   { label: "Problem", href: "#problem" },
-  { label: "Story", href: "#story" },
   { label: "Workflow", href: "#workflow" },
   { label: "Architecture", href: "#architecture" },
   { label: "Open Source", href: "#opensource" },
@@ -74,24 +73,6 @@ const researchFacts = [
   },
 ];
 
-const storyBeats = [
-  {
-    title: "Scene 1 · The handoff bottleneck",
-    body: "A designer shares a polished frame, but the coding agent receives too much raw detail and loses focus.",
-    image: "/placeholders/feature-card.svg",
-  },
-  {
-    title: "Scene 2 · Translation friction",
-    body: "The team keeps translating design intent by hand, retry after retry, while momentum slows down.",
-    image: "/placeholders/feature-card.svg",
-  },
-  {
-    title: "Scene 3 · Clear brief, faster shipping",
-    body: "figma-specs turns the same screen into a compact brief, so Claude or OpenAI Codex can build with fewer retries.",
-    image: "/placeholders/feature-card.svg",
-  },
-];
-
 const architecturePillars = [
   {
     title: "Orchestration Core",
@@ -129,21 +110,24 @@ const workflowBlocks = [
     title: "Select in Figma",
     caption: "Frame + intent",
     icon: Stack,
-    image: "/placeholders/workflow-step.svg",
+    image: "/plugin-shots/run-plugin-in-figma.png",
+    imagePosition: "50% 20%",
   },
   {
     step: "02",
     title: "Generate specs",
     caption: "Compact agent brief",
     icon: FileCode,
-    image: "/placeholders/workflow-step.svg",
+    image: "/plugin-shots/01-generate-ai-agent-default.png",
+    imagePosition: "50% 10%",
   },
   {
     step: "03",
     title: "Build in agent",
     caption: "Claude or OpenAI Codex",
     icon: BracketsAngle,
-    image: "/placeholders/workflow-step.svg",
+    image: "/plugin-shots/plugin-sepcs-generated.png",
+    imagePosition: "50% 12%",
   },
 ];
 
@@ -160,23 +144,27 @@ const showcaseCards = [
   {
     title: "Generate Tab",
     subtitle: "Presets and configuration for structured spec output.",
-    image: "/placeholders/feature-card.svg",
+    image: "/plugin-shots/19-generate-all-primary-sections-enabled.png",
+    imagePosition: "50% 5%",
   },
   {
     title: "Learn Tab",
     subtitle: "Built-in usage guidance so teams ramp quickly.",
-    image: "/placeholders/feature-card.svg",
+    image: "/plugin-shots/11-learn-tab-top.png",
+    imagePosition: "50% 10%",
   },
   {
     title: "AGENTS Tab",
     subtitle: "Snippet + framework-aware setup for coding agents.",
-    image: "/placeholders/feature-card.svg",
+    image: "/plugin-shots/13-agents-tab-top-auto-detect.png",
+    imagePosition: "50% 8%",
   },
   {
     title: "Agent Rules Snippet",
     subtitle:
       "Ready-to-paste CLAUDE.md / AGENTS.md rules so your coding agent knows how to consume specs output.",
-    image: "/placeholders/feature-card.svg",
+    image: "/plugin-shots/17-agents-tab-mid-how-to-use.png",
+    imagePosition: "50% 30%",
   },
 ];
 
@@ -298,9 +286,36 @@ const faqItems = [
   },
 ];
 
+const helpfulResources = [
+  {
+    title: "Figma MCP",
+    href: "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server",
+    note: "Required when coding so specs can execute through Claude Code or Codex workflows.",
+    icon: Stack,
+  },
+  {
+    title: "Agent Browser by Vercel",
+    href: "https://github.com/vercel-labs/agent-browser",
+    note: "Browser automation for validating generated UI and interaction flows.",
+    icon: Browsers,
+  },
+  {
+    title: "React Best Practices by Vercel",
+    href: "https://vercel.com/blog/introducing-react-best-practices",
+    note: "Performance and architecture guidance for production React apps.",
+    icon: ChartLineUp,
+  },
+  {
+    title: "Web Design Guidelines",
+    href: "https://skills.sh/vercel-labs/agent-skills/web-design-guidelines",
+    note: "Practical UI decision framework for design-to-code output quality.",
+    icon: Sparkle,
+  },
+];
+
 const GITHUB_REPO = "https://github.com/antivirusakash/figma-ui-specs-generator";
-const PLUGIN_LINK = "https://www.figma.com/community/plugins";
-const SITE_URL = "https://figma-specs.dev";
+const PLUGIN_LINK = "https://www.figma.com/community/plugin/1604491843373484782/specs-prompt-for-design-to-code-for-claude-code-codex";
+const SITE_URL = "https://figmaspecs.dev";
 const siteJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -507,17 +522,14 @@ export default function Home() {
                 </a>
               </div>
 
-              <div className="relative mt-6 rounded-3xl border border-brand-hairline bg-brand-surface p-3 lg:hidden">
+              <div className="relative mt-6 overflow-hidden rounded-[8px] border border-brand-hairline bg-brand-surface shadow-[0_18px_48px_rgba(15,23,42,0.08)] lg:hidden">
                 <Image
-                  src="/placeholders/hero-workbench.svg"
+                  src="/plugin-shots/run-plugin-in-figma.png"
                   alt="Figma canvas with Specs plugin open"
                   width={920}
                   height={560}
-                  className="h-auto w-full rounded-2xl border border-brand-border bg-[#1f2126] object-contain"
+                  className="block h-auto w-full"
                 />
-                <div className="absolute bottom-6 left-6 rounded-xl border border-brand-border bg-brand-panel px-3 py-2 text-xs text-brand-text-muted shadow-sm">
-                  Plugin panel + live options
-                </div>
               </div>
 
               <div className="mt-7 max-w-[620px] rounded-2xl border border-brand-hairline bg-brand-surface p-4">
@@ -560,17 +572,14 @@ export default function Home() {
             </div>
 
             <div data-reveal className="space-y-4">
-              <div className="relative hidden rounded-3xl border border-brand-hairline bg-brand-surface p-3 lg:block">
+              <div className="relative hidden overflow-hidden rounded-[8px] border border-brand-hairline bg-brand-surface shadow-[0_18px_48px_rgba(15,23,42,0.08)] lg:block">
                 <Image
-                  src="/placeholders/hero-workbench.svg"
+                  src="/plugin-shots/run-plugin-in-figma.png"
                   alt="Figma canvas with Specs plugin open"
                   width={920}
                   height={560}
-                  className="h-auto w-full rounded-2xl border border-brand-border bg-[#1f2126] object-contain"
+                  className="block h-auto w-full"
                 />
-                <div className="absolute bottom-6 left-6 rounded-xl border border-brand-border bg-brand-panel px-3 py-2 text-xs text-brand-text-muted shadow-sm">
-                  Plugin panel + live options
-                </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
@@ -649,13 +658,17 @@ export default function Home() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {showcaseCards.map((card) => (
                 <article key={card.title} className="overflow-hidden rounded-2xl border border-brand-hairline bg-brand-surface">
-                  <Image
-                    src={card.image}
-                    alt={`${card.title} placeholder`}
-                    width={900}
-                    height={520}
-                    className="h-[220px] w-full border-b border-brand-border bg-brand-canvas/80 object-contain p-2"
-                  />
+                  <div className="h-[340px] border-b border-brand-border bg-brand-canvas/80 p-3 sm:h-[360px] sm:p-4">
+                    <div className="relative mx-auto h-full w-[80%] overflow-hidden rounded-[10px] border border-brand-border bg-brand-panel shadow-[0_10px_24px_rgba(16,24,40,0.08)]">
+                      <Image
+                        src={card.image}
+                        alt={`${card.title} screenshot`}
+                        fill
+                        className="object-cover"
+                        style={{ objectPosition: card.imagePosition }}
+                      />
+                    </div>
+                  </div>
                   <div className="p-4">
                     <h3 className="text-lg tracking-[-0.01em]">{card.title}</h3>
                     <p className="mt-1 text-sm text-brand-text-muted">{card.subtitle}</p>
@@ -689,7 +702,7 @@ export default function Home() {
                     </div>
                     <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full border border-brand-border bg-brand-panel px-3 py-1 text-[11px] text-brand-text-subtle">
                       <GlobeHemisphereWest size={12} />
-                      <span className="truncate">figma-specs.dev/preview/blog-page</span>
+                      <span className="truncate">figmaspecs.dev/preview/blog-page</span>
                     </div>
                     <span className="hidden text-[11px] font-medium text-brand-text-subtle sm:inline">
                       Live preview
@@ -748,64 +761,22 @@ export default function Home() {
             <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
               The problem, backed by docs
             </h2>
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {researchFacts.map((fact) => (
-                  <article key={fact.title} className="rounded-2xl border border-brand-hairline bg-brand-surface p-5">
-                    <span className="inline-flex rounded-full border border-brand-border bg-brand-panel p-2 text-brand-text-subtle">
-                      <fact.icon size={14} />
-                    </span>
-                    <h3 className="mt-3 text-base tracking-[-0.01em]">{fact.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-brand-text-muted">{fact.detail}</p>
-                    <a
-                      href={fact.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs font-medium text-brand-text-subtle underline underline-offset-2"
-                    >
-                      Source: {fact.source}
-                    </a>
-                  </article>
-                ))}
-              </div>
-              <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
-                <Image
-                  src="/placeholders/feature-card.svg"
-                  alt="Plugin UI evidence snapshot"
-                  width={760}
-                  height={520}
-                  className="h-[300px] w-full rounded-xl border border-brand-border bg-brand-panel object-contain p-2"
-                />
-                <div className="mt-3 rounded-xl border border-brand-border bg-brand-panel p-3 text-sm text-brand-text-muted">
-                  Visualizing the real cost: large raw context + retries + repeated extraction.
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="story" className="mx-auto w-full max-w-[1188px] scroll-mt-24 px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
-          <div data-reveal>
-            <h2 className="text-[32px] leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
-              The story behind better handoff
-            </h2>
-            <p className="mt-3 max-w-[720px] text-base leading-7 text-brand-text-muted">
-              This is the pattern teams describe again and again: less prompt noise, less manual translation, and faster delivery.
-            </p>
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
-              {storyBeats.map((beat) => (
-                <article key={beat.title} className="overflow-hidden rounded-2xl border border-brand-hairline bg-brand-surface">
-                  <Image
-                    src={beat.image}
-                    alt={`${beat.title} placeholder`}
-                    width={640}
-                    height={360}
-                    className="h-[208px] w-full border-b border-brand-border bg-brand-panel object-contain p-2"
-                  />
-                  <div className="p-5">
-                    <h3 className="text-xl tracking-[-0.02em]">{beat.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-brand-text-muted">{beat.body}</p>
-                  </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {researchFacts.map((fact) => (
+                <article key={fact.title} className="rounded-2xl border border-brand-hairline bg-brand-surface p-5">
+                  <span className="inline-flex rounded-full border border-brand-border bg-brand-panel p-2 text-brand-text-subtle">
+                    <fact.icon size={14} />
+                  </span>
+                  <h3 className="mt-3 text-base tracking-[-0.01em]">{fact.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-brand-text-muted">{fact.detail}</p>
+                  <a
+                    href={fact.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-xs font-medium text-brand-text-subtle underline underline-offset-2"
+                  >
+                    Source: {fact.source}
+                  </a>
                 </article>
               ))}
             </div>
@@ -819,6 +790,18 @@ export default function Home() {
             </h2>
             <p className="mt-3 max-w-[520px] text-base leading-7 text-brand-text-muted">
               Three steps. Connected, compact, and clear.
+            </p>
+            <p className="mt-2 max-w-[760px] text-sm leading-6 text-brand-text-muted">
+              For coding execution, connect{" "}
+              <a
+                href="https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-brand-text underline underline-offset-2"
+              >
+                Figma MCP
+              </a>{" "}
+              so specs can be fetched and consumed directly by Claude Code or Codex.
             </p>
             <div className="mt-6 overflow-hidden rounded-3xl border border-brand-hairline bg-brand-surface p-4 sm:p-6">
               <div className="relative hidden lg:block">
@@ -845,9 +828,11 @@ export default function Home() {
                         <Image
                           src={block.image}
                           alt={`${block.title} workflow panel`}
-                          width={520}
-                          height={320}
-                          className="mt-2 h-[98px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-contain p-1"
+                          width={460}
+                          height={1100}
+                          unoptimized
+                          className="mt-2 h-[116px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
+                          style={{ objectPosition: block.imagePosition }}
                         />
                       </article>
                     );
@@ -883,9 +868,11 @@ export default function Home() {
                         <Image
                           src={block.image}
                           alt={`${block.title} workflow panel`}
-                          width={520}
-                          height={320}
-                          className="mt-2 h-[86px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-contain p-1"
+                          width={460}
+                          height={1100}
+                          unoptimized
+                          className="mt-2 h-[98px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
+                          style={{ objectPosition: block.imagePosition }}
                         />
                       </article>
                     </div>
@@ -921,13 +908,18 @@ export default function Home() {
                 ))}
               </div>
               <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
-                <Image
-                  src="/placeholders/feature-card.svg"
-                  alt="Plugin architecture and learn tab preview"
-                  width={900}
-                  height={620}
-                  className="h-[220px] w-full rounded-xl border border-brand-border bg-brand-panel object-contain p-2 sm:h-[320px]"
-                />
+                <div className="h-[220px] rounded-xl border border-brand-border bg-brand-panel p-3 sm:h-[320px] sm:p-4">
+                  <div className="relative mx-auto h-full w-[80%] overflow-hidden rounded-[10px] border border-brand-border bg-brand-canvas shadow-[0_10px_24px_rgba(16,24,40,0.08)]">
+                    <Image
+                      src="/plugin-shots/20-generate-all-panels-expanded.png"
+                      alt="Plugin architecture and sections preview"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      style={{ objectPosition: "50% 24%" }}
+                    />
+                  </div>
+                </div>
                 <pre className="mt-3 whitespace-pre-wrap break-words rounded-xl border border-brand-border bg-brand-panel p-3 text-[11px] leading-4 text-brand-text-muted">
 {`src/
   code.ts                 orchestration
@@ -953,7 +945,7 @@ tests/unit/*              contracts + regression coverage`}
               <a href={PLUGIN_LINK} target="_blank" rel="noopener noreferrer">
                 <Button className="h-11 rounded-full bg-brand-action px-5 text-sm text-brand-inverse hover:bg-brand-action-hover">
                   <Image src="/figma-logo.svg" alt="" aria-hidden width={15} height={15} className="h-[15px] w-[15px]" />
-                  Get Plugin (soon update)
+                  Get Plugin
                 </Button>
               </a>
               <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
@@ -963,21 +955,39 @@ tests/unit/*              contracts + regression coverage`}
                 </Button>
               </a>
             </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <Image
-                src="/placeholders/feature-card.svg"
-                alt="Open source learn tab preview"
-                width={760}
-                height={420}
-                className="h-[240px] w-full rounded-2xl border border-brand-border bg-brand-panel object-contain p-2"
-              />
-              <Image
-                src="/placeholders/feature-card.svg"
-                alt="Open source agents tab preview"
-                width={760}
-                height={420}
-                className="h-[240px] w-full rounded-2xl border border-brand-border bg-brand-panel object-contain p-2"
-              />
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
+          <div data-reveal className="rounded-3xl border border-brand-hairline bg-brand-surface p-6 sm:p-8">
+            <h2 className="text-[30px] leading-[1.1] tracking-[-0.03em] sm:text-[36px]">
+              Helpful resources for Figma AI Agents with Claude Code & Codex
+            </h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {helpfulResources.map((resource) => (
+                <a
+                  key={resource.title}
+                  href={resource.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block rounded-xl border border-brand-border bg-brand-panel p-4 transition-colors hover:bg-brand-surface active:bg-brand-surface/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-action focus-visible:ring-offset-2 focus-visible:ring-offset-brand-canvas"
+                  aria-label={`${resource.title} (opens in a new tab)`}
+                >
+                  <div className="inline-flex rounded-full border border-brand-border bg-brand-surface p-2 text-brand-text-subtle transition-colors group-hover:text-brand-text">
+                    <resource.icon size={14} />
+                  </div>
+                  <div className="mt-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-brand-text underline underline-offset-2">
+                      {resource.title}
+                    </p>
+                    <ArrowRight
+                      size={14}
+                      className="mt-0.5 shrink-0 text-brand-text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-brand-text"
+                    />
+                  </div>
+                  <p className="mt-1 text-sm leading-6 text-brand-text-muted">{resource.note}</p>
+                </a>
+              ))}
             </div>
           </div>
         </section>

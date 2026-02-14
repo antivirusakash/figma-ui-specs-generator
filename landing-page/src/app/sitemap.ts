@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://figma-specs.dev";
+const SITE_URL = "https://figmaspecs.dev";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

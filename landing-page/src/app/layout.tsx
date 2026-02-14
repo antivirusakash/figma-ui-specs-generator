@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-const SITE_URL = "https://figma-specs.dev";
+const SITE_URL = "https://figmaspecs.dev";
 const SITE_NAME = "Figma Specs";
 const SITE_TITLE = "Figma Specs · Generate Figma specs for Claude Code and OpenAI Codex";
 const SITE_DESCRIPTION =
@@ -59,6 +59,11 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: ["/twitter-image"],
+  },
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   robots: {
     index: true,
