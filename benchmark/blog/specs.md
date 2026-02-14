@@ -1,7 +1,7 @@
 ## Figma Component: Desktop
 
 ### Figma URL
-[Paste Figma frame URL here]
+https://www.figma.com/design/w2W0AS12sA2VhAhVXDawLa/Figma-Specs-Sample-Files?node-id=1-14654&t=1FQjO4OdTEPEP7Dl-11
 
 ### Implementation Instructions
 1. Use get_screenshot on the Figma URL above and **save it to `.figma/desktop.png`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.

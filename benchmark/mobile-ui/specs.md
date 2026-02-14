@@ -1,7 +1,7 @@
 ## Figma Component: Apple Health
 
 ### Figma URL
-[Paste Figma frame URL here]
+https://www.figma.com/design/w2W0AS12sA2VhAhVXDawLa/Figma-Specs-Sample-Files?node-id=1-234&t=1FQjO4OdTEPEP7Dl-11
 
 ### Implementation Instructions
 1. Use get_screenshot on the Figma URL above and **save it to `.figma/apple_health.png`** (relative to working directory). Reference this local file whenever you need to check the design — do not call get_screenshot again.
@@ -168,7 +168,7 @@
 ### Specs Data (YAML)
 ```yaml
 schema: specs-plugin.agent_pack.v14.yaml.compact
-generated_at: "2026-02-12T16:15:50.448Z"
+generated_at: "2026-02-14T10:04:47.603Z"
 selection:
   node_id: "14304:14047"
   name: Apple Health

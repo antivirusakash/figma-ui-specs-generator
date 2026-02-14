@@ -668,7 +668,7 @@ consequence…"
 ### Specs Data (YAML)
 ```yaml
 schema: specs-plugin.agent_pack.v14.yaml.compact
-generated_at: "2026-02-12T16:05:46.137Z"
+generated_at: "2026-02-14T08:05:54.428Z"
 selection:
   node_id: "1:4"
   name: 1440w default

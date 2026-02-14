@@ -1,139 +1,127 @@
-# Specs
+# Figma Specs
 
-Extract design specs from any Figma component, frame, or page — and turn them into structured, readable annotations that both humans and AI agents can consume.
+Generate compact, agent-ready Figma specs for **Claude Code** and **OpenAI Codex** without burning too many tokens.
 
-Select a layer in Figma, run Specs, and get a full breakdown: component anatomy, layout rules, spacing values, design tokens, variant properties, and a styling inventory. The output lives directly on your canvas as auto-layout frames — no context switching, no copy-pasting, no stale docs.
+[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](https://github.com/antivirusakash/figma-ui-specs-generator/blob/main/LICENSE)
+[![Open Source](https://img.shields.io/badge/Open%20Source-Yes-black.svg)](https://github.com/antivirusakash/figma-ui-specs-generator)
 
-![Specs Plugin](assets/quick-layouts.png)
+- Website: `figma-specs.dev`
+- GitHub: `https://github.com/antivirusakash/figma-ui-specs-generator`
+- Figma Plugin: `https://www.figma.com/community/plugins` (listing refresh in progress)
 
-## Why
+![Figma Specs Plugin](assets/quick-layouts.png)
 
-Design handoff is broken. Designers spend time redlining. Engineers spend time inspecting. AI agents can't read Figma files without structured context. Specs fixes all three:
+## Why Figma Specs
 
-- **For designers** — Generate spec annotations in seconds. Document component anatomy, variant behavior, and spacing rules without manually drawing redlines. Use it for design reviews, critiques, and QA.
-- **For front-end engineers** — Get exact values: auto-layout direction, alignment, padding, gap, color tokens, typography scales, variable bindings. No more guessing from the inspector panel. Everything is right there on the canvas.
-- **For AI agents** — Structured data output that tools like Claude Code, Cursor, and Codex can read via Figma MCP. The agent gets component hierarchy, spacing in px/rem, resolved design tokens, and layout constraints — everything it needs to write accurate UI code from a mockup.
+Design handoff usually sends too much raw context to coding agents. That increases retries, prompt churn, and cost.
 
-## Features
+Figma Specs turns selected UI into:
+- visual spec frames on the canvas for humans
+- compact structured YAML for agents
+- cleaner prompts that preserve intent and reduce noise
 
-- **Anatomy** — Walks the component tree and lists every element with its type, name, and visual attributes (fills, strokes, corner radius, typography, effects, opacity)
-- **Layout & Spacing** — Detects auto-layout and annotates direction, alignment, padding, gap, and sizing modes with visual markers on the artwork
-- **Properties** — Extracts component properties and variants, highlights visual differences between each option
-- **Two-Way Comparison** — Cross-references two property dimensions to show how combinations affect the component
-- **Variables & Tokens** — Resolves Figma variables and Tokens Studio references to their actual values, shows binding source
-- **Modes** — Iterates over variable collection modes (light/dark, density, themes) and shows how the component changes
-- **Inventory** — Collects all unique colors, typography styles, and effects used across the selection into a summary table
-- **Data Model** — Outputs raw structured data (anatomy tree, layout specs, property matrix) for programmatic consumption
-- **Multi-column** — Arranges sections in multi-column grid or side-by-side layouts for large components
-- **Format options** — HEX or HSLA colors, px or rem spacing, configurable rem base, variable-first or token-first resolution
+Common team outcome: moving from large raw payloads (often `80k+` tokens) toward compact specs around `~20k` depending on screen complexity.
 
-## Using with AI Agents
+## What It Generates
 
-![AI-Ready Data](assets/ai-ready.png)
+| Output | What you get |
+|---|---|
+| Anatomy | Tree of elements and relationships |
+| Layout | Auto-layout direction, spacing, alignment, sizing |
+| Properties & Variants | Variant dimensions and behavior deltas |
+| Inventory | Colors, typography, effects used across selection |
+| Variables / Tokens | Resolved Figma variables and token values |
+| Agent Payload | Chunked YAML (`resolved_tokens`, repeats, compact schema) |
+| Agent Rules Snippet | Ready instructions for `CLAUDE.md` / `AGENTS.md` |
 
-Specs was built with AI-assisted development in mind. The workflow:
+![AI Ready Data](assets/ai-ready.png)
 
-1. Select a frame or component in Figma
-2. Run Specs — annotations are generated on canvas
-3. Connect your AI agent to Figma via [MCP](https://modelcontextprotocol.io/) (e.g. [Figma MCP Server](https://github.com/nicholasgriffintn/figma-mcp-server))
-4. The agent reads the spec frames and gets structured design data — spacing, colors, typography, component hierarchy, token bindings — without manual handoff
+## AI Agent Workflow
 
-This closes the loop between design and code. The designer generates specs, the agent reads them, and the engineer reviews the output. No screenshots, no Zeplin exports, no "what's the padding here?" in Slack.
+1. Select a frame/component in Figma.
+2. Run Figma Specs to generate on-canvas specs + YAML.
+3. Add project rules snippet to:
+   - `CLAUDE.md` for Claude Code
+   - `AGENTS.md` for Codex and other coding agents
+4. Paste prompt + YAML into your coding agent.
+5. Build and compare to reference screenshot.
 
-## Schema Versions (v11 → v12)
+This creates a cleaner handoff loop for both designers and coders.
 
-The YAML data payload uses versioned schemas. **v11** is the default and stable schema. **v12** is an opt-in compact schema that reduces payload size by ~30%.
+## Architecture Highlights
 
-### How to select v12
+- `src/code.ts` orchestrates plugin flow and dependency wiring.
+- `src/plugin/limits.ts` centralizes payload limits and truncation caps.
+- `src/plugin/helpers/anatomy-collector.ts` handles repeat fingerprinting and diff logic.
+- `src/plugin/sections/data-section.ts` builds chunked agent payload YAML.
+- `src/ui-app.tsx` provides the plugin UI, including `CLAUDE.md / AGENTS.md` helper tab.
 
-In the plugin UI: **Output & AI options → Schema version → v12 (compact)**. Only available when both "AI-ready JSON" and "Compact mode" are enabled.
+## Quick Start
 
-### What changed in v12
-
-| Feature | v11 | v12 |
-|---------|-----|-----|
-| `path_key` on anatomy items | Present | Removed |
-| `template_path_key` on repeats | Present | Removed |
-| `path_key` on repeat items | Present | Removed |
-| `path_range` on anatomy chunks | Present | Removed |
-| `text_index` section | Present | Removed (text in `children_text`) |
-| Repeat `diffs` format | `Record<string, string>` | Indexed tuple array |
-| Anatomy/repeat node overlap | Allowed | Excluded (O1) |
-| Width cascade diffs | All included | Deduplicated |
-
-### Decoding v12 indexed diffs
-
-v12 encodes repeat diffs as `[keyIndex, value, keyIndex, value, ...]` against the `varying_keys` array:
-
-```yaml
-# v11
-diffs:
-  Card/Title/text: "New Title"
-  Card/width: "300"
-
-# v12
-varying_keys: [Card/Title/text, Card/width]
-diffs: [0, "New Title", 1, "300"]
-```
-
-To decode in JavaScript:
-
-```js
-function decodeDiffs(encoded, varyingKeys) {
-  const result = {};
-  for (let i = 0; i < encoded.length - 1; i += 2) {
-    result[varyingKeys[encoded[i]]] = encoded[i + 1];
-  }
-  return result;
-}
-```
-
-### Extraction strategy
-
-- **v11**: Use `path_key` or `node_id` to locate elements
-- **v12**: Use `node_id` exclusively — pass to MCP tools (`get_metadata`, `get_design_context`, `get_screenshot`)
-
-## Install
+### Plugin (root)
 
 ```bash
-git clone <repo-url>
-cd specs
+git clone https://github.com/antivirusakash/figma-ui-specs-generator.git
+cd figma-ui-specs-generator
 npm install
 npm run build
 ```
 
-Then in Figma: **Plugins > Development > Import plugin from manifest** > select `manifest.json`
+In Figma: `Plugins -> Development -> Import plugin from manifest...` and select `manifest.json`.
 
-## Development
+### Landing page (`landing-page/`)
 
 ```bash
-npm run build        # Production build (esbuild)
-npm run watch        # Watch mode
-npm run test:unit    # Unit tests (vitest)
-npm run test:ui      # E2E tests (playwright)
-npm run typecheck    # TypeScript check
-npm run test         # All checks: typecheck + unit + build + e2e
+cd landing-page
+npm install
+npm run dev
 ```
 
-## Project Structure
+## Development Commands
 
+### Plugin
+
+```bash
+npm run build
+npm run watch
+npm run typecheck
+npm run test:unit
+npm run test:ui
+npm run test
 ```
+
+### Landing Page
+
+```bash
+cd landing-page
+npm run dev
+npm run lint
+npm run build
+```
+
+## Repo Layout
+
+```text
 src/
-├── code.ts                    # Plugin backend — orchestration, state, Figma API
-├── ui-app.tsx                 # Plugin UI panel (React + Tailwind)
-├── plugin/
-│   ├── sections/              # Section generators (anatomy, layout, properties, etc.)
-│   ├── helpers/               # Shared utilities (text, frames, formatting, tokens)
-│   ├── theme.ts               # Color theme for generated annotations
-│   ├── types.ts               # TypeScript types
-│   └── constants.ts           # Layout constants
-└── ui/
-    └── components/            # UI components (Radix primitives)
+  code.ts
+  ui-app.tsx
+  plugin/
+    helpers/
+    sections/
+landing-page/
+  src/app/page.tsx
+  src/app/globals.css
+benchmark/
+  blog/specs.md
 ```
 
 ## Contributing
 
-Issues and PRs welcome. If you're adding a new section type, follow the existing pattern: export a function that receives `deps` (injected helpers) and `settings`, returns a Figma frame.
+Issues and PRs are welcome.
+
+- Keep changes focused and testable.
+- Follow module injection patterns in section generators.
+- Preserve schema compatibility unless intentionally versioning.
 
 ## License
 
