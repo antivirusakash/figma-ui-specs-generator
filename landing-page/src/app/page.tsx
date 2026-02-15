@@ -14,6 +14,7 @@ import {
   Database,
   DeviceMobile,
   FileCode,
+  Play,
   GithubLogo,
   GlobeHemisphereWest,
   ListChecks,
@@ -124,7 +125,7 @@ const workflowBlocks = [
   {
     step: "03",
     title: "Build in agent",
-    caption: "Claude or OpenAI Codex",
+    caption: "Claude, Codex, or Cursor",
     icon: BracketsAngle,
     image: "/plugin-shots/plugin-sepcs-generated.png",
     imagePosition: "50% 12%",
@@ -138,6 +139,12 @@ const codingLanguages = [
   { label: "Vue", icon: FileVue },
   { label: "React Native", icon: DeviceMobile },
   { label: "HTML/CSS", icon: Browsers },
+];
+
+const heroCodingAgents = [
+  { label: "Claude Code", logoSrc: "/claude.svg", logoAlt: "Claude Code" },
+  { label: "Codex", logoSrc: "/chatgpt.svg", logoAlt: "Codex" },
+  { label: "Cursor", logoSrc: "/cursor.png", logoAlt: "Cursor" },
 ];
 
 const showcaseCards = [
@@ -290,7 +297,7 @@ const helpfulResources = [
   {
     title: "Figma MCP",
     href: "https://help.figma.com/hc/en-us/articles/32132100833559-Guide-to-the-Figma-MCP-server",
-    note: "Required when coding so specs can execute through Claude Code or Codex workflows.",
+    note: "Required when coding so specs can execute through Claude Code, Codex, or Cursor workflows.",
     icon: Stack,
   },
   {
@@ -338,7 +345,7 @@ const siteJsonLd = {
       operatingSystem: "Web",
       isAccessibleForFree: true,
       description:
-        "Generate compact, agent-ready Figma specs without burning too many tokens. Open-source plugin for Claude Code and OpenAI Codex workflows.",
+        "Generate compact, agent-ready Figma specs without burning too many tokens. Open-source plugin for Claude Code, Codex, and Cursor workflows.",
       url: SITE_URL,
       codeRepository: GITHUB_REPO,
       softwareHelp: `${SITE_URL}/#faq`,
@@ -353,7 +360,9 @@ const siteJsonLd = {
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const rotatingAgentRef = useRef<HTMLSpanElement | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [heroAgentIndex, setHeroAgentIndex] = useState(0);
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -373,10 +382,59 @@ export default function Home() {
         }
       );
 
+      gsap.fromTo(
+        "[data-token-impact-bar]",
+        { scaleX: 0, transformOrigin: "left center" },
+        {
+          scaleX: 1,
+          duration: 1.8,
+          ease: "power3.out",
+          stagger: 0.2,
+          delay: 0.2,
+        }
+      );
+
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      const rotatingAgentEl = rotatingAgentRef.current;
+
+      if (!rotatingAgentEl) {
+        setHeroAgentIndex((current) => (current + 1) % heroCodingAgents.length);
+        return;
+      }
+
+      gsap.to(rotatingAgentEl, {
+        opacity: 0,
+        y: -8,
+        duration: 0.2,
+        ease: "power2.in",
+        onComplete: () => {
+          setHeroAgentIndex((current) => (current + 1) % heroCodingAgents.length);
+        },
+      });
+    }, 2000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (!rotatingAgentRef.current) {
+      return;
+    }
+
+    gsap.fromTo(
+      rotatingAgentRef.current,
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.24, ease: "power2.out" }
+    );
+  }, [heroAgentIndex]);
+
+  const activeHeroAgent = heroCodingAgents[heroAgentIndex];
 
   return (
     <div ref={containerRef} className="min-h-dvh overflow-x-hidden bg-brand-canvas text-brand-text">
@@ -481,28 +539,31 @@ export default function Home() {
                 <Sparkle size={12} />
                 Open-source Figma plugin for agent-ready specs
               </p>
-              <h1 className="mt-5 max-w-[720px] text-[24px] font-light leading-[1.06] tracking-[-0.03em] sm:text-[40px] sm:leading-[1.02] lg:text-[54px]">
-                Generate Figma specs for{" "}
-                <span className="inline-flex items-center gap-1.5 align-baseline">
-                  <Image src="/claude.svg" alt="" aria-hidden width={28} height={28} className="h-[0.85em] w-[0.85em] object-contain" />
-                  <span>Claude Code</span>
-                </span>{" "}
-                and{" "}
-                <span className="inline-flex items-center gap-1.5 align-baseline">
-                  <Image
-                    src="/chatgpt.svg"
-                    alt=""
-                    aria-hidden
-                    width={28}
-                    height={28}
-                    className="h-[0.85em] w-[0.85em] object-contain"
-                  />
-                  <span>Codex</span>
-                </span>{" "}
-                without burning too many tokens.
+              <h1 className="mt-5 max-w-[720px] text-[32px] font-light leading-[1.06] tracking-[-0.03em] sm:text-[40px] sm:leading-[1.02] lg:text-[54px]">
+                <span className="block">
+                  Generate <span>Figma</span> specs
+                </span>
+                <span className="block">
+                  for{" "}
+                  <span
+                    ref={rotatingAgentRef}
+                    className="inline-flex w-[260px] items-center gap-1.5 whitespace-nowrap align-baseline sm:w-[300px] lg:w-[340px]"
+                  >
+                    <Image
+                      src={activeHeroAgent.logoSrc}
+                      alt={activeHeroAgent.logoAlt}
+                      width={28}
+                      height={28}
+                      className="h-[0.85em] w-[0.85em] object-contain"
+                    />
+                    <span className="whitespace-nowrap">{activeHeroAgent.label}</span>
+                  </span>
+                </span>
+                <span className="block">without burning</span>
+                <span className="block">too many tokens.</span>
               </h1>
               <p className="mt-5 max-w-[620px] text-base leading-7 text-brand-text-muted sm:text-lg">
-                figma-specs converts selected Figma UI into compact, structured
+                The plugin converts selected Figma UI into compact, structured
                 YAML so agents get anatomy, layout, tokens, repeats, and less
                 context waste than raw dumps.
               </p>
@@ -536,7 +597,7 @@ export default function Home() {
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand-text-subtle">
                   Built for coding agents
                 </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-panel px-4 py-3">
                     <Image src="/claude.svg" alt="Claude Code" width={24} height={24} className="h-6 w-6 object-contain" />
                     <div>
@@ -549,6 +610,13 @@ export default function Home() {
                     <div>
                       <p className="text-sm font-medium tracking-[-0.01em]">OpenAI Codex</p>
                       <p className="text-xs text-brand-text-muted">Deterministic builds</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-panel px-4 py-3">
+                    <Image src="/cursor.png" alt="Cursor" width={24} height={24} className="h-6 w-6 object-contain" />
+                    <div>
+                      <p className="text-sm font-medium tracking-[-0.01em]">Cursor</p>
+                      <p className="text-xs text-brand-text-muted">Agent-first coding</p>
                     </div>
                   </div>
                 </div>
@@ -581,7 +649,7 @@ export default function Home() {
                   className="block h-auto w-full"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4">
                 <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand-text-subtle">Token impact</p>
                   <p className="mt-2 text-sm leading-6 text-brand-text-muted">
@@ -596,50 +664,18 @@ export default function Home() {
                       <span>80k+ tokens</span>
                     </div>
                     <div className="mt-1 h-2 rounded bg-brand-border">
-                      <div className="h-2 w-full rounded bg-brand-orange" />
+                      <div data-token-impact-bar className="h-2 w-full rounded bg-brand-orange" />
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[11px] text-brand-text-subtle">
                       <span>After (figma-specs)</span>
                       <span>~20k tokens</span>
                     </div>
                     <div className="mt-1 h-2 rounded bg-brand-border">
-                      <div className="h-2 w-1/4 rounded bg-brand-blue" />
+                      <div data-token-impact-bar className="h-2 w-1/4 rounded bg-brand-blue" />
                     </div>
                     <p className="mt-3 text-xs text-brand-text-muted">
                       Less bloat means more room for actual building, less retry stress, and steadier delivery.
                     </p>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-brand-text-subtle">Agent payload</p>
-                  <p className="mt-2 text-sm leading-6 text-brand-text-muted">
-                    Instead of handing your coding agent a noisy wall of layers,
-                    you hand over a clean brief it can follow with confidence.
-                  </p>
-                  <div className="mt-3 rounded-xl border border-brand-border bg-brand-panel p-3">
-                    <div className="rounded-lg border border-brand-border bg-brand-surface px-3 py-2">
-                      <p className="text-[11px] font-medium text-brand-text-subtle">
-                        Before
-                      </p>
-                      <p className="mt-1 text-xs text-brand-text-muted">
-                        Scattered context, repeated details, and more guesswork.
-                      </p>
-                    </div>
-                    <div className="my-2 h-px bg-brand-border" />
-                    <div className="rounded-lg border border-brand-border bg-brand-surface px-3 py-2">
-                      <p className="text-[11px] font-medium text-brand-text-subtle">
-                        After
-                      </p>
-                      <p className="mt-1 text-xs text-brand-text-muted">
-                        One compact pack: structure, key details, and repeat patterns in the right order.
-                      </p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
-                      <span className="rounded-full bg-brand-surface px-2 py-1 text-brand-text-subtle">Anatomy</span>
-                      <span className="rounded-full bg-brand-surface px-2 py-1 text-brand-text-subtle">Layout</span>
-                      <span className="rounded-full bg-brand-surface px-2 py-1 text-brand-text-subtle">Tokens</span>
-                      <span className="rounded-full bg-brand-surface px-2 py-1 text-brand-text-subtle">Repeats</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -693,7 +729,7 @@ export default function Home() {
             <div className="mt-6 grid items-start gap-4 lg:grid-cols-[0.85fr_1.15fr]">
               <div className="rounded-2xl border border-brand-hairline bg-brand-surface p-3">
                 <p className="px-1 pb-2 text-xs font-medium text-brand-text-subtle">Preview</p>
-                <div className="max-h-[556px] overflow-hidden rounded-xl border border-brand-border bg-brand-panel">
+                <div className="relative max-h-[556px] overflow-hidden rounded-xl border border-brand-border bg-brand-panel">
                   <div className="flex items-center gap-3 border-b border-brand-border bg-brand-surface/95 px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-brand-orange" />
@@ -704,11 +740,8 @@ export default function Home() {
                       <GlobeHemisphereWest size={12} />
                       <span className="truncate">figmaspecs.dev/preview/blog-page</span>
                     </div>
-                    <span className="hidden text-[11px] font-medium text-brand-text-subtle sm:inline">
-                      Live preview
-                    </span>
                   </div>
-                  <div className="max-h-[512px] overflow-auto bg-brand-canvas/70 p-2 sm:p-3">
+                  <div className="max-h-[512px] overflow-auto bg-brand-canvas/70 p-2 pb-16 sm:p-3 sm:pb-16">
                     <div className="mx-auto overflow-hidden rounded-lg border border-brand-border bg-brand-panel shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
                       <Image
                         src="/blog-landing-page.jpg"
@@ -719,6 +752,15 @@ export default function Home() {
                       />
                     </div>
                   </div>
+                  <a
+                    href="/preview/blog-page"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-3 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-brand-action bg-brand-action px-3.5 py-1.5 text-xs font-medium text-brand-inverse shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-brand-action-hover"
+                  >
+                    <Play size={12} weight="fill" />
+                    <span>Live Preview</span>
+                  </a>
                 </div>
               </div>
               <div className="min-w-0 rounded-2xl border border-brand-hairline bg-brand-surface p-3">
@@ -801,7 +843,7 @@ export default function Home() {
               >
                 Figma MCP
               </a>{" "}
-              so specs can be fetched and consumed directly by Claude Code or Codex.
+              so specs can be fetched and consumed directly by Claude Code, Codex, or Cursor.
             </p>
             <div className="mt-6 overflow-hidden rounded-3xl border border-brand-hairline bg-brand-surface p-4 sm:p-6">
               <div className="relative hidden lg:block">
@@ -961,7 +1003,7 @@ tests/unit/*              contracts + regression coverage`}
         <section className="mx-auto w-full max-w-[1188px] px-4 pb-16 sm:px-6 lg:px-0 lg:pb-24">
           <div data-reveal className="rounded-3xl border border-brand-hairline bg-brand-surface p-6 sm:p-8">
             <h2 className="text-[30px] leading-[1.1] tracking-[-0.03em] sm:text-[36px]">
-              Helpful resources for Figma AI Agents with Claude Code & Codex
+              Helpful resources for Figma AI Agents with Claude Code, Codex, and Cursor
             </h2>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {helpfulResources.map((resource) => (
@@ -1016,12 +1058,10 @@ tests/unit/*              contracts + regression coverage`}
 
       <footer className="border-t border-brand-hairline py-6">
         <div className="mx-auto flex w-full max-w-[1188px] flex-col items-center gap-2 px-4 text-center text-sm text-brand-text-subtle sm:px-6 lg:px-0">
-          <div className="flex items-center gap-2">
-            <BracketsAngle size={15} />
-            <span>Built with Next.js, shadcn/ui, GSAP, and Phosphor Icons</span>
-          </div>
           <p>
-            Created by designer for designer & developer by{" "}
+            Created by designer for designer & developer
+            <br />
+            by{" "}
             <a
               href="https://www.linkedin.com/in/antivirusakash/"
               target="_blank"
@@ -1029,7 +1069,8 @@ tests/unit/*              contracts + regression coverage`}
               className="underline underline-offset-2"
             >
               Akash Solanki
-            </a>
+            </a>{" "}
+            in Bangalore 🇮🇳
           </p>
         </div>
       </footer>

@@ -5,7 +5,7 @@ Generate compact, agent-ready Figma specs for **Claude Code** and **OpenAI Codex
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](https://github.com/antivirusakash/figma-ui-specs-generator/blob/main/LICENSE)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-black.svg)](https://github.com/antivirusakash/figma-ui-specs-generator)
 
-- Website: `figma-specs.dev`
+- Website: `figmaspecs.dev`
 - GitHub: `https://github.com/antivirusakash/figma-ui-specs-generator`
 - Figma Plugin: `https://www.figma.com/community/plugins` (listing refresh in progress)
 

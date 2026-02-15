@@ -138,7 +138,7 @@ The full source code, tests (289+ unit tests), and architecture docs are availab
 Links
 
 - GitHub: https://github.com/antivirusakash/figma-ui-specs-generator
-- Website: https://figma-specs.dev
+- Website: https://figmaspecs.dev
 - Created by Akash Solanki — https://www.linkedin.com/in/antivirusakash/
 
 ### Changelog
