@@ -127,7 +127,7 @@ const workflowBlocks = [
     title: "Build in agent",
     caption: "Claude, Codex, or Cursor",
     icon: BracketsAngle,
-    image: "/plugin-shots/plugin-sepcs-generated.png",
+    image: "/plugin-shots/build-in-agent.png",
     imagePosition: "50% 12%",
   },
 ];
@@ -765,8 +765,8 @@ export default function Home() {
               </div>
               <div className="min-w-0 rounded-2xl border border-brand-hairline bg-brand-surface p-3">
                 <p className="px-1 pb-2 text-xs font-medium text-brand-text-subtle">Specs snippet</p>
-                <div className="max-h-[556px] overflow-auto rounded-xl border border-brand-code-border bg-brand-code-bg">
-                  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-brand-code-border bg-brand-code-chrome/95 px-3 py-2 backdrop-blur">
+                <div className="max-h-[556px] overflow-hidden rounded-xl border border-brand-code-border bg-brand-code-bg">
+                  <div className="z-10 flex items-center justify-between gap-3 border-b border-brand-code-border bg-brand-code-chrome/95 px-3 py-2 backdrop-blur">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-brand-code-dot-red" />
                       <span className="h-2.5 w-2.5 rounded-full bg-brand-code-dot-yellow" />
@@ -780,17 +780,19 @@ export default function Home() {
                       Markdown + YAML
                     </span>
                   </div>
-                  <div className="min-w-[620px] px-0 py-2 font-mono text-[11px] leading-5">
-                    {blogSpecLines.map((line, index) => (
-                      <div key={index} className="grid grid-cols-[42px_1fr] px-2">
-                        <span className="select-none pr-2 text-right text-brand-code-line/70">
-                          {index + 1}
-                        </span>
-                        <span className={`whitespace-pre ${getSnippetLineClass(line)}`}>
-                          {line || " "}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="max-h-[512px] overflow-auto [scrollbar-gutter:stable]">
+                    <div className="min-w-[620px] px-0 py-2 font-mono text-[11px] leading-5">
+                      {blogSpecLines.map((line, index) => (
+                        <div key={index} className="grid grid-cols-[42px_1fr] px-2">
+                          <span className="select-none pr-2 text-right text-brand-code-line/70">
+                            {index + 1}
+                          </span>
+                          <span className={`whitespace-pre ${getSnippetLineClass(line)}`}>
+                            {line || " "}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -873,7 +875,7 @@ export default function Home() {
                           width={460}
                           height={1100}
                           unoptimized
-                          className="mt-2 h-[116px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
+                          className="mt-2 h-[156px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
                           style={{ objectPosition: block.imagePosition }}
                         />
                       </article>
@@ -913,7 +915,7 @@ export default function Home() {
                           width={460}
                           height={1100}
                           unoptimized
-                          className="mt-2 h-[98px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
+                          className="mt-2 h-[138px] w-full rounded-lg border border-brand-border bg-brand-canvas/70 object-cover"
                           style={{ objectPosition: block.imagePosition }}
                         />
                       </article>
