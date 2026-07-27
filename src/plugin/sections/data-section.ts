@@ -344,8 +344,10 @@ export function toAgentReadyDataPayload(
     }
     const strokeAlign = findAttr("Stroke align");
     if (strokeAlign && record.stroke) record.stroke_align = strokeAlign.value;
+    // Guarded like stroke_width and stroke_align above: sides without a colour describe a
+    // border the design does not draw.
     const strokeSides = findAttr("Stroke sides");
-    if (strokeSides) record.stroke_sides = strokeSides.value;
+    if (strokeSides && record.stroke) record.stroke_sides = strokeSides.value;
     const dash = findAttr("Dash pattern");
     if (dash) {
       const dashValue = dash.rawValue ?? dash.value;
@@ -419,6 +421,12 @@ export function toAgentReadyDataPayload(
     if (element.layoutWrap === "WRAP") record.wrap = true;
     if (element.layoutClips) record.clips = true;
     if (element.layoutInferred) record.inferred = true;
+    // Only present when the PARENT's layout was inferred. direction/justify/gap are a guess
+    // there, so these offsets are the only reliable placement the pack can offer.
+    if (element.parentOffset) {
+      record.parent_x = element.parentOffset.x;
+      record.parent_y = element.parentOffset.y;
+    }
 
     // v14: omit CSS flexbox defaults (documented in defaults_omitted)
     if (isV14) {
@@ -545,8 +553,18 @@ export function toAgentReadyDataPayload(
       }
     }
 
-    chunk.varying_keys = varyingKeys;
-    chunk.items = tpl.repeats.map(row => {
+    // O3: width dedup for all versions, indexed encoding in v12+.
+    // Width dedup can drop the last diff that referenced a key, so the surviving key list has
+    // to be settled BEFORE the indexed encoding. Encoding against the full list and filtering
+    // afterwards shifts every index past the removed key, and the diff decodes to the wrong
+    // property — or to nothing, when the index runs off the end of the shortened list.
+    const dedupedByRow = tpl.repeats.map(row => deduplicateWidthDiffs(row.diffs));
+    const usedKeys = new Set<string>();
+    dedupedByRow.forEach(diffs => Object.keys(diffs).forEach(k => usedKeys.add(k)));
+    const activeKeys = varyingKeys.filter(k => usedKeys.has(k));
+    if (activeKeys.length > 0) chunk.varying_keys = activeKeys;
+
+    chunk.items = tpl.repeats.map((row, rowIndex) => {
       const item: any = {
         node_id: row.nodeId,
       };
@@ -554,13 +572,15 @@ export function toAgentReadyDataPayload(
       if (!isV12 || keepPathKeys) {
         item.path_key = row.pathKey;
       }
-      // O3: width dedup for all versions, indexed encoding in v12+
-      const dedupedDiffs = deduplicateWidthDiffs(row.diffs);
-      if (isV12) {
-        item.diffs = encodeDiffs(dedupedDiffs, varyingKeys);
-      } else {
-        item.diffs = dedupedDiffs;
-      }
+      const dedupedDiffs = dedupedByRow[rowIndex]!;
+      const encoded = isV12 ? encodeDiffs(dedupedDiffs, activeKeys) : dedupedDiffs;
+      const hasDiffs = Array.isArray(encoded)
+        ? encoded.length > 0
+        : Object.keys(encoded).length > 0;
+      // An instance that matches its template exactly has no diffs. Emit the item anyway:
+      // anatomy already dropped these node ids, so this chunk is the only record that the
+      // nodes exist at all. Dropping it deleted every identical repeat from the pack.
+      if (hasDiffs) item.diffs = encoded;
       if (!compact && row.childrenText?.length) {
         item.children_text = row.childrenText.map(t =>
           deps.truncateText(t, LIMITS.TRUNC_REPEAT_CHILDREN_TEXT)
@@ -568,28 +588,7 @@ export function toAgentReadyDataPayload(
       }
       return item;
     });
-    // Clean up varying_keys: remove keys no longer present in any item's diffs after width dedup
-    const usedKeys = new Set<string>();
-    chunk.items.forEach((item: any) => {
-      if (isV12 && Array.isArray(item.diffs)) {
-        for (let i = 0; i < item.diffs.length; i += 2) {
-          const key = varyingKeys[item.diffs[i]];
-          if (key !== undefined) usedKeys.add(key);
-        }
-      } else if (item.diffs && typeof item.diffs === 'object') {
-        Object.keys(item.diffs).forEach(k => usedKeys.add(k));
-      }
-    });
-    chunk.varying_keys = varyingKeys.filter(k => usedKeys.has(k));
     return chunk;
-  }).filter(chunk => {
-    // Skip empty repeats chunks (no varying keys, all diffs empty)
-    if (chunk.varying_keys.length > 0) return true;
-    return chunk.items.some((item: any) => {
-      if (Array.isArray(item.diffs)) return item.diffs.length > 0;
-      if (item.diffs && typeof item.diffs === 'object') return Object.keys(item.diffs).length > 0;
-      return false;
-    });
   });
 
   // v13: Build component_definition chunk when available
@@ -699,7 +698,11 @@ export function toAgentReadyDataPayload(
       })(),
       truncated: {
         anatomy: dataModel.anatomy.length > maxAnatomy,
-        anatomy_included: Math.min(dataModel.anatomy.length, maxAnatomy),
+        // Counted off the records actually emitted, not off the pre-dedup element list:
+        // reporting the input count read as full coverage while the deduplicated nodes had
+        // been moved into repeats chunks. included + deduplicated + dropped == total.
+        anatomy_included: anatomyRecords.length,
+        anatomy_deduplicated: allAnatomyRecords.length - anatomyRecords.length,
         anatomy_dropped: Math.max(0, dataModel.anatomy.length - maxAnatomy),
         properties: propertyRecords.length > maxProperties,
         properties_included: Math.min(propertyRecords.length, maxProperties),

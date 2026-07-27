@@ -761,7 +761,10 @@ describe("v14 CSS default omission", () => {
 // ─── Attribute → payload field mapping ────────────────────────
 
 describe("attribute field mapping", () => {
-  function makeModelWithAttr(attr: { key: string; value: string; format: string }): DataModel {
+  function makeModelWithAttr(
+    attr: { key: string; value: string; format: string },
+    ...extra: Array<{ key: string; value: string; format: string }>
+  ): DataModel {
     return {
       anatomy: [
         {
@@ -769,7 +772,7 @@ describe("attribute field mapping", () => {
           type: "FRAME",
           nodeId: "2:1",
           pathKey: "root/Box",
-          attributes: [attr],
+          attributes: [attr, ...extra],
           bounds: { x: 0, y: 0, width: 100, height: 100 },
           textContent: undefined,
           childrenText: undefined,
@@ -805,7 +808,10 @@ describe("attribute field mapping", () => {
   });
 
   it("stroke_sides attribute with border-* maps to stroke_sides field", () => {
-    const model = makeModelWithAttr({ key: "Stroke sides", value: "border-bottom: 1px", format: "HARDCODED" });
+    const model = makeModelWithAttr(
+      { key: "Stroke sides", value: "border-bottom: 1px", format: "HARDCODED" },
+      { key: "Stroke", value: "#2F2F33", format: "HARDCODED" }
+    );
     const payload = toAgentReadyDataPayload(
       model, false, makeTarget(),
       { ...baseSettings, schemaVersion: "v11" },
@@ -814,6 +820,20 @@ describe("attribute field mapping", () => {
     const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
     const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
     expect(item.stroke_sides).toBe("border-bottom: 1px");
+  });
+
+  it("omits stroke_sides when the node carries no stroke paint", () => {
+    // Figma keeps strokeBottomWeight after the paint is deleted, so per-side weight alone
+    // would draw a divider under the last row of every list card.
+    const model = makeModelWithAttr({ key: "Stroke sides", value: "border-bottom: 1px", format: "HARDCODED" });
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
+    expect(item.stroke_sides).toBeUndefined();
   });
 });
 
@@ -1283,14 +1303,28 @@ describe("empty repeats chunk filtering", () => {
     };
   }
 
-  it("skips repeats chunks with empty varying_keys and empty diffs", () => {
+  it("keeps repeats chunks whose instances are identical to the template", () => {
+    // Both node ids have already been filtered out of the anatomy chunks, so this chunk is the
+    // only record that they exist. Dropping it deleted every perfectly-consistent repeat from
+    // the pack — the more uniform the design system, the more layers went missing.
     const payload = toAgentReadyDataPayload(
       makeModelWithEmptyRepeats(), false, makeTarget(),
       { ...baseSettings, schemaVersion: "v11" },
       makeInventory(), makeDeps()
     );
+    const anatomyIds = payload.chunks
+      .filter((c: any) => c.kind === "anatomy")
+      .flatMap((c: any) => c.items.map((i: any) => i.node_id));
+    expect(anatomyIds).not.toContain("5:1");
+    expect(anatomyIds).not.toContain("5:2");
+
     const repeatsChunks = payload.chunks.filter((c: any) => c.kind === "repeats");
-    expect(repeatsChunks).toHaveLength(0);
+    expect(repeatsChunks).toHaveLength(1);
+    expect(repeatsChunks[0].template_node_id).toBe("5:1");
+    expect(repeatsChunks[0].items.map((i: any) => i.node_id)).toEqual(["5:2"]);
+    // Identical means nothing to encode: no empty diffs or varying_keys taking up room.
+    expect(repeatsChunks[0].varying_keys).toBeUndefined();
+    expect(repeatsChunks[0].items[0].diffs).toBeUndefined();
   });
 
   it("keeps repeats chunks with non-empty diffs", () => {
