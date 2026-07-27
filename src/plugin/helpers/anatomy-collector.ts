@@ -39,7 +39,8 @@ export async function computeInstanceFingerprint(
 }
 
 /**
- * Walk template and repeat children in parallel, collecting diffs (text, fill, width, visibility).
+ * Walk template and repeat children in parallel, collecting diffs
+ * (text, fill, stroke, corner radius, width, visibility, variant props).
  * `currentPath` is the fully-qualified path for the current node pair.
  */
 export function collectRepeatDiffs(
@@ -72,6 +73,24 @@ export function collectRepeatDiffs(
     }
   }
 
+  // Stroke color diff
+  if ("strokes" in templateNode && "strokes" in repeatNode) {
+    const tStroke = getFirstSolidStrokeHex(templateNode);
+    const rStroke = getFirstSolidStrokeHex(repeatNode);
+    if (tStroke && rStroke && tStroke !== rStroke) {
+      diffs[`${path}/stroke`] = rStroke;
+    }
+  }
+
+  // Corner radius diff
+  if ("cornerRadius" in templateNode && "cornerRadius" in repeatNode) {
+    const tRadius = formatCornerRadius(templateNode);
+    const rRadius = formatCornerRadius(repeatNode);
+    if (tRadius !== null && rRadius !== null && tRadius !== rRadius) {
+      diffs[`${path}/radius`] = rRadius;
+    }
+  }
+
   // Width diff
   if (templateNode.absoluteBoundingBox && repeatNode.absoluteBoundingBox) {
     const tW = Math.round(templateNode.absoluteBoundingBox.width);
@@ -101,19 +120,32 @@ export function collectRepeatDiffs(
     }
   }
 
-  // Recurse into children — disambiguate siblings with duplicate names
+  // Recurse into children — pair by name (array index is unreliable because the
+  // repeat can hide/add siblings), disambiguating duplicate names with [N]
   if ("children" in templateNode && "children" in repeatNode) {
     const tChildren = (templateNode as FrameNode).children;
     const rChildren = (repeatNode as FrameNode).children;
-    const len = Math.min(tChildren.length, rChildren.length);
+    // "name#occurrence" → template child, so the Nth "label" pairs with the Nth "label"
+    const templateByName = new Map<string, SceneNode>();
+    const templateNameCounts = new Map<string, number>();
+    for (const tChild of tChildren) {
+      const occurrence = (templateNameCounts.get(tChild.name) ?? 0) + 1;
+      templateNameCounts.set(tChild.name, occurrence);
+      templateByName.set(`${tChild.name}#${occurrence}`, tChild);
+    }
     const nameCounts = new Map<string, number>();
-    for (let i = 0; i < len; i++) {
-      const tChild = tChildren[i];
+    for (let i = 0; i < rChildren.length; i++) {
       const rChild = rChildren[i];
-      if (!tChild || !rChild) continue;
+      if (!rChild) continue;
       const childName = rChild.name;
       const count = (nameCounts.get(childName) ?? 0) + 1;
       nameCounts.set(childName, count);
+      // Name match first; fall back to the same array slot when the child was renamed
+      const indexFallback = tChildren[i];
+      const tChild =
+        templateByName.get(`${childName}#${count}`) ??
+        (indexFallback && indexFallback.type === rChild.type ? indexFallback : undefined);
+      if (!tChild) continue;
       // Build full child path; append [N] suffix when sibling names collide
       const childSegment = count > 1 ? `${childName}[${count}]` : childName;
       const childPath = `${path}/${childSegment}`;
@@ -125,18 +157,48 @@ export function collectRepeatDiffs(
   return diffs;
 }
 
-function getFirstSolidFillHex(node: SceneNode): string | null {
-  if (!("fills" in node)) return null;
-  const fills = node.fills;
-  if (!fills || fills === figma.mixed || fills.length === 0) return null;
-  const solid = (fills as readonly Paint[]).find(
-    (f): f is SolidPaint => f.type === "SOLID" && f.visible !== false
-  );
+/** Topmost visible solid, matching format.ts's paint resolution. Figma stores paints
+ *  bottom-first, so scanning forwards would diff a colour the record never reports. */
+function solidPaintHex(paints: unknown): string | null {
+  if (!Array.isArray(paints) || paints.length === 0) return null;
+  const list = paints as readonly Paint[];
+  let solid: SolidPaint | undefined;
+  for (let index = list.length - 1; index >= 0; index -= 1) {
+    const paint = list[index];
+    if (paint && paint.type === "SOLID" && paint.visible !== false) {
+      solid = paint as SolidPaint;
+      break;
+    }
+  }
   if (!solid) return null;
   const r = Math.round(solid.color.r * 255);
   const g = Math.round(solid.color.g * 255);
   const b = Math.round(solid.color.b * 255);
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`.toUpperCase();
+}
+
+function getFirstSolidFillHex(node: SceneNode): string | null {
+  if (!("fills" in node)) return null;
+  const fills = node.fills;
+  if (!fills || fills === figma.mixed) return null;
+  return solidPaintHex(fills);
+}
+
+function getFirstSolidStrokeHex(node: SceneNode): string | null {
+  if (!("strokes" in node)) return null;
+  return solidPaintHex((node as any).strokes);
+}
+
+/** Corner radius as a single number, or "tl tr br bl" when the corners differ. */
+function formatCornerRadius(node: SceneNode): string | null {
+  const shape = node as any;
+  const radius = shape.cornerRadius;
+  if (typeof radius === "number") return String(Math.round(radius));
+  const corners = [shape.topLeftRadius, shape.topRightRadius, shape.bottomRightRadius, shape.bottomLeftRadius];
+  if (corners.every((corner) => typeof corner === "number")) {
+    return corners.map((corner) => Math.round(corner as number)).join(" ");
+  }
+  return null;
 }
 
 export async function collectAnatomyElements(
@@ -182,7 +244,7 @@ export async function collectAnatomyElements(
       const mainComponent = node.type === "INSTANCE"
         ? await getMainComponentSafe(node as InstanceNode)
         : null;
-      const instanceOf = mainComponent?.name;
+      const { instanceOf, instanceVariant } = resolveInstanceIdentity(mainComponent);
 
       // Instance dedup: check fingerprint for INSTANCE nodes (not root)
       if (node.type === "INSTANCE" && depth > 0) {
@@ -199,10 +261,12 @@ export async function collectAnatomyElements(
               name: node.name,
               type: node.type,
               instanceOf,
+              instanceVariant,
               attributes: await collectAttributes(node, inventory, settings),
               bounds: relativeBounds,
               nodeId: node.id,
               pathKey: key,
+              depth,
               childrenText: childrenText?.length ? childrenText : undefined
             });
 
@@ -254,10 +318,12 @@ export async function collectAnatomyElements(
         name: node.name,
         type: node.type,
         instanceOf,
+        instanceVariant,
         attributes: await collectAttributes(node, inventory, settings),
         bounds: relativeBounds,
         nodeId: node.id,
         pathKey: key,
+        depth,
         textContent,
         childrenText: childrenText?.length ? childrenText : undefined
       });
@@ -290,6 +356,23 @@ function collectDescendantIds(node: SceneNode, ids: Set<string>) {
       collectDescendantIds(child, ids);
     }
   }
+}
+
+/** Component identity for an instance.
+ *  For a variant, main.name is the variant string ("Size=Large, Type=Primary"), never the
+ *  component name — agents match `instance_of` against icon/component libraries, so the
+ *  COMPONENT_SET name is the identity and the variant config is reported separately. */
+export function resolveInstanceIdentity(
+  mainComponent: ComponentNode | null | undefined
+): { instanceOf?: string; instanceVariant?: string } {
+  if (!mainComponent) return {};
+  if (mainComponent.parent?.type === "COMPONENT_SET") {
+    return {
+      instanceOf: (mainComponent.parent as ComponentSetNode).name,
+      instanceVariant: mainComponent.name
+    };
+  }
+  return { instanceOf: mainComponent.name };
 }
 
 export async function getMainComponentSafe(instance: InstanceNode) {
@@ -355,11 +438,14 @@ export function isRelevantNode(node: SceneNode, depth = 0) {
     if (!hasVisualProperties(node)) return false;
   }
 
-  // Skip deep vectors/shapes at depth > 4 (usually icon internals)
+  // Skip deep vectors/shapes at depth > 4 (usually icon internals) — but keep the ones that
+  // actually read as dividers/rules. Outline icon sets (Lucide, Phosphor) draw every glyph as
+  // a stroked VECTOR, so "has a stroke" alone would readmit whole icon libraries and burn the
+  // MAX_ANATOMY_ELEMENTS budget that later, real components need.
   if (depth > 4 && (node.type === "VECTOR" || node.type === "RECTANGLE"
       || node.type === "ELLIPSE" || node.type === "LINE"
       || node.type === "POLYGON" || node.type === "STAR")) {
-    return false;
+    return isRuleLike(node) && hasVisibleStroke(node);
   }
 
   if (node.type === "FRAME" || node.type === "GROUP"
@@ -386,17 +472,41 @@ export function collectInstanceText(instance: InstanceNode, maxDepth = getLimit(
   return texts;
 }
 
+/** Thickest short side a shape can have and still be a rule rather than an icon glyph. */
+const RULE_MAX_THICKNESS_PX = 4;
+
+/** A divider/rule: a LINE, or a hairline shape. Nodes with no readable size are kept. */
+function isRuleLike(node: SceneNode): boolean {
+  if (node.type === "LINE") return true;
+  const width = (node as any).width;
+  const height = (node as any).height;
+  if (typeof width !== "number" || typeof height !== "number") return true;
+  return Math.min(width, height) <= RULE_MAX_THICKNESS_PX;
+}
+
+/** A stroke that is actually drawn: at least one visible paint and a non-zero weight. */
+function hasVisibleStroke(node: SceneNode): boolean {
+  if (!("strokes" in node)) return false;
+  const strokes = (node as any).strokes;
+  if (!Array.isArray(strokes) || strokes.length === 0) return false;
+  if (!(strokes as readonly Paint[]).some(s => s.visible !== false)) return false;
+  const weight = (node as any).strokeWeight;
+  // Mixed per-side weights come through as figma.mixed — at least one side is drawn
+  if (typeof weight === "number") return weight > 0;
+  return true;
+}
+
 function hasVisualProperties(node: SceneNode): boolean {
-  if (!("fills" in node)) return false;
-  const fills = node.fills;
-  if (fills && fills !== figma.mixed && fills.length > 0) {
-    const hasVisibleFill = (fills as readonly Paint[]).some(f => f.visible !== false);
-    if (hasVisibleFill) return true;
+  // No early return on missing `fills` — GROUPs have no fills but can still carry
+  // a visible stroke or effect, and stroke-only nodes are real visual elements
+  if ("fills" in node) {
+    const fills = node.fills;
+    if (fills && fills !== figma.mixed && fills.length > 0) {
+      const hasVisibleFill = (fills as readonly Paint[]).some(f => f.visible !== false);
+      if (hasVisibleFill) return true;
+    }
   }
-  if ("strokes" in node) {
-    const strokes = node.strokes;
-    if (strokes && strokes.length > 0) return true;
-  }
+  if (hasVisibleStroke(node)) return true;
   if ("effects" in node) {
     const effects = node.effects;
     if (effects && effects.length > 0) {

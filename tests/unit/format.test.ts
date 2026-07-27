@@ -213,33 +213,146 @@ describe('formatColor', () => {
     expect(fmt.formatColor(undefined, baseSettings)).toBe('Unknown');
   });
 
-  it('returns paint type for non-solid', () => {
-    const paint = { type: 'GRADIENT_LINEAR' as const } as any;
-    expect(fmt.formatColor(paint, baseSettings)).toBe('GRADIENT_LINEAR');
+  it('folds the colour own alpha into the rendered alpha', () => {
+    const paint = { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0, a: 0.5 }, opacity: 1 };
+    expect(fmt.formatColor(paint, baseSettings)).toBe('hsla(0, 100%, 50%, 0.50)');
+  });
+
+  it('multiplies paint opacity by the colour alpha', () => {
+    const paint = { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0, a: 0.5 }, opacity: 0.5 };
+    expect(fmt.formatColor(paint, baseSettings)).toBe('hsla(0, 100%, 50%, 0.25)');
+  });
+
+  it('renders a linear gradient as CSS instead of the bare type', () => {
+    const paint = {
+      type: 'GRADIENT_LINEAR' as const,
+      gradientStops: [
+        { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+        { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+      ],
+      gradientTransform: [[0, 1, 0], [-1, 0, 1]],
+    } as any;
+    expect(fmt.formatColor(paint, baseSettings)).toBe(
+      'linear-gradient(180deg, #FF0000 0%, #0000FF 100%)'
+    );
+  });
+
+  it('derives the gradient angle from gradientTransform row 0', () => {
+    const identity = {
+      type: 'GRADIENT_LINEAR' as const,
+      gradientStops: [{ position: 0, color: { r: 0, g: 0, b: 0, a: 1 } }],
+      gradientTransform: [[1, 0, 0], [0, 1, 0]],
+    } as any;
+    // Figma's identity transform runs left → right, which is 90deg in CSS.
+    expect(fmt.gradientAngle(identity)).toBe(90);
+    expect(fmt.gradientAngle({ type: 'GRADIENT_LINEAR' } as any)).toBe(180);
+  });
+
+  it('returns a structured gradient from formatGradient', () => {
+    const paint = {
+      type: 'GRADIENT_RADIAL' as const,
+      gradientStops: [
+        { position: 0, color: { r: 1, g: 1, b: 1, a: 1 } },
+        { position: 0.5, color: { r: 0, g: 0, b: 0, a: 1 } },
+      ],
+      gradientTransform: [[1, 0, 0], [0, 1, 0]],
+    } as any;
+    expect(fmt.formatGradient(paint, baseSettings)).toEqual({
+      angle: 90,
+      stops: [
+        { pos: 0, color: '#FFFFFF' },
+        { pos: 0.5, color: '#000000' },
+      ],
+    });
+  });
+
+  it('scales the gradient axis by the node size before taking the angle', () => {
+    // A visually 45deg gradient on a 320x64 node: the NORMALIZED direction is (1/320, 1/64).
+    const paint = {
+      type: 'GRADIENT_LINEAR' as const,
+      gradientStops: [{ position: 0, color: { r: 0, g: 0, b: 0, a: 1 } }],
+      gradientTransform: [[0.003125, 0.015625, 0], [0, 0, 0]],
+    } as any;
+    expect(fmt.gradientAngle(paint)).toBe(169);
+    expect(fmt.gradientAngle(paint, { width: 320, height: 64 })).toBe(135);
+  });
+
+  it('leaves the square / default cases untouched when a size is supplied', () => {
+    const topToBottom = {
+      type: 'GRADIENT_LINEAR' as const,
+      gradientStops: [{ position: 0, color: { r: 0, g: 0, b: 0, a: 1 } }],
+      gradientTransform: [[0, 1, 0], [-1, 0, 1]],
+    } as any;
+    expect(fmt.gradientAngle(topToBottom, { width: 328, height: 120 })).toBe(180);
+  });
+
+  it('folds the gradient paint opacity into every stop', () => {
+    const paint = {
+      type: 'GRADIENT_LINEAR' as const,
+      opacity: 0.4,
+      gradientStops: [
+        { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+        { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+      ],
+      gradientTransform: [[0, 1, 0], [-1, 0, 1]],
+    } as any;
+    expect(fmt.formatGradient(paint, baseSettings).stops.map((s: any) => s.color)).toEqual([
+      'hsla(0, 100%, 50%, 0.40)',
+      'hsla(240, 100%, 50%, 0.40)',
+    ]);
+    expect(fmt.formatColor(paint, baseSettings)).toContain('hsla(0, 100%, 50%, 0.40) 0%');
+  });
+
+  it('returns the paint type for image paints', () => {
+    const paint = { type: 'IMAGE' as const, imageHash: 'abc', scaleMode: 'FILL' } as any;
+    expect(fmt.formatColor(paint, baseSettings)).toBe('IMAGE');
   });
 });
 
-describe('getFirstSolidPaint', () => {
+describe('resolveTopPaint / resolveTopSolidPaint', () => {
   it('returns undefined for null/undefined', () => {
+    expect(fmt.resolveTopPaint(null)).toBeUndefined();
     expect(fmt.getFirstSolidPaint(null)).toBeUndefined();
     expect(fmt.getFirstSolidPaint(undefined)).toBeUndefined();
   });
 
   it('returns undefined for figma.mixed', () => {
+    expect(fmt.resolveTopPaint(FIGMA_MIXED as any)).toBeUndefined();
     expect(fmt.getFirstSolidPaint(FIGMA_MIXED as any)).toBeUndefined();
   });
 
-  it('finds solid paint in array', () => {
-    const paints = [
-      { type: 'GRADIENT_LINEAR' as const },
-      { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0 }, opacity: 1 }
-    ] as Paint[];
-    const result = fmt.getFirstSolidPaint(paints);
-    expect(result?.type).toBe('SOLID');
+  it('returns the TOPMOST paint — Figma stores paints bottom-first', () => {
+    const red = { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0 }, opacity: 1 };
+    const blue = { type: 'SOLID' as const, color: { r: 0, g: 0, b: 1 }, opacity: 1 };
+    const result = fmt.resolveTopPaint([red, blue] as Paint[]);
+    expect(result).toEqual({ paint: blue, index: 1 });
+    expect(fmt.getFirstSolidPaint([red, blue] as Paint[])).toBe(blue);
   });
 
-  it('returns undefined when no solid paint exists', () => {
-    const paints = [{ type: 'GRADIENT_LINEAR' as const }] as Paint[];
+  it('skips hidden paints — a hidden fill must not win', () => {
+    const red = { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0 }, opacity: 1 };
+    const hiddenBlue = { type: 'SOLID' as const, color: { r: 0, g: 0, b: 1 }, opacity: 1, visible: false };
+    expect(fmt.resolveTopPaint([red, hiddenBlue] as Paint[])).toEqual({ paint: red, index: 0 });
+    expect(fmt.getFirstSolidPaint([red, hiddenBlue] as Paint[])).toBe(red);
+  });
+
+  it('resolveTopPaint keeps non-solid paints; resolveTopSolidPaint skips past them', () => {
+    const solid = { type: 'SOLID' as const, color: { r: 1, g: 0, b: 0 }, opacity: 1 };
+    const gradient = { type: 'GRADIENT_LINEAR' as const, gradientStops: [] } as any;
+    const paints = [solid, gradient] as Paint[];
+    expect(fmt.resolveTopPaint(paints)).toEqual({ paint: gradient, index: 1 });
+    expect(fmt.resolveTopSolidPaint(paints)).toEqual({ paint: solid, index: 0 });
+  });
+
+  it('resolveTopPaint surfaces image paints that have no solid sibling', () => {
+    const image = { type: 'IMAGE' as const, imageHash: 'abc', scaleMode: 'FILL' } as any;
+    expect(fmt.resolveTopPaint([image] as Paint[])).toEqual({ paint: image, index: 0 });
+    expect(fmt.getFirstSolidPaint([image] as Paint[])).toBeUndefined();
+  });
+
+  it('returns undefined when every paint is hidden', () => {
+    const paints = [{ type: 'SOLID' as const, color: { r: 0, g: 0, b: 0 }, opacity: 1, visible: false }] as Paint[];
+    expect(fmt.resolveTopPaint(paints)).toBeUndefined();
     expect(fmt.getFirstSolidPaint(paints)).toBeUndefined();
   });
 });

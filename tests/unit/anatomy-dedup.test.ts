@@ -392,3 +392,198 @@ describe("collectInstanceText", () => {
     expect(texts).toEqual(["Hello", "World"]);
   });
 });
+
+// ─── resolveInstanceIdentity ───
+
+describe("resolveInstanceIdentity", () => {
+  it("resolves instanceOf to the COMPONENT_SET name and splits out the variant", () => {
+    const main = { name: "Size=Large, Type=Primary", parent: { type: "COMPONENT_SET", name: "Button" } } as any;
+    expect(mod.resolveInstanceIdentity(main)).toEqual({
+      instanceOf: "Button",
+      instanceVariant: "Size=Large, Type=Primary",
+    });
+  });
+
+  it("keeps the component name and omits the variant for a non-variant component", () => {
+    for (const parentType of ["FRAME", "PAGE"]) {
+      const main = { name: "Avatar", parent: { type: parentType, name: "Page 1" } } as any;
+      const identity = mod.resolveInstanceIdentity(main);
+      expect(identity.instanceOf).toBe("Avatar");
+      expect(identity.instanceVariant).toBeUndefined();
+    }
+  });
+
+  it("returns an empty identity for a detached/missing main component", () => {
+    expect(mod.resolveInstanceIdentity(null)).toEqual({});
+    expect(mod.resolveInstanceIdentity(undefined)).toEqual({});
+  });
+});
+
+// ─── isRelevantNode: stroke-only visual nodes ───
+
+describe("isRelevantNode – deep stroke-only shapes", () => {
+  function strokedNode(type: string, strokes: any[], strokeWeight: unknown, size?: { width: number; height: number }): any {
+    const node = mockNode(type, "divider");
+    node.strokes = strokes;
+    node.strokeWeight = strokeWeight;
+    if (size) {
+      node.width = size.width;
+      node.height = size.height;
+    }
+    return node;
+  }
+
+  it("keeps a deep hairline shape and any LINE that carries a drawn stroke (dividers/rules)", () => {
+    expect(mod.isRelevantNode(strokedNode("RECTANGLE", [solidFill("#000000")], 1, { width: 320, height: 1 }), 5)).toBe(true);
+    expect(mod.isRelevantNode(strokedNode("LINE", [solidFill("#000000")], 1, { width: 320, height: 320 }), 6)).toBe(true);
+  });
+
+  it("drops a deep stroked VECTOR that is icon-glyph sized, not a rule", () => {
+    // Outline icon sets draw every glyph as a stroked VECTOR; readmitting them at depth > 4
+    // burns the MAX_ANATOMY_ELEMENTS budget that later real components need.
+    expect(mod.isRelevantNode(strokedNode("VECTOR", [solidFill("#000000")], 1, { width: 20, height: 20 }), 5)).toBe(false);
+  });
+
+  it("keeps a deep stroked shape whose size cannot be read", () => {
+    expect(mod.isRelevantNode(strokedNode("VECTOR", [solidFill("#000000")], 1), 5)).toBe(true);
+  });
+
+  it("still drops a deep VECTOR whose stroke weight is 0", () => {
+    expect(mod.isRelevantNode(strokedNode("VECTOR", [solidFill("#000000")], 0), 5)).toBe(false);
+  });
+
+  it("still drops a deep VECTOR whose only stroke is hidden", () => {
+    const hidden = { ...solidFill("#000000"), visible: false };
+    expect(mod.isRelevantNode(strokedNode("VECTOR", [hidden], 1), 5)).toBe(false);
+  });
+
+  it("keeps a deep shape with mixed per-side stroke weights", () => {
+    expect(mod.isRelevantNode(strokedNode("RECTANGLE", [solidFill("#000000")], FIGMA_MIXED), 5)).toBe(true);
+  });
+});
+
+// ─── collectRepeatDiffs: name pairing, stroke and radius ───
+
+describe("collectRepeatDiffs – pairing and new diff kinds", () => {
+  it("pairs children by NAME, not array index", () => {
+    const template = mockNode("FRAME", "card", {
+      children: [
+        mockNode("TEXT", "title", { characters: "A" }),
+        mockNode("TEXT", "subtitle", { characters: "B" }),
+      ],
+    });
+    // Same children, reversed order — must still pair title↔title and subtitle↔subtitle
+    const repeat = mockNode("FRAME", "card", {
+      children: [
+        mockNode("TEXT", "subtitle", { characters: "B2" }),
+        mockNode("TEXT", "title", { characters: "A2" }),
+      ],
+    });
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["card/title/text"]).toBe("A2");
+    expect(diffs["card/subtitle/text"]).toBe("B2");
+  });
+
+  it("diffs a surviving child even when an earlier sibling was dropped", () => {
+    const template = mockNode("FRAME", "card", {
+      children: [mockNode("INSTANCE", "icon"), mockNode("TEXT", "label", { characters: "One" })],
+    });
+    const repeat = mockNode("FRAME", "card", {
+      children: [mockNode("TEXT", "label", { characters: "Two" })],
+    });
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["card/label/text"]).toBe("Two");
+  });
+
+  it("emits a /stroke diff when the stroke colour changes", () => {
+    const template = mockNode("FRAME", "card");
+    template.strokes = [solidFill("#000000")];
+    const repeat = mockNode("FRAME", "card");
+    repeat.strokes = [solidFill("#FF0000")];
+    expect(mod.collectRepeatDiffs(template, repeat)["card/stroke"]).toBe("#FF0000");
+  });
+
+  it("emits a /radius diff for a single changed radius", () => {
+    const template = mockNode("FRAME", "card");
+    template.cornerRadius = 8;
+    const repeat = mockNode("FRAME", "card");
+    repeat.cornerRadius = 12;
+    expect(mod.collectRepeatDiffs(template, repeat)["card/radius"]).toBe("12");
+  });
+
+  it("emits 'tl tr br bl' when the repeat has mixed corners", () => {
+    const template = mockNode("FRAME", "card");
+    template.cornerRadius = 8;
+    const repeat = mockNode("FRAME", "card");
+    repeat.cornerRadius = FIGMA_MIXED;
+    repeat.topLeftRadius = 12;
+    repeat.topRightRadius = 12;
+    repeat.bottomRightRadius = 0;
+    repeat.bottomLeftRadius = 0;
+    expect(mod.collectRepeatDiffs(template, repeat)["card/radius"]).toBe("12 12 0 0");
+  });
+
+  it("emits no stroke or radius diff when they are identical", () => {
+    const template = mockNode("FRAME", "card");
+    template.strokes = [solidFill("#000000")];
+    template.cornerRadius = 8;
+    const repeat = mockNode("FRAME", "card");
+    repeat.strokes = [solidFill("#000000")];
+    repeat.cornerRadius = 8;
+    const diffs = mod.collectRepeatDiffs(template, repeat);
+    expect(diffs["card/stroke"]).toBeUndefined();
+    expect(diffs["card/radius"]).toBeUndefined();
+  });
+});
+
+// ─── collectAnatomyElements: real tree depth ───
+
+describe("collectAnatomyElements – depth", () => {
+  const settings: any = {
+    spacingUnit: "px", remBase: 16, valuePrecision: 0, colorFormat: "hex",
+    showRawValues: false, valuePreference: "variable",
+  };
+  const inventory: any = { add: () => {}, trackVariable: () => {} };
+
+  function walkableNode(type: string, name: string, id: string, children?: any[]): any {
+    const node = mockNode(type, name, { id, ...(children ? { children } : {}) });
+    node.fills = [];
+    node.strokes = [];
+    node.effects = [];
+    node.boundVariables = {};
+    node.opacity = 1;
+    node.width = 100;
+    node.height = 40;
+    node.getSharedPluginDataKeys = () => [];
+    node.getSharedPluginData = () => "";
+    if (type === "TEXT") {
+      node.fontName = { family: "Inter", style: "Regular" };
+      node.fontSize = 14;
+      node.lineHeight = { unit: "AUTO" };
+      node.letterSpacing = { unit: "PIXELS", value: 0 };
+      node.textAlignHorizontal = "LEFT";
+      node.textStyleId = "";
+    }
+    return node;
+  }
+
+  it("records the real walk depth: root 0, child 1, grandchild 2", async () => {
+    const grandchild = walkableNode("TEXT", "label", "gc");
+    const child = walkableNode("FRAME", "row", "c", [grandchild]);
+    const root = walkableNode("FRAME", "card", "r", [child]);
+    const { elements } = await mod.collectAnatomyElements(root, inventory, settings);
+    const byId = new Map(elements.map((e: any) => [e.nodeId, e]));
+    expect(byId.get("r")!.depth).toBe(0);
+    expect(byId.get("c")!.depth).toBe(1);
+    expect(byId.get("gc")!.depth).toBe(2);
+  });
+
+  it("does not derive depth from pathKey (pathKeys carry no spaces)", async () => {
+    const child = walkableNode("TEXT", "label", "c2");
+    const root = walkableNode("FRAME", "card", "r2", [child]);
+    const { elements } = await mod.collectAnatomyElements(root, inventory, settings);
+    const leaf = elements.find((e: any) => e.nodeId === "c2")!;
+    expect(leaf.pathKey).not.toContain(" / ");
+    expect(leaf.depth).toBe(1);
+  });
+});
