@@ -244,7 +244,10 @@ export async function collectAttributes(node: SceneNode, inventory: Inventory, s
     const bottom = n.strokeBottomWeight ?? 0;
     const left = n.strokeLeftWeight ?? 0;
     const allSame = top === right && right === bottom && bottom === left;
-    if (!allSame) {
+    // Figma keeps the per-side weights after the stroke paint is deleted, so weight alone
+    // does not mean the node has a border. Without the topStroke guard the last row of every
+    // list card — where the designer removed the divider — still reports border-bottom.
+    if (!allSame && topStroke) {
       const sides: string[] = [];
       if (top > 0) sides.push(`border-top: ${formatSpacing(top, settings)}`);
       if (right > 0) sides.push(`border-right: ${formatSpacing(right, settings)}`);
@@ -1081,18 +1084,10 @@ export async function resolveStyleOrVariable(
     }
   }
 
-  if (node.type === "TEXT" && node.textStyleId && !isMixed(node.textStyleId)) {
-    const style = await figma.getStyleByIdAsync(node.textStyleId as string);
-    if (style) {
-      inventory.add("text-style", style.name, "Typography", node.name);
-      styleAttr = {
-        value: style.name,
-        format: "STYLE",
-        rawValue,
-        systemId: node.textStyleId as string
-      };
-    }
-  }
+  // NOTE: there is deliberately no textStyleId branch here. Every caller resolves a colour
+  // field ("fills" or "strokes"), so reading the typography style would overwrite the paint
+  // style resolved above — emitting `fill_ref: H5/Bold` typed as a colour and registering the
+  // type ramp in resolved_tokens as a hex. The Text style attribute is collected separately.
 
   if (tokenValue) {
     return { value: tokenValue, format: "TOKEN", rawValue };

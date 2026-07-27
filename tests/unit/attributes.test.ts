@@ -252,6 +252,33 @@ describe("collectAttributes – stroke sides border-* (Fix 4)", () => {
     expect(sides).toBeDefined();
     expect(sides!.value).toBe("border-top: 1px, border-bottom: 2px");
   });
+
+  it("omits the sides when the per-side weights survive a deleted stroke paint", async () => {
+    // Deleting the paint in Figma leaves strokeBottomWeight at 1. The all-sides branch already
+    // required a visible stroke; without the same guard here the last row of every list card
+    // reported a divider the design does not draw.
+    const node = mockSceneNode({
+      strokeTopWeight: 0,
+      strokeRightWeight: 0,
+      strokeBottomWeight: 1,
+      strokeLeftWeight: 0,
+      strokes: [],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    expect(attrs.find((a: any) => a.key === "Stroke sides")).toBeUndefined();
+  });
+
+  it("omits the sides when the only stroke paint is hidden", async () => {
+    const node = mockSceneNode({
+      strokeTopWeight: 0,
+      strokeRightWeight: 0,
+      strokeBottomWeight: 1,
+      strokeLeftWeight: 0,
+      strokes: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, visible: false, opacity: 1 }],
+    });
+    const attrs = await mod.collectAttributes(node, stubInventory(), defaultSettings);
+    expect(attrs.find((a: any) => a.key === "Stroke sides")).toBeUndefined();
+  });
 });
 
 // ─── collectAttributes: text_align (Fix 2) ───
