@@ -1,5 +1,7 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
+import { formatAliasChain, resolveVariableValue } from "../helpers/variable-resolver";
 import type { Inventory } from "../inventory";
+import { getLimit } from "../limits";
 import type { Settings, SpecTextRole, Theme } from "../types";
 
 type CreateTextFn = (
@@ -22,8 +24,8 @@ type VariablesSectionDeps = {
     maxContentWidth?: number,
     maxContentHeight?: number
   ) => Promise<FrameNode>;
-  formatSpacing: (value: number, settings: Settings) => string;
-  formatColor: (paint: Paint | undefined, settings: Settings) => string;
+  getSectionContentWidth: (settings: Settings) => number;
+  truncateText: (value: string, maxLength: number) => string;
   log: (...args: any[]) => void;
   logError: (...args: any[]) => void;
 };
@@ -42,6 +44,7 @@ export async function createVariablesSection(
     return section;
   }
 
+  const textWidth = variableTextWidth(settings, deps);
   const card = deps.createContentCard(theme);
   for (const id of variableIds) {
     const variable = await figma.variables.getVariableByIdAsync(id);
@@ -53,19 +56,24 @@ export async function createVariablesSection(
     const collection = collectionId ? await figma.variables.getVariableCollectionByIdAsync(collectionId) : null;
     const modes = collection?.modes ?? [];
     const header = deps.createText(
-      `${collection?.name ?? "Collection"} / ${variable.name}`,
+      capVariablePath(`${collection?.name ?? "Collection"} / ${variable.name}`, deps),
       11,
       FONT_MEDIUM,
       theme.text,
       "label"
     );
+    // Variable paths wrap — they are never single-line clipped.
+    deps.fitTextToWidth(header, textWidth);
     card.appendChild(header);
 
-    const lines = modes.map((mode) => {
+    const lines: string[] = [];
+    for (const mode of modes) {
       const value = variable.valuesByMode[mode.modeId];
-      return `${mode.name}: ${formatVariableValue(value, settings, deps)}`;
-    });
-    card.appendChild(deps.createText(lines.join("\n"), 9, FONT_REGULAR, theme.muted, "muted"));
+      lines.push(capVariablePath(`${mode.name}: ${await formatVariableValue(value, settings)}`, deps));
+    }
+    const linesNode = deps.createText(lines.join("\n"), 9, FONT_REGULAR, theme.muted, "muted");
+    deps.fitTextToWidth(linesNode, textWidth);
+    card.appendChild(linesNode);
   }
   section.appendChild(card);
 
@@ -112,7 +120,10 @@ export async function createModesSection(
       valuesByMode[mode.modeId] = variable.valuesByMode[mode.modeId];
     });
 
-    const serialized = collection.modes.map((mode) => serializeVariableValue(valuesByMode[mode.modeId]));
+    const serialized: string[] = [];
+    for (const mode of collection.modes) {
+      serialized.push(await serializeVariableValue(valuesByMode[mode.modeId], settings));
+    }
     const uniqueCount = new Set(serialized).size;
     if (uniqueCount < 2) continue;
 
@@ -127,6 +138,7 @@ export async function createModesSection(
   }
 
   const section = deps.createSectionFrame("Modes", theme);
+  const textWidth = variableTextWidth(settings, deps);
   for (const { collection, variables } of collections.values()) {
     const card = deps.createContentCard(theme);
     card.appendChild(deps.createText(collection.name, 12, FONT_MEDIUM, theme.text, "heading"));
@@ -140,15 +152,22 @@ export async function createModesSection(
       modeFrame.layoutAlign = "STRETCH";
       modeFrame.itemSpacing = 8;
       modeFrame.fills = [];
-      modeFrame.resizeWithoutConstraints(settings.multiColumn ? 480 : 720, 1);
+      modeFrame.resizeWithoutConstraints(textWidth + 24, 1);
 
       modeFrame.appendChild(deps.createText(mode.name, 11, FONT_MEDIUM, theme.text, "label"));
-      const lines = variables.map((entry) => {
+      const lines: string[] = [];
+      for (const entry of variables) {
         const value = entry.valuesByMode[mode.modeId];
-        return `${entry.variable.name}: ${formatVariableValue(value, settings, deps)}`;
-      });
+        // Prefix the collection: brand and theme collections can repeat variable names.
+        lines.push(
+          capVariablePath(
+            `${collection.name} / ${entry.variable.name}: ${await formatVariableValue(value, settings)}`,
+            deps
+          )
+        );
+      }
       const linesNode = deps.createText(lines.join("\n"), 9, FONT_REGULAR, theme.muted, "muted");
-      deps.fitTextToWidth(linesNode, settings.multiColumn ? 448 : 688);
+      deps.fitTextToWidth(linesNode, textWidth);
       modeFrame.appendChild(linesNode);
 
       // Clone target temporarily to set variable mode before exporting as image.
@@ -172,26 +191,40 @@ export async function createModesSection(
   return section;
 }
 
-function formatVariableValue(value: VariableValue | undefined, settings: Settings, deps: VariablesSectionDeps) {
-  if (value === undefined || value === null) return "—";
-  if (typeof value === "number") return deps.formatSpacing(value, settings);
-  if (typeof value === "string") return value;
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "object" && "r" in value) {
-    return deps.formatColor({ type: "SOLID", color: value, opacity: 1 }, settings);
-  }
-  return String(value);
+/** Width available to a variable-path text node inside a content card. */
+function variableTextWidth(settings: Settings, deps: VariablesSectionDeps) {
+  return Math.max(200, deps.getSectionContentWidth(settings) - 48);
 }
 
-function serializeVariableValue(value: VariableValue | undefined) {
+/** Variable paths are only ever capped by TRUNC_VARIABLE_PATH — never by name truncation. */
+function capVariablePath(text: string, deps: VariablesSectionDeps) {
+  return deps.truncateText(text, getLimit("TRUNC_VARIABLE_PATH"));
+}
+
+/**
+ * Format a variable value for canvas display. Aliases are resolved through their full
+ * chain ("Semantic/Surface/Brand -> Brand/Blue/500 -> #0A66FF"); every other shape is
+ * handled by the resolver, so no branch can print "[object Object]".
+ */
+async function formatVariableValue(value: VariableValue | undefined, settings: Settings) {
+  if (value === undefined || value === null) return "—";
+  const resolved = await resolveVariableValue(value, settings);
+  if (!("chain" in resolved)) return resolved.value;
+  const chain = formatAliasChain(resolved);
+  return resolved.unresolved ? `${chain} (unresolved: alias cycle or depth limit)` : chain;
+}
+
+/**
+ * Mode-comparison key. Aliases are keyed by BOTH the target variable and its resolved
+ * primitive: two modes pointing at different variables genuinely differ per mode even when
+ * those targets happen to coincide in their own collection's default mode, and collapsing
+ * them would drop the variable from the Modes section entirely.
+ * Resolution is cached per variable id, so this stays cheap per variable per mode.
+ */
+async function serializeVariableValue(value: VariableValue | undefined, settings: Settings) {
   if (value === undefined || value === null) return "null";
-  if (typeof value === "object") {
-    if ("r" in value) {
-      return `rgb:${value.r}-${value.g}-${value.b}`;
-    }
-    if ("id" in value) {
-      return `alias:${value.id}`;
-    }
-  }
-  return String(value);
+  const resolved = await resolveVariableValue(value, settings);
+  if ("chain" in resolved && resolved.unresolved) return `unresolved:${resolved.chain.join(">")}`;
+  if ("id" in resolved) return `alias:${resolved.id}|value:${resolved.value}`;
+  return `value:${resolved.value}`;
 }

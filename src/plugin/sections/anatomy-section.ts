@@ -142,14 +142,18 @@ export async function createAnatomySection(
         const props = element.attributes
           .filter((attr) => attr.format === "PROPERTY")
           .slice(0, 4)
-          .map((attr) => `${attr.propertyName}: ${deps.truncateText(attr.value, 80)}`)
+          .map((attr) => `${attr.propertyName}: ${deps.truncateText(attr.value, getLimit("TRUNC_CANVAS_ATTR_VALUE"))}`)
           .join(", ");
         const row = deps.createTableRow(
           [
             { label: String(index + 1), width: tableWidths.index },
             { label: deps.truncateText(element.name, nameMax), width: tableWidths.component },
-            { label: deps.truncateText(element.instanceOf ?? "—", nameMax), width: tableWidths.dependsOn },
-            { label: deps.truncateText(props || "—", 300), width: tableWidths.props, wrap: true }
+            {
+              label: deps.truncateText(element.instanceOf ?? "—", LIMITS.TRUNC_CANVAS_INSTANCE_OF),
+              width: tableWidths.dependsOn,
+              wrap: true
+            },
+            { label: props || "—", width: tableWidths.props, wrap: true }
           ],
           theme,
           false,
@@ -181,7 +185,7 @@ export async function createAnatomySection(
             { label: String(index + 1), width: tableWidths.index },
             { label: deps.truncateText(element.name, nameMax), width: tableWidths.element },
             { label: element.type, width: tableWidths.type },
-            { label: deps.truncateText(attrs || "—", 300), width: tableWidths.details, wrap: true }
+            { label: attrs || "—", width: tableWidths.details, wrap: true }
           ],
           theme,
           false,
@@ -212,7 +216,7 @@ export async function createAnatomySection(
           { label: String(index + 1), width: tableWidths.index },
           { label: deps.truncateText(element.name, nameMax), width: tableWidths.element },
           { label: element.type, width: tableWidths.type },
-          { label: deps.truncateText(details, 300), width: tableWidths.details, wrap: true }
+          { label: details, width: tableWidths.details, wrap: true }
         ],
         theme,
         false,
@@ -248,7 +252,7 @@ function summarizeAnatomyAttributes(element: AnatomyElement, deps: AnatomySectio
   const ordered = preferred.concat(remainder);
   return ordered
     .slice(0, limit)
-    .map((attr) => `${attr.key}: ${deps.truncateText(attr.value, 80)}`)
+    .map((attr) => `${attr.key}: ${deps.truncateText(attr.value, getLimit("TRUNC_CANVAS_ATTR_VALUE"))}`)
     .join(", ");
 }
 

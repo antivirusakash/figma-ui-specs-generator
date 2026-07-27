@@ -45,6 +45,26 @@ type PropertiesSectionDeps = {
   collectLayoutData: (root: SceneNode) => LayoutSpec[];
 };
 
+/** Remove a temporary node without letting cleanup failures mask the original error. */
+function removeNodeSafely(node: SceneNode | null) {
+  if (!node) return;
+  try {
+    if (!node.removed) node.remove();
+  } catch (error) {
+    log("Failed to remove temporary node", error);
+  }
+}
+
+/** Figma suffixes non-variant property keys with an id ("Icon#12:3").
+ *  setProperties() requires that raw key — only the published name is cleaned. */
+function cleanPropertyName(propName: string) {
+  return propName.replace(/#[\d:]+$/, "");
+}
+
+/** PropertySpec plus the raw Figma property key. `name` is the cleaned, published name;
+ *  `key` is what setProperties() needs (canvas variant previews call it). */
+type KeyedPropertySpec = PropertySpec & { key: string };
+
 export async function collectPropertySpecs(
   target: SceneNode,
   inventory: Inventory,
@@ -53,112 +73,148 @@ export async function collectPropertySpecs(
 ): Promise<PropertySpec[]> {
   log("Collecting property specs", target.type);
   let baseInstance: InstanceNode | null = null;
-  let componentSet: ComponentSetNode | null = null;
+  let tempFrame: FrameNode | null = null;
 
-  if (target.type === "INSTANCE") {
-    const source = target as InstanceNode;
-    baseInstance = source.clone();
-    const main = await deps.getMainComponentSafe(source);
-    if (main?.parent?.type === "COMPONENT_SET") {
-      componentSet = main.parent as ComponentSetNode;
-    }
-  } else if (target.type === "COMPONENT_SET") {
-    componentSet = target as ComponentSetNode;
-    if (componentSet.defaultVariant) {
-      baseInstance = componentSet.defaultVariant.createInstance();
-    }
-  } else if (target.type === "COMPONENT") {
-    const component = target as ComponentNode;
-    baseInstance = component.createInstance();
-    if (component.parent?.type === "COMPONENT_SET") {
-      componentSet = component.parent as ComponentSetNode;
-    }
-  }
+  try {
+    let componentSet: ComponentSetNode | null = null;
 
-  if (!baseInstance || !componentSet) {
-    log("No component set or instance found for properties.");
-    return [];
-  }
-
-  const tempFrame = figma.createFrame();
-  tempFrame.name = "__specs_temp__";
-  tempFrame.visible = false;
-  tempFrame.locked = true;
-  figma.currentPage.appendChild(tempFrame);
-  tempFrame.appendChild(baseInstance);
-
-  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
-  const properties = baseInstance.componentProperties;
-  const specs: PropertySpec[] = [];
-  log("Property keys", Object.keys(properties));
-
-  for (const [propName, prop] of Object.entries(properties)) {
-    if (!prop) continue;
-    if (prop.type === "VARIANT") {
-      const allOptions = componentSet.variantGroupProperties[propName]?.values ?? [];
-      const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
-      const optionSpecs: PropertyOption[] = [];
-      for (const option of options) {
-        const variantInstance = baseInstance.clone();
-        tempFrame.appendChild(variantInstance);
-        try {
-          variantInstance.setProperties({ [propName]: option });
-        } catch {
-          // ignore invalid variants
-        }
-        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
-        const differences = diffElements(baseElements, elements);
-        optionSpecs.push({ name: option, elements, differences });
-        variantInstance.remove();
+    if (target.type === "INSTANCE") {
+      const source = target as InstanceNode;
+      baseInstance = source.clone();
+      const main = await deps.getMainComponentSafe(source);
+      if (main?.parent?.type === "COMPONENT_SET") {
+        componentSet = main.parent as ComponentSetNode;
       }
-
-      specs.push({
-        name: propName,
-        type: "VARIANT",
-        default: String(prop.value),
-        options: optionSpecs
-      });
-    } else if (prop.type === "BOOLEAN") {
-      const optionSpecs: PropertyOption[] = [];
-      const booleanOptions = [true, false];
-      for (const option of booleanOptions) {
-        const variantInstance = baseInstance.clone();
-        tempFrame.appendChild(variantInstance);
-        try {
-          variantInstance.setProperties({ [propName]: option });
-        } catch {
-          // ignore
-        }
-        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
-        const differences = diffElements(baseElements, elements);
-        optionSpecs.push({ name: String(option), elements, differences });
-        variantInstance.remove();
+    } else if (target.type === "COMPONENT_SET") {
+      componentSet = target as ComponentSetNode;
+      if (componentSet.defaultVariant) {
+        baseInstance = componentSet.defaultVariant.createInstance();
       }
+    } else if (target.type === "COMPONENT") {
+      const component = target as ComponentNode;
+      baseInstance = component.createInstance();
+      if (component.parent?.type === "COMPONENT_SET") {
+        componentSet = component.parent as ComponentSetNode;
+      }
+    }
 
-      specs.push({
-        name: propName,
-        type: "BOOLEAN",
-        default: Boolean(prop.value),
-        options: optionSpecs
-      });
-    } else {
-      specs.push({
-        name: propName,
-        type: prop.type,
-        default: String(prop.value),
-        options: [
-          {
-            name: String(prop.value),
-            elements: baseElements,
-            differences: []
+    if (!baseInstance || !componentSet) {
+      log("No component set or instance found for properties.");
+      return [];
+    }
+
+    tempFrame = figma.createFrame();
+    tempFrame.name = "__specs_temp__";
+    tempFrame.visible = false;
+    tempFrame.locked = true;
+    figma.currentPage.appendChild(tempFrame);
+    tempFrame.appendChild(baseInstance);
+
+    const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+    const properties = baseInstance.componentProperties;
+    const specs: KeyedPropertySpec[] = [];
+    log("Property keys", Object.keys(properties));
+
+    for (const [propName, prop] of Object.entries(properties)) {
+      if (!prop) continue;
+      const cleanName = cleanPropertyName(propName);
+      if (prop.type === "VARIANT") {
+        const allOptions = componentSet.variantGroupProperties[propName]?.values ?? [];
+        const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
+        const optionSpecs: PropertyOption[] = [];
+        for (const option of options) {
+          const variantInstance = baseInstance.clone();
+          tempFrame.appendChild(variantInstance);
+          try {
+            try {
+              variantInstance.setProperties({ [propName]: option });
+            } catch {
+              // ignore invalid variants
+            }
+            const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+            const differences = diffElements(baseElements, elements);
+            optionSpecs.push({ name: option, elements, differences });
+          } finally {
+            removeNodeSafely(variantInstance);
           }
-        ]
-      });
-    }
-  }
+        }
 
-  tempFrame.remove();
-  return specs;
+        specs.push({
+          name: cleanName,
+          key: propName,
+          type: "VARIANT",
+          default: String(prop.value),
+          options: optionSpecs
+        });
+      } else if (prop.type === "BOOLEAN") {
+        const optionSpecs: PropertyOption[] = [];
+        const booleanOptions = [true, false];
+        for (const option of booleanOptions) {
+          const variantInstance = baseInstance.clone();
+          tempFrame.appendChild(variantInstance);
+          try {
+            try {
+              variantInstance.setProperties({ [propName]: option });
+            } catch {
+              // ignore
+            }
+            const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+            const differences = diffElements(baseElements, elements);
+            optionSpecs.push({ name: String(option), elements, differences });
+          } finally {
+            removeNodeSafely(variantInstance);
+          }
+        }
+
+        specs.push({
+          name: cleanName,
+          key: propName,
+          type: "BOOLEAN",
+          default: Boolean(prop.value),
+          options: optionSpecs
+        });
+      } else {
+        specs.push({
+          name: cleanName,
+          key: propName,
+          type: prop.type,
+          default: String(prop.value),
+          options: [
+            {
+              name: String(prop.value),
+              elements: baseElements,
+              differences: []
+            }
+          ]
+        });
+      }
+    }
+
+    return specs;
+  } finally {
+    // tempFrame owns baseInstance once appended; baseInstance is removed separately because
+    // clone()/createInstance() parent it in the user's document before we adopt it.
+    removeNodeSafely(tempFrame);
+    removeNodeSafely(baseInstance);
+  }
+}
+
+/** Attribute label for display: strips the internal "key:"/"prop:"/"attr:" map prefix. */
+function displayAttributeKey(attrKey: string) {
+  return attrKey.replace(/^(key:|prop:|attr:)/, "");
+}
+
+/** Full display value of an attribute: variable-backed attributes render their whole alias
+ *  chain ("Semantic/Surface/Brand -> Brand/Blue/500 -> #0A66FF"). Never truncated here —
+ *  the canvas renderer applies TRUNC_CANVAS_DIFF_LINE, and the YAML path keeps it intact.
+ *  attr.value is the variable's own full path (chain[0]); attr.rawValue is the primitive the
+ *  chain resolves to. */
+function describeAttributeValue(attr: Attribute) {
+  if (!attr.aliasChain || attr.aliasChain.length === 0) return attr.value;
+  const parts = attr.aliasChain[0] === attr.value ? [...attr.aliasChain] : [attr.value, ...attr.aliasChain];
+  const primitive = attr.rawValue === undefined || attr.rawValue === null ? "" : String(attr.rawValue);
+  if (primitive && parts[parts.length - 1] !== primitive) parts.push(primitive);
+  return parts.join(" -> ");
 }
 
 function diffElements(baseElements: AnatomyElement[], variantElements: AnatomyElement[]) {
@@ -175,20 +231,24 @@ function diffElements(baseElements: AnatomyElement[], variantElements: AnatomyEl
 
     const baseAttrs = attributeMap(baseEl.attributes);
     const variantAttrs = attributeMap(variantEl.attributes);
-    for (const [attrKey, baseValue] of baseAttrs.entries()) {
-      const variantValue = variantAttrs.get(attrKey);
-      if (variantValue === undefined) {
-        diffs.push(`${baseEl.name} · ${attrKey} removed`);
+    for (const [attrKey, baseAttr] of baseAttrs.entries()) {
+      const variantAttr = variantAttrs.get(attrKey);
+      if (variantAttr === undefined) {
+        diffs.push(`${baseEl.name} · ${displayAttributeKey(attrKey)} removed`);
         continue;
       }
-      if (baseValue !== variantValue) {
-        diffs.push(`${baseEl.name} · ${attrKey}: ${baseValue} → ${variantValue}`);
+      if (baseAttr.value !== variantAttr.value) {
+        diffs.push(
+          `${baseEl.name} · ${displayAttributeKey(attrKey)}: ${describeAttributeValue(baseAttr)} → ${describeAttributeValue(
+            variantAttr
+          )}`
+        );
       }
     }
 
     for (const attrKey of variantAttrs.keys()) {
       if (!baseAttrs.has(attrKey)) {
-        diffs.push(`${baseEl.name} · ${attrKey} added`);
+        diffs.push(`${baseEl.name} · ${displayAttributeKey(attrKey)} added`);
       }
     }
   }
@@ -199,13 +259,19 @@ function diffElements(baseElements: AnatomyElement[], variantElements: AnatomyEl
     }
   }
 
+  // Cap kept at 24: this list is the human/YAML prose diff and bounds output size. v13+ carries
+  // the complete, uncapped diff through computeStructuredDiff, so nothing is lost there.
   return diffs.slice(0, 24);
 }
 
 /**
  * v13: Compute a structured diff between base and variant anatomy.
- * Returns a VariantChange mapping node_id → {attributeKey: newValue} for changed attributes,
- * plus lists of added/removed node_ids.
+ * Returns a VariantChange mapping path_key → {attributeKey: newValue} for changed attributes,
+ * plus lists of added/removed path_keys.
+ *
+ * LIMITATION: pathKey embeds the layer name (".../FRAME:Icon"), so a variant that RENAMES a
+ * layer registers as removed + added rather than changed. ComponentDefinition.nodeIds maps
+ * those path keys back to document node ids for the base configuration only.
  */
 export function computeStructuredDiff(
   baseElements: AnatomyElement[],
@@ -240,18 +306,18 @@ export function computeStructuredDiff(
     // Compare attributes by key
     const baseAttrs = attributeMap(baseEl.attributes);
     const variantAttrs = attributeMap(variantEl.attributes);
-    for (const [attrKey, baseValue] of baseAttrs.entries()) {
-      const variantValue = variantAttrs.get(attrKey);
-      if (variantValue === undefined) {
+    for (const [attrKey, baseAttr] of baseAttrs.entries()) {
+      const variantAttr = variantAttrs.get(attrKey);
+      if (variantAttr === undefined) {
         // Attribute removed — record as empty string
-        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = "";
-      } else if (baseValue !== variantValue) {
-        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = variantValue;
+        nodeChanges[displayAttributeKey(attrKey)] = "";
+      } else if (baseAttr.value !== variantAttr.value) {
+        nodeChanges[displayAttributeKey(attrKey)] = variantAttr.value;
       }
     }
-    for (const [attrKey, variantValue] of variantAttrs.entries()) {
+    for (const [attrKey, variantAttr] of variantAttrs.entries()) {
       if (!baseAttrs.has(attrKey)) {
-        nodeChanges[attrKey.replace(/^(key:|prop:|attr:)/, "")] = variantValue;
+        nodeChanges[displayAttributeKey(attrKey)] = variantAttr.value;
       }
     }
 
@@ -278,6 +344,45 @@ export function computeStructuredDiff(
 }
 
 /**
+ * Translate a node id collected from the throwaway base instance into the id of the node it
+ * mirrors in the user's document. Figma composes instance descendant ids as
+ * "I<instance id chain>;<component-side id chain>", so:
+ *   - the temp instance root maps to the live root it was cloned/instantiated from;
+ *   - when the temp instance mirrors a live INSTANCE, the same component-side chain hangs off
+ *     the live instance id;
+ *   - when it is synthetic (COMPONENT / COMPONENT_SET target), the component-side chain alone
+ *     already addresses the layer inside the main component, which lives in the document.
+ * Returns null for ids we cannot translate — a dead reference is worse than no reference.
+ */
+function liveNodeIdFor(nodeId: string, tempRootId: string, liveRootId: string, mirrorsInstance: boolean): string | null {
+  if (nodeId === tempRootId) return liveRootId;
+  const prefix = `I${tempRootId};`;
+  if (!nodeId.startsWith(prefix)) return null;
+  const componentChain = nodeId.slice(prefix.length);
+  if (mirrorsInstance) {
+    const liveBase = liveRootId.startsWith("I") ? liveRootId.slice(1) : liveRootId;
+    return `I${liveBase};${componentChain}`;
+  }
+  // A chain with a separator is itself nested inside an instance within the component.
+  return componentChain.includes(";") ? `I${componentChain}` : componentChain;
+}
+
+function buildLiveNodeIdMap(
+  elements: AnatomyElement[],
+  tempRootId: string,
+  liveRootId: string,
+  mirrorsInstance: boolean
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const element of elements) {
+    if (!element.pathKey || !element.nodeId) continue;
+    const liveId = liveNodeIdFor(element.nodeId, tempRootId, liveRootId, mirrorsInstance);
+    if (liveId) map[element.pathKey] = liveId;
+  }
+  return map;
+}
+
+/**
  * v13: Collect a ComponentDefinition from a component set.
  * Defines the structure once (base variant) and records only diffs per variant option.
  */
@@ -288,148 +393,166 @@ export async function collectComponentDefinition(
   deps: PropertiesSectionDeps
 ): Promise<ComponentDefinition | null> {
   let baseInstance: InstanceNode | null = null;
-  let componentSet: ComponentSetNode | null = null;
+  let tempFrame: FrameNode | null = null;
 
-  if (target.type === "INSTANCE") {
-    const source = target as InstanceNode;
-    baseInstance = source.clone();
-    const main = await deps.getMainComponentSafe(source);
-    if (main?.parent?.type === "COMPONENT_SET") {
-      componentSet = main.parent as ComponentSetNode;
+  try {
+    let componentSet: ComponentSetNode | null = null;
+    // Node in the user's document that the temporary base instance mirrors.
+    let liveRootId = target.id;
+
+    if (target.type === "INSTANCE") {
+      const source = target as InstanceNode;
+      baseInstance = source.clone();
+      const main = await deps.getMainComponentSafe(source);
+      if (main?.parent?.type === "COMPONENT_SET") {
+        componentSet = main.parent as ComponentSetNode;
+      }
+    } else if (target.type === "COMPONENT_SET") {
+      componentSet = target as ComponentSetNode;
+      if (componentSet.defaultVariant) {
+        baseInstance = componentSet.defaultVariant.createInstance();
+        liveRootId = componentSet.defaultVariant.id;
+      }
+    } else if (target.type === "COMPONENT") {
+      const component = target as ComponentNode;
+      baseInstance = component.createInstance();
+      if (component.parent?.type === "COMPONENT_SET") {
+        componentSet = component.parent as ComponentSetNode;
+      }
     }
-  } else if (target.type === "COMPONENT_SET") {
-    componentSet = target as ComponentSetNode;
-    if (componentSet.defaultVariant) {
-      baseInstance = componentSet.defaultVariant.createInstance();
+
+    if (!baseInstance || !componentSet) {
+      return null;
     }
-  } else if (target.type === "COMPONENT") {
-    const component = target as ComponentNode;
-    baseInstance = component.createInstance();
-    if (component.parent?.type === "COMPONENT_SET") {
-      componentSet = component.parent as ComponentSetNode;
+
+    tempFrame = figma.createFrame();
+    tempFrame.name = "__specs_v13_def__";
+    tempFrame.visible = false;
+    tempFrame.locked = true;
+    figma.currentPage.appendChild(tempFrame);
+    tempFrame.appendChild(baseInstance);
+
+    const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+
+    // Build property definitions from component set
+    const propDefs: ComponentPropertyDef[] = [];
+    const properties = baseInstance.componentProperties;
+    const variantGroupProps = componentSet.variantGroupProperties ?? {};
+
+    for (const [propName, prop] of Object.entries(properties)) {
+      if (!prop) continue;
+      const cleanName = cleanPropertyName(propName);
+      if (prop.type === "VARIANT") {
+        const allOptions = variantGroupProps[propName]?.values ?? [];
+        propDefs.push({
+          name: cleanName,
+          type: "VARIANT",
+          default: String(prop.value),
+          options: allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"))
+        });
+      } else if (prop.type === "BOOLEAN") {
+        propDefs.push({
+          name: cleanName,
+          type: "BOOLEAN",
+          default: Boolean(prop.value),
+          options: ["true", "false"]
+        });
+      } else if (prop.type === "TEXT") {
+        propDefs.push({
+          name: cleanName,
+          type: "TEXT",
+          default: String(prop.value)
+        });
+      } else if (prop.type === "INSTANCE_SWAP") {
+        propDefs.push({
+          name: cleanName,
+          type: "INSTANCE_SWAP",
+          default: String(prop.value)
+        });
+      }
     }
-  }
 
-  if (!baseInstance || !componentSet) {
-    return null;
-  }
+    // Collect variant diffs for each non-default option
+    const variantDiffs: VariantDiff[] = [];
 
-  const tempFrame = figma.createFrame();
-  tempFrame.name = "__specs_v13_def__";
-  tempFrame.visible = false;
-  tempFrame.locked = true;
-  figma.currentPage.appendChild(tempFrame);
-  tempFrame.appendChild(baseInstance);
+    for (const [propName, prop] of Object.entries(properties)) {
+      if (!prop) continue;
+      const cleanName = cleanPropertyName(propName);
 
-  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
-
-  // Build property definitions from component set
-  const propDefs: ComponentPropertyDef[] = [];
-  const properties = baseInstance.componentProperties;
-  const variantGroupProps = componentSet.variantGroupProperties ?? {};
-
-  for (const [propName, prop] of Object.entries(properties)) {
-    if (!prop) continue;
-    const cleanName = propName.replace(/#[\d:]+$/, "");
-    if (prop.type === "VARIANT") {
-      const allOptions = variantGroupProps[propName]?.values ?? [];
-      propDefs.push({
-        name: cleanName,
-        type: "VARIANT",
-        default: String(prop.value),
-        options: allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"))
-      });
-    } else if (prop.type === "BOOLEAN") {
-      propDefs.push({
-        name: cleanName,
-        type: "BOOLEAN",
-        default: Boolean(prop.value),
-        options: ["true", "false"]
-      });
-    } else if (prop.type === "TEXT") {
-      propDefs.push({
-        name: cleanName,
-        type: "TEXT",
-        default: String(prop.value)
-      });
-    } else if (prop.type === "INSTANCE_SWAP") {
-      propDefs.push({
-        name: cleanName,
-        type: "INSTANCE_SWAP",
-        default: String(prop.value)
-      });
-    }
-  }
-
-  // Collect variant diffs for each non-default option
-  const variantDiffs: VariantDiff[] = [];
-
-  for (const [propName, prop] of Object.entries(properties)) {
-    if (!prop) continue;
-    const cleanName = propName.replace(/#[\d:]+$/, "");
-
-    if (prop.type === "VARIANT") {
-      const allOptions = variantGroupProps[propName]?.values ?? [];
-      const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
-      for (const option of options) {
-        if (option === String(prop.value)) continue; // skip default
+      if (prop.type === "VARIANT") {
+        const allOptions = variantGroupProps[propName]?.values ?? [];
+        const options = allOptions.slice(0, getLimit("MAX_VARIANT_OPTIONS"));
+        for (const option of options) {
+          if (option === String(prop.value)) continue; // skip default
+          const variantInstance = baseInstance.clone();
+          tempFrame.appendChild(variantInstance);
+          try {
+            try {
+              variantInstance.setProperties({ [propName]: option });
+            } catch {
+              continue;
+            }
+            const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+            const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
+            if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
+              const diff: VariantDiff = {
+                config: { [cleanName]: option },
+                changes
+              };
+              if (added.length > 0) diff.added = added;
+              if (removed.length > 0) diff.removed = removed;
+              variantDiffs.push(diff);
+            }
+          } finally {
+            removeNodeSafely(variantInstance);
+          }
+        }
+      } else if (prop.type === "BOOLEAN") {
+        // Only collect the non-default value
+        const nonDefault = !Boolean(prop.value);
         const variantInstance = baseInstance.clone();
         tempFrame.appendChild(variantInstance);
         try {
-          variantInstance.setProperties({ [propName]: option });
-        } catch {
-          variantInstance.remove();
-          continue;
+          try {
+            variantInstance.setProperties({ [propName]: nonDefault });
+          } catch {
+            continue;
+          }
+          const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+          const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
+          if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
+            const diff: VariantDiff = {
+              config: { [cleanName]: nonDefault },
+              changes
+            };
+            if (added.length > 0) diff.added = added;
+            if (removed.length > 0) diff.removed = removed;
+            variantDiffs.push(diff);
+          }
+        } finally {
+          removeNodeSafely(variantInstance);
         }
-        const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
-        const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
-        if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
-          const diff: VariantDiff = {
-            config: { [cleanName]: option },
-            changes
-          };
-          if (added.length > 0) diff.added = added;
-          if (removed.length > 0) diff.removed = removed;
-          variantDiffs.push(diff);
-        }
-        variantInstance.remove();
       }
-    } else if (prop.type === "BOOLEAN") {
-      // Only collect the non-default value
-      const nonDefault = !Boolean(prop.value);
-      const variantInstance = baseInstance.clone();
-      tempFrame.appendChild(variantInstance);
-      try {
-        variantInstance.setProperties({ [propName]: nonDefault });
-      } catch {
-        variantInstance.remove();
-        continue;
-      }
-      const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
-      const { changes, added, removed } = computeStructuredDiff(baseElements, elements);
-      if (Object.keys(changes).length > 0 || added.length > 0 || removed.length > 0) {
-        const diff: VariantDiff = {
-          config: { [cleanName]: nonDefault },
-          changes
-        };
-        if (added.length > 0) diff.added = added;
-        if (removed.length > 0) diff.removed = removed;
-        variantDiffs.push(diff);
-      }
-      variantInstance.remove();
+      // TEXT and INSTANCE_SWAP don't produce structural diffs
     }
-    // TEXT and INSTANCE_SWAP don't produce structural diffs
+
+    // variant_diffs are keyed by path_key; carry the document node id alongside so the
+    // linkage stays resolvable even when path_key is dropped from anatomy records.
+    const nodeIds = buildLiveNodeIdMap(baseElements, baseInstance.id, liveRootId, target.type === "INSTANCE");
+
+    const definition: ComponentDefinition = {
+      componentSetName: componentSet.name,
+      // The live node the spec was generated from — the temp instance id dies with tempFrame.
+      baseNodeId: liveRootId,
+      properties: propDefs,
+      variantDiffs
+    };
+    if (Object.keys(nodeIds).length > 0) definition.nodeIds = nodeIds;
+    return definition;
+  } finally {
+    removeNodeSafely(tempFrame);
+    removeNodeSafely(baseInstance);
   }
-
-  const baseNodeId = baseInstance.id ?? target.id;
-  tempFrame.remove();
-
-  return {
-    componentSetName: componentSet.name,
-    baseNodeId,
-    properties: propDefs,
-    variantDiffs
-  };
 }
 
 function mapElementsByPath(elements: AnatomyElement[]) {
@@ -450,10 +573,10 @@ export function buildLayoutKey(spec: LayoutSpec) {
 }
 
 function attributeMap(attributes: Attribute[]) {
-  const map = new Map<string, string>();
+  const map = new Map<string, Attribute>();
   attributes.forEach((attr, index) => {
     const key = attr.key ? `key:${attr.key}` : attr.propertyName ? `prop:${attr.propertyName}` : `attr:${index}`;
-    map.set(key, attr.value);
+    map.set(key, attr);
   });
   return map;
 }
@@ -466,82 +589,97 @@ export async function collectTwoWaySpec(
 ): Promise<TwoWaySpec | null> {
   log("Collecting two-way spec", target.type);
   let baseInstance: InstanceNode | null = null;
-  let componentSet: ComponentSetNode | null = null;
+  let tempFrame: FrameNode | null = null;
 
-  if (target.type === "INSTANCE") {
-    const source = target as InstanceNode;
-    baseInstance = source.clone();
-    const main = await deps.getMainComponentSafe(source);
-    if (main?.parent?.type === "COMPONENT_SET") {
-      componentSet = main.parent as ComponentSetNode;
-    }
-  } else if (target.type === "COMPONENT_SET") {
-    componentSet = target as ComponentSetNode;
-    if (componentSet.defaultVariant) {
-      baseInstance = componentSet.defaultVariant.createInstance();
-    }
-  } else if (target.type === "COMPONENT") {
-    const component = target as ComponentNode;
-    baseInstance = component.createInstance();
-    if (component.parent?.type === "COMPONENT_SET") {
-      componentSet = component.parent as ComponentSetNode;
-    }
-  }
+  try {
+    let componentSet: ComponentSetNode | null = null;
 
-  if (!baseInstance || !componentSet) {
-    log("Two-way spec skipped: missing component set/instance.");
-    return null;
-  }
-
-  const variantProps = Object.keys(componentSet.variantGroupProperties ?? {});
-  if (variantProps.length < 2) {
-    log("Two-way spec skipped: less than two variant props.");
-    return null;
-  }
-
-  const requestedA = settings.twoWayPropA?.trim();
-  const requestedB = settings.twoWayPropB?.trim();
-  const propA = requestedA && variantProps.includes(requestedA) ? requestedA : variantProps[0];
-  const propB =
-    requestedB && variantProps.includes(requestedB)
-      ? requestedB
-      : variantProps.find((prop) => prop !== propA) ?? variantProps[1];
-  if (!propA || !propB || propA === propB) {
-    log("Two-way spec skipped: invalid property selection.", { propA, propB });
-    return null;
-  }
-  const optionsA = componentSet.variantGroupProperties[propA]?.values ?? [];
-  const optionsB = componentSet.variantGroupProperties[propB]?.values ?? [];
-
-  const tempFrame = figma.createFrame();
-  tempFrame.name = "__specs_two_way__";
-  tempFrame.visible = false;
-  tempFrame.locked = true;
-  figma.currentPage.appendChild(tempFrame);
-  tempFrame.appendChild(baseInstance);
-
-  const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
-  const combinations: TwoWaySpec["combinations"] = [];
-  for (const a of optionsA) {
-    if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
-    for (const b of optionsB) {
-      if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
-      const variantInstance = baseInstance.clone();
-      tempFrame.appendChild(variantInstance);
-      try {
-        variantInstance.setProperties({ [propA]: a, [propB]: b });
-      } catch {
-        // ignore
+    if (target.type === "INSTANCE") {
+      const source = target as InstanceNode;
+      baseInstance = source.clone();
+      const main = await deps.getMainComponentSafe(source);
+      if (main?.parent?.type === "COMPONENT_SET") {
+        componentSet = main.parent as ComponentSetNode;
       }
-      const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
-      const differences = diffElements(baseElements, elements);
-      combinations.push({ a, b, differences });
-      variantInstance.remove();
+    } else if (target.type === "COMPONENT_SET") {
+      componentSet = target as ComponentSetNode;
+      if (componentSet.defaultVariant) {
+        baseInstance = componentSet.defaultVariant.createInstance();
+      }
+    } else if (target.type === "COMPONENT") {
+      const component = target as ComponentNode;
+      baseInstance = component.createInstance();
+      if (component.parent?.type === "COMPONENT_SET") {
+        componentSet = component.parent as ComponentSetNode;
+      }
     }
-  }
 
-  tempFrame.remove();
-  return { propA, propB, combinations };
+    if (!baseInstance || !componentSet) {
+      log("Two-way spec skipped: missing component set/instance.");
+      return null;
+    }
+
+    const variantProps = Object.keys(componentSet.variantGroupProperties ?? {});
+    if (variantProps.length < 2) {
+      log("Two-way spec skipped: less than two variant props.");
+      return null;
+    }
+
+    const requestedA = settings.twoWayPropA?.trim();
+    const requestedB = settings.twoWayPropB?.trim();
+    const propA = requestedA && variantProps.includes(requestedA) ? requestedA : variantProps[0];
+    const propB =
+      requestedB && variantProps.includes(requestedB)
+        ? requestedB
+        : variantProps.find((prop) => prop !== propA) ?? variantProps[1];
+    if (!propA || !propB || propA === propB) {
+      log("Two-way spec skipped: invalid property selection.", { propA, propB });
+      return null;
+    }
+    const optionsA = componentSet.variantGroupProperties[propA]?.values ?? [];
+    const optionsB = componentSet.variantGroupProperties[propB]?.values ?? [];
+
+    tempFrame = figma.createFrame();
+    tempFrame.name = "__specs_two_way__";
+    tempFrame.visible = false;
+    tempFrame.locked = true;
+    figma.currentPage.appendChild(tempFrame);
+    tempFrame.appendChild(baseInstance);
+
+    const { elements: baseElements } = await deps.collectAnatomyElements(baseInstance, inventory, settings);
+    const combinations: TwoWaySpec["combinations"] = [];
+    for (const a of optionsA) {
+      if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
+      for (const b of optionsB) {
+        if (combinations.length >= getLimit("MAX_TWO_WAY_COMBOS")) break;
+        const variantInstance = baseInstance.clone();
+        tempFrame.appendChild(variantInstance);
+        try {
+          try {
+            variantInstance.setProperties({ [propA]: a, [propB]: b });
+          } catch {
+            // ignore
+          }
+          const { elements } = await deps.collectAnatomyElements(variantInstance, inventory, settings);
+          const differences = diffElements(baseElements, elements);
+          combinations.push({ a, b, differences });
+        } finally {
+          removeNodeSafely(variantInstance);
+        }
+      }
+    }
+
+    return { propA, propB, combinations };
+  } finally {
+    removeNodeSafely(tempFrame);
+    removeNodeSafely(baseInstance);
+  }
+}
+
+/** Diff lines carry full variable paths ("Brand/Theme/Semantic/Surface/Interactive/Primary"),
+ *  so the old 72/120 char caps cut the variable name itself. getLimit keeps tier overrides live. */
+function diffLineLimit(compact: boolean) {
+  return compact ? getLimit("TRUNC_CANVAS_DIFF_LINE_COMPACT") : getLimit("TRUNC_CANVAS_DIFF_LINE");
 }
 
 export async function createPropertiesSection(
@@ -603,7 +741,7 @@ export async function createPropertiesSection(
         const detail = combo.differences.length
           ? combo.differences
               .slice(0, compact ? 1 : 3)
-              .map((line) => `• ${deps.truncateText(line, compact ? 72 : 120)}`)
+              .map((line) => `• ${deps.truncateText(line, diffLineLimit(compact))}`)
               .join("\n")
           : "No detected differences.";
         const detailNode = deps.createText(detail, 8, FONT_REGULAR, theme.muted, "caption");
@@ -681,7 +819,7 @@ export async function createPropertiesSection(
       const diffText = option.differences.length
         ? option.differences
             .slice(0, compact ? 2 : 6)
-            .map((line) => `• ${deps.truncateText(line, compact ? 72 : 120)}`)
+            .map((line) => `• ${deps.truncateText(line, diffLineLimit(compact))}`)
             .join("\n")
         : "No detected differences.";
       const diffNode = deps.createText(diffText, 10, FONT_REGULAR, theme.muted, "muted");
@@ -690,7 +828,9 @@ export async function createPropertiesSection(
 
       if (!compact && (spec.type === "VARIANT" || spec.type === "BOOLEAN")) {
         const previewValue = spec.type === "BOOLEAN" ? option.name === "true" : option.name;
-        const preview = createVariantPreview(target, spec.name, previewValue, theme, deps);
+        // setProperties() needs the raw suffixed key; spec.name is the cleaned display name.
+        const rawPropertyKey = (spec as Partial<KeyedPropertySpec>).key ?? spec.name;
+        const preview = createVariantPreview(target, rawPropertyKey, previewValue, theme, deps);
         if (preview) {
           optionFrame.appendChild(preview);
         }
@@ -809,6 +949,9 @@ function createUnavailablePreview(theme: Theme, deps: PropertiesSectionDeps) {
   return frame;
 }
 
+/** Width of a combination cell in the standalone two-way grid (no Settings available here). */
+const TWO_WAY_CELL_WIDTH = 240;
+
 export function createTwoWaySection(spec: TwoWaySpec, theme: Theme, deps: PropertiesSectionDeps) {
   const section = deps.createSectionFrame("Two-Way Comparison", theme);
   section.appendChild(deps.createText(`Properties: ${spec.propA} × ${spec.propB}`, 11, FONT_MEDIUM, theme.text, "label"));
@@ -846,8 +989,13 @@ export function createTwoWaySection(spec: TwoWaySpec, theme: Theme, deps: Proper
       cell.fills = [];
 
       cell.appendChild(deps.createText(`${spec.propB}: ${combo.b}`, 9, FONT_MEDIUM, theme.text, "label"));
-      const detail = combo.differences.length ? combo.differences.join(" | ") : "No detected differences.";
-      cell.appendChild(deps.createText(detail, 8, FONT_REGULAR, theme.muted, "caption"));
+      const detail = combo.differences.length
+        ? combo.differences.map((line) => `• ${line}`).join("\n")
+        : "No detected differences.";
+      const detailNode = deps.createText(detail, 8, FONT_REGULAR, theme.muted, "caption");
+      // Wrap instead of letting a full variable path stretch (or clip) the comparison cell.
+      deps.fitTextToWidth(detailNode, TWO_WAY_CELL_WIDTH);
+      cell.appendChild(detailNode);
       row.appendChild(cell);
     });
 
