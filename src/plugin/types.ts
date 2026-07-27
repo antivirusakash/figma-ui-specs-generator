@@ -63,6 +63,14 @@ export type Attribute = {
   systemId?: string;
   fillSegments?: FillSegment[];
   imageHash?: string;
+  /** Full alias chain (outermost first) when format === "VARIABLE". */
+  aliasChain?: string[];
+  /** Index of the paint this attribute describes. */
+  paintIndex?: number;
+  gradient?: { angle: number; stops: Array<{ pos: number; color: string }> };
+  /** SOLID | GRADIENT_LINEAR | IMAGE | ... */
+  fillType?: string;
+  scaleMode?: string;
 };
 
 export type BoundVariablesMap = {
@@ -89,10 +97,18 @@ export type AnatomyElement = {
   layoutSizing?: string;
   layoutJustify?: string;
   layoutAlignItems?: string;
+  /** Sourced from the node's own layoutSizingHorizontal — not the parent's counter/primary axis sizing mode. */
   layoutWSizing?: string;
+  /** Sourced from the node's own layoutSizingVertical — not the parent's counter/primary axis sizing mode. */
   layoutHSizing?: string;
   layoutClips?: boolean;
   layoutInferred?: boolean;
+  /** Real tree depth (root = 0). Not derived from pathKey — pathKeys join with "/" and carry no spaces. */
+  depth?: number;
+  /** Variant selection of the instance, e.g. "Size=Large, Type=Primary" — split out of instanceOf. */
+  instanceVariant?: string;
+  layoutGrow?: number;
+  layoutWrap?: string;
 };
 
 export type ComponentSetContext = {
@@ -145,6 +161,36 @@ export type LayoutSpec = {
     y2: number;
   };
   inferred?: boolean;
+  layoutWrap?: string;
+  counterAxisSpacing?: number;
+  counterAxisAlignContent?: string;
+  layoutPositioning?: string;
+  strokesIncludedInLayout?: boolean;
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+  /** Bound-variable ids captured synchronously by collectLayoutData (which must stay sync);
+   *  resolved later inside the async createLayoutSection. */
+  varIds?: {
+    itemSpacing?: string;
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    counterAxisSpacing?: string;
+  };
+  /** Modes this node resolves each variable collection to (collectionId → modeId), captured
+   *  alongside varIds so the token column resolves in the node's mode, not the default one. */
+  varModes?: Record<string, string>;
+};
+
+/** Per-node sizing behaviour on each axis: "FIXED" | "HUG" | "FILL". */
+export type NodeSizing = {
+  nodeId: string;
+  w?: string;
+  h?: string;
+  grow?: number;
 };
 
 export type InstanceRepeatRow = {
@@ -193,6 +239,8 @@ export type ComponentDefinition = {
   baseNodeId: string;
   properties: ComponentPropertyDef[];
   variantDiffs: VariantDiff[];
+  /** Element path key -> live document node id, so variant_diffs keys are addressable. */
+  nodeIds?: Record<string, string>;
 };
 
 export type DataModel = {

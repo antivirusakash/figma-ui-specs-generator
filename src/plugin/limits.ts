@@ -8,6 +8,7 @@ export const LIMITS = {
   MAX_SIGNATURE_DEPTH: 6,
   MAX_DIFF_DEPTH: 12,
   MAX_INSTANCE_TEXT_DEPTH: 12,
+  MAX_ALIAS_CHAIN_DEPTH: 12,
   ICON_SKIP_MAX_PX: 48,
 
   // ── Data Output (agent-ready YAML) ──
@@ -28,12 +29,17 @@ export const LIMITS = {
   // ── Truncation: Names & Refs ──
   TRUNC_ELEMENT_NAME: 200,
   TRUNC_INSTANCE_OF: 500,
-  TRUNC_FILL_REF: 200,
-  TRUNC_STROKE_REF: 200,
+  TRUNC_FILL_REF: 1000,
+  TRUNC_STROKE_REF: 1000,
   TRUNC_FONT: 200,
   TRUNC_TEXT_STYLE: 200,
   TRUNC_ATTRIBUTE_VALUE: 500,
   TRUNC_PROPERTY_DIFF: 500,
+  // Variable paths are never truncated in practice — kept as a safety ceiling only.
+  TRUNC_VARIABLE_PATH: 4000,
+  // Component names are not variable paths; the canvas "Depends on" column stays
+  // readable at a much lower cap than the YAML-side TRUNC_INSTANCE_OF.
+  TRUNC_CANVAS_INSTANCE_OF: 120,
 
   // ── Attributes ──
   MAX_COMPONENT_PROPS: 4,
@@ -44,6 +50,9 @@ export const LIMITS = {
   CANVAS_MAX_TEXT_CHUNKS: 3,
   CANVAS_SPLIT_TEXT_CHARS: 8000,
   CANVAS_ANATOMY_TEXT_TRUNC: 40,
+  TRUNC_CANVAS_ATTR_VALUE: 400,
+  TRUNC_CANVAS_DIFF_LINE: 600,
+  TRUNC_CANVAS_DIFF_LINE_COMPACT: 200,
   ANATOMY_HIGHLIGHTS_DEFAULT: 20,
   ANATOMY_HIGHLIGHTS_TABULAR: 24,
   ANATOMY_HIGHLIGHTS_COMPACT: 16,
