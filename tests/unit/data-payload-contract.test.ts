@@ -506,9 +506,75 @@ describe("v13 contract", () => {
     expect(repeatsChunk).toBeDefined();
   });
 
-  it("inherits v12 optimizations (no path_key)", () => {
+  it.each(["v13", "v14"])("retains path_key in %s when a component_definition chunk is emitted", (schemaVersion) => {
     const payload = toAgentReadyDataPayload(
       makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion } as Settings,
+      makeInventory(), makeDeps()
+    );
+    // variant_diffs are keyed by path_key, so path_key must survive the v12 optimization here.
+    expect(payload.chunks.some((c: any) => c.kind === "component_definition")).toBe(true);
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    expect(anatomyChunk.items.length).toBeGreaterThan(0);
+    for (const item of anatomyChunk.items) {
+      expect(typeof item.path_key).toBe("string");
+      expect(item.path_key.length).toBeGreaterThan(0);
+    }
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk.template_path_key).toBe("root/Card");
+    for (const item of repeatsChunk.items) {
+      expect(typeof item.path_key).toBe("string");
+    }
+    // The other half of the v12 inheritance is unchanged.
+    expect(payload.text_index).toBeUndefined();
+  });
+
+  it("variant_diffs change keys resolve to an anatomy or repeat record", () => {
+    const model = makeV13DataModel();
+    // Realistic keying: computeStructuredDiff keys variant changes by path_key, not node id.
+    model.componentDefinition!.variantDiffs = [
+      { config: { Size: "Small" }, changes: { "root/Header": { h: 36 } } },
+      { config: { Size: "Large" }, changes: { "root/Header/Title": { h: 72 } } },
+    ];
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const known = new Set<string>();
+    for (const chunk of payload.chunks) {
+      for (const item of chunk.items ?? []) {
+        if (item.path_key) known.add(item.path_key);
+      }
+      if (chunk.template_path_key) known.add(chunk.template_path_key);
+    }
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    for (const diff of defChunk.variant_diffs) {
+      for (const key of Object.keys(diff.changes)) {
+        expect(known.has(key)).toBe(true);
+      }
+    }
+  });
+
+  it("emits node_ids on the component_definition chunk when populated", () => {
+    const model = makeV13DataModel();
+    model.componentDefinition!.nodeIds = { "root/Header": "1:1", "root/Card": "1:3" };
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk.node_ids).toEqual({ "root/Header": "1:1", "root/Card": "1:3" });
+  });
+
+  it("drops path_key from anatomy/repeat records once node_ids can resolve the linkage", () => {
+    // node_ids maps path_key -> node id, so re-adding path_key to every record would ship
+    // the same string twice per element and undo the v12 size optimisation.
+    const model = makeV13DataModel();
+    model.componentDefinition!.nodeIds = { "root/Header": "1:1", "root/Card": "1:3" };
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
       { ...baseSettings, schemaVersion: "v13" },
       makeInventory(), makeDeps()
     );
@@ -516,7 +582,21 @@ describe("v13 contract", () => {
     for (const item of anatomyChunk.items) {
       expect(item).not.toHaveProperty("path_key");
     }
-    expect(payload.text_index).toBeUndefined();
+    const repeatsChunk = payload.chunks.find((c: any) => c.kind === "repeats");
+    expect(repeatsChunk).not.toHaveProperty("template_path_key");
+    for (const item of repeatsChunk.items) {
+      expect(item).not.toHaveProperty("path_key");
+    }
+  });
+
+  it("omits node_ids from the component_definition chunk when absent", () => {
+    const payload = toAgentReadyDataPayload(
+      makeV13DataModel(), false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v13" },
+      makeInventory(), makeDeps()
+    );
+    const defChunk = payload.chunks.find((c: any) => c.kind === "component_definition");
+    expect(defChunk).not.toHaveProperty("node_ids");
   });
 
   it("summary includes component_definition flag", () => {
@@ -734,6 +814,181 @@ describe("attribute field mapping", () => {
     const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
     const item = anatomyChunk.items.find((i: any) => i.node_id === "2:1");
     expect(item.stroke_sides).toBe("border-bottom: 1px");
+  });
+});
+
+// ─── Border / text / paint record contract ────────────────────
+
+describe("anatomy record contract", () => {
+  function recordFor(element: Partial<DataModel["anatomy"][0]>): any {
+    const model: DataModel = {
+      anatomy: [
+        {
+          name: "Box",
+          type: "FRAME",
+          nodeId: "3:1",
+          pathKey: "root/Box",
+          attributes: [],
+          bounds: { x: 0, y: 0, width: 100, height: 100 },
+          ...element,
+        } as DataModel["anatomy"][0],
+      ],
+      properties: [],
+      instanceTemplates: [],
+    };
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const anatomyChunk = payload.chunks.find((c: any) => c.kind === "anatomy");
+    return { record: anatomyChunk.items.find((i: any) => i.node_id === "3:1"), payload };
+  }
+
+  it("emits stroke_width whenever a stroke exists", () => {
+    const { record } = recordFor({
+      attributes: [
+        { key: "Stroke", value: "#000000", format: "HARDCODED" },
+        { key: "Stroke width", value: "2px", format: "HARDCODED", rawValue: 2 },
+      ],
+    });
+    expect(record.stroke).toBe("#000000");
+    expect(record.stroke_width).toBe(2);
+  });
+
+  it("does not emit stroke_width without a stroke colour", () => {
+    const { record } = recordFor({
+      attributes: [{ key: "Stroke width", value: "2px", format: "HARDCODED", rawValue: 2 }],
+    });
+    expect(record).not.toHaveProperty("stroke_width");
+  });
+
+  it("carries the per-side stroke width string through unchanged", () => {
+    const { record } = recordFor({
+      attributes: [
+        { key: "Stroke", value: "#000000", format: "HARDCODED" },
+        { key: "Stroke width", value: "1px 0px 2px 0px", format: "HARDCODED", rawValue: "1px 0px 2px 0px" },
+      ],
+    });
+    expect(record.stroke_width).toBe("1px 0px 2px 0px");
+  });
+
+  it("emits letter_spacing when non-zero and omits it at 0", () => {
+    const { record } = recordFor({
+      attributes: [{ key: "Letter spacing", value: "2px", format: "HARDCODED", rawValue: 2 }],
+    });
+    expect(record.letter_spacing).toBe(2);
+
+    const { record: zero } = recordFor({
+      attributes: [{ key: "Letter spacing", value: "0px", format: "HARDCODED", rawValue: 0 }],
+    });
+    expect(zero).not.toHaveProperty("letter_spacing");
+  });
+
+  it("emits text_case / text_decoration and omits them at their defaults", () => {
+    const { record } = recordFor({
+      attributes: [
+        { key: "Text case", value: "upper", format: "HARDCODED", rawValue: "upper" },
+        { key: "Text decoration", value: "underline", format: "HARDCODED", rawValue: "underline" },
+      ],
+    });
+    expect(record.text_case).toBe("upper");
+    expect(record.text_decoration).toBe("underline");
+
+    const { record: defaults } = recordFor({
+      attributes: [
+        { key: "Text case", value: "ORIGINAL", format: "HARDCODED", rawValue: "ORIGINAL" },
+        { key: "Text decoration", value: "NONE", format: "HARDCODED", rawValue: "NONE" },
+      ],
+    });
+    expect(defaults).not.toHaveProperty("text_case");
+    expect(defaults).not.toHaveProperty("text_decoration");
+  });
+
+  it("emits per-corner radius strings", () => {
+    const { record } = recordFor({
+      attributes: [
+        { key: "Corner radius", value: "8px 8px 0px 0px", format: "HARDCODED", rawValue: "8px 8px 0px 0px" },
+      ],
+    });
+    expect(record.radius).toBe("8px 8px 0px 0px");
+  });
+
+  it("emits fill_type and gradient for a gradient fill", () => {
+    const { record } = recordFor({
+      attributes: [
+        {
+          key: "Fill",
+          value: "linear-gradient(180deg, #FF0000 0%, #0000FF 100%)",
+          format: "HARDCODED",
+          fillType: "GRADIENT_LINEAR",
+          gradient: { angle: 180, stops: [{ pos: 0, color: "#FF0000" }, { pos: 1, color: "#0000FF" }] },
+        } as any,
+      ],
+    });
+    expect(record.fill_type).toBe("GRADIENT_LINEAR");
+    expect(record.gradient).toEqual({
+      angle: 180,
+      stops: [{ pos: 0, color: "#FF0000" }, { pos: 1, color: "#0000FF" }],
+    });
+  });
+
+  it("emits image_hash and scale_mode for an image fill", () => {
+    const { record } = recordFor({
+      attributes: [
+        { key: "Fill", value: "image", format: "HARDCODED", fillType: "IMAGE", imageHash: "h1", scaleMode: "FIT" } as any,
+      ],
+    });
+    expect(record.fill_type).toBe("IMAGE");
+    expect(record.image_hash).toBe("h1");
+    expect(record.scale_mode).toBe("FIT");
+  });
+
+  it("keeps a white fill on an instance with children text (skipWhiteFill is gone)", () => {
+    const { record } = recordFor({
+      type: "INSTANCE",
+      instanceOf: "Card",
+      childrenText: ["Title", "Body"],
+      attributes: [{ key: "Fill", value: "#FFFFFF", format: "HARDCODED", rawValue: "#FFFFFF" }],
+    });
+    expect(record.fill).toBe("#FFFFFF");
+  });
+
+  it("splits instance_of and instance_variant", () => {
+    const { record } = recordFor({
+      type: "INSTANCE",
+      instanceOf: "Button",
+      instanceVariant: "Size=Large, Type=Primary",
+    });
+    expect(record.instance_of).toBe("Button");
+    expect(record.instance_variant).toBe("Size=Large, Type=Primary");
+  });
+
+  it("omits instance_variant for a non-variant instance", () => {
+    const { record } = recordFor({ type: "INSTANCE", instanceOf: "Card" });
+    expect(record).not.toHaveProperty("instance_variant");
+  });
+
+  it("surfaces token_aliases from an attribute alias chain", () => {
+    const { payload } = recordFor({
+      attributes: [
+        {
+          key: "Fill",
+          value: "Semantic/Surface/Brand",
+          format: "VARIABLE",
+          rawValue: "#0A66FF",
+          aliasChain: ["Semantic/Surface/Brand", "Brand/Blue/500"],
+        } as any,
+      ],
+    });
+    expect(payload.token_aliases).toEqual({ "Semantic/Surface/Brand": ["Brand/Blue/500"] });
+  });
+
+  it("omits token_aliases when no attribute has a chain", () => {
+    const { payload } = recordFor({
+      attributes: [{ key: "Fill", value: "#000000", format: "HARDCODED" }],
+    });
+    expect(payload.token_aliases).toBeUndefined();
   });
 });
 
@@ -1118,5 +1373,63 @@ describe("compact mode size reductions", () => {
     const itemWithText = repeatsChunk.items.find((i: any) => i.children_text);
     expect(itemWithText).toBeDefined();
     expect(itemWithText.children_text).toEqual(["Item 2", "Other desc"]);
+  });
+});
+
+// ─── Gradient strokes ─────────────────────────────────────────
+
+describe("gradient strokes", () => {
+  it("emits stroke_type and stroke_gradient the same way the fill branch does", () => {
+    const model = makeDataModel();
+    model.anatomy[0].attributes = [
+      {
+        key: "Stroke",
+        value: "conic-gradient(from 180deg, #FF3366 0%, #0A66FF 100%)",
+        format: "HARDCODED",
+        fillType: "GRADIENT_ANGULAR",
+        gradient: {
+          angle: 180,
+          stops: [
+            { pos: 0, color: "#FF3366" },
+            { pos: 1, color: "#0A66FF" },
+          ],
+        },
+      },
+      { key: "Stroke width", value: "1px", format: "HARDCODED", rawValue: 1 },
+    ];
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const record = payload.chunks
+      .find((c: any) => c.kind === "anatomy")
+      .items.find((item: any) => item.node_id === "1:1");
+    expect(record.stroke_type).toBe("GRADIENT_ANGULAR");
+    expect(record.stroke_gradient).toEqual({
+      angle: 180,
+      stops: [
+        { pos: 0, color: "#FF3366" },
+        { pos: 1, color: "#0A66FF" },
+      ],
+    });
+  });
+
+  it("leaves a solid stroke untouched", () => {
+    const model = makeDataModel();
+    model.anatomy[0].attributes = [
+      { key: "Stroke", value: "#000000", format: "HARDCODED", fillType: "SOLID" },
+    ];
+    const payload = toAgentReadyDataPayload(
+      model, false, makeTarget(),
+      { ...baseSettings, schemaVersion: "v11" },
+      makeInventory(), makeDeps()
+    );
+    const record = payload.chunks
+      .find((c: any) => c.kind === "anatomy")
+      .items.find((item: any) => item.node_id === "1:1");
+    expect(record.stroke).toBe("#000000");
+    expect(record).not.toHaveProperty("stroke_type");
+    expect(record).not.toHaveProperty("stroke_gradient");
   });
 });

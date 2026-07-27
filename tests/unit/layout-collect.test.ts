@@ -6,7 +6,8 @@ beforeAll(() => {
   (globalThis as any).figma = { mixed: FIGMA_MIXED };
 });
 
-const { collectLayoutData, inferAlignment } = await import('../../src/plugin/sections/layout-section');
+const { collectLayoutData, collectNodeSizing, inferAlignment } = await import('../../src/plugin/sections/layout-section');
+const { mapFigmaSizing } = await import('../../src/plugin/sections/data-section');
 
 // Helper to create mock nodes with layout properties
 function createMockLayoutNode(overrides: Partial<{
@@ -483,5 +484,126 @@ describe('inferAlignment', () => {
     ];
     const result = inferAlignment(kids, parent, 'HORIZONTAL');
     expect(result.primary).not.toBe('SPACE_BETWEEN');
+  });
+});
+
+describe('collectNodeSizing', () => {
+  function sizingNode(overrides: Record<string, any> = {}): any {
+    return {
+      name: 'Node',
+      type: 'FRAME',
+      id: 'n-1',
+      layoutMode: 'NONE',
+      children: [],
+      parent: null,
+      ...overrides,
+    };
+  }
+
+  it('records a FILL/HUG child of an auto-layout parent', () => {
+    const child = sizingNode({
+      id: 'child-1',
+      layoutSizingHorizontal: 'FILL',
+      layoutSizingVertical: 'HUG',
+      layoutGrow: 1,
+    });
+    const root = sizingNode({ id: 'root-1', layoutMode: 'HORIZONTAL', children: [child] });
+    const result = collectNodeSizing(root);
+    expect(result).toContainEqual({ nodeId: 'child-1', w: 'FILL', h: 'HUG', grow: 1 });
+  });
+
+  it('records LEAF text nodes under an auto-layout parent', () => {
+    const label = sizingNode({
+      id: 'text-1',
+      type: 'TEXT',
+      layoutSizingHorizontal: 'FILL',
+      layoutSizingVertical: 'HUG',
+    });
+    delete (label as any).children;
+    const root = sizingNode({ id: 'root-2', layoutMode: 'VERTICAL', children: [label] });
+    const result = collectNodeSizing(root);
+    expect(result).toContainEqual({ nodeId: 'text-1', w: 'FILL', h: 'HUG' });
+  });
+
+  it('does not lose a FILL root whose own parent is the auto-layout frame', () => {
+    const root = sizingNode({
+      id: 'root-3',
+      layoutSizingHorizontal: 'FILL',
+      layoutSizingVertical: 'FIXED',
+      parent: { type: 'FRAME', layoutMode: 'VERTICAL' },
+    });
+    expect(collectNodeSizing(root)).toEqual([{ nodeId: 'root-3', w: 'FILL', h: 'FIXED' }]);
+  });
+
+  it('returns nothing for a node with no auto-layout involvement', () => {
+    const child = sizingNode({ id: 'child-2', layoutSizingHorizontal: 'FIXED' });
+    const root = sizingNode({ id: 'root-4', children: [child] });
+    expect(collectNodeSizing(root)).toEqual([]);
+  });
+
+  it('omits grow when it is 0', () => {
+    const child = sizingNode({ id: 'child-3', layoutSizingHorizontal: 'FIXED', layoutGrow: 0 });
+    const root = sizingNode({ id: 'root-5', layoutMode: 'HORIZONTAL', children: [child] });
+    const entry = collectNodeSizing(root).find((s) => s.nodeId === 'child-3');
+    expect(entry).toEqual({ nodeId: 'child-3', w: 'FIXED' });
+  });
+
+  it('honours skipNodeIds by skipping the whole subtree', () => {
+    const grandchild = sizingNode({ id: 'gc-1', layoutSizingHorizontal: 'FILL' });
+    const child = sizingNode({ id: 'child-4', layoutMode: 'VERTICAL', layoutSizingHorizontal: 'FILL', children: [grandchild] });
+    const root = sizingNode({ id: 'root-6', layoutMode: 'HORIZONTAL', children: [child] });
+    const ids = collectNodeSizing(root, new Set(['child-4'])).map((s) => s.nodeId);
+    expect(ids).not.toContain('child-4');
+    expect(ids).not.toContain('gc-1');
+  });
+
+  it('tolerates nodes that expose no layoutSizing properties at all', () => {
+    const child = sizingNode({ id: 'child-5' });
+    const root = sizingNode({ id: 'root-7', layoutMode: 'HORIZONTAL', children: [child] });
+    expect(collectNodeSizing(root)).toEqual([]);
+  });
+
+  it('maps collected sizing through mapFigmaSizing to the CSS vocabulary', () => {
+    const fill = sizingNode({ id: 'c-fill', layoutSizingHorizontal: 'FILL', layoutSizingVertical: 'HUG' });
+    const fixed = sizingNode({ id: 'c-fixed', layoutSizingHorizontal: 'FIXED', layoutSizingVertical: 'FIXED' });
+    const root = sizingNode({ id: 'root-8', layoutMode: 'HORIZONTAL', children: [fill, fixed] });
+    const byId = new Map(collectNodeSizing(root).map((s) => [s.nodeId, s]));
+    expect(mapFigmaSizing(byId.get('c-fill')!.w!)).toBe('fill');
+    expect(mapFigmaSizing(byId.get('c-fill')!.h!)).toBe('auto');
+    expect(mapFigmaSizing(byId.get('c-fixed')!.w!)).toBe('fixed');
+  });
+});
+
+describe('collectLayoutData – bound variables and wrap', () => {
+  it('captures bound-variable ids into varIds', () => {
+    const root = createMockLayoutNode({
+      id: 'var-root',
+      boundVariables: {
+        itemSpacing: { type: 'VARIABLE_ALIAS', id: 'VariableID:1' },
+        paddingLeft: { type: 'VARIABLE_ALIAS', id: 'VariableID:2' },
+      },
+    } as any);
+    const spec = collectLayoutData(root)[0]!;
+    expect(spec.varIds).toEqual({ itemSpacing: 'VariableID:1', paddingLeft: 'VariableID:2' });
+  });
+
+  it('leaves varIds undefined when the node has no boundVariables', () => {
+    const spec = collectLayoutData(createMockLayoutNode({ id: 'no-vars' }))[0]!;
+    expect(spec.varIds).toBeUndefined();
+  });
+
+  it('records counterAxisSpacing only when layoutWrap is WRAP', () => {
+    const wrapped = collectLayoutData(createMockLayoutNode({
+      id: 'wrap-1', layoutWrap: 'WRAP', counterAxisSpacing: 12, counterAxisAlignContent: 'SPACE_BETWEEN',
+    } as any))[0]!;
+    expect(wrapped.layoutWrap).toBe('WRAP');
+    expect(wrapped.counterAxisSpacing).toBe(12);
+    expect(wrapped.counterAxisAlignContent).toBe('SPACE_BETWEEN');
+
+    const noWrap = collectLayoutData(createMockLayoutNode({
+      id: 'wrap-2', layoutWrap: 'NO_WRAP', counterAxisSpacing: 12,
+    } as any))[0]!;
+    expect(noWrap.counterAxisSpacing).toBeUndefined();
+    expect(noWrap.counterAxisAlignContent).toBeUndefined();
   });
 });

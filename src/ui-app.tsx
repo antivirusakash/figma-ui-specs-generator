@@ -267,7 +267,7 @@ const App = () => {
 - When given a Figma spec (YAML from Specs plugin), follow the implementation instructions in the spec header exactly.
 - Use \`get_screenshot\` from the Figma MCP server to capture the design. Save to \`.figma/\` and reference it — don't re-fetch.
 - Read the YAML \`chunks\` for anatomy (structure), layout (flex/grid), and repeats (deduplicated instances).
-- Use \`resolved_tokens\` to map design token names to actual values (hex, font names).
+- Use \`resolved_tokens\` to map design token names to actual values (hex, font names); when \`token_aliases\` is present, use it to follow a semantic token to the primitive it aliases.
 - Match \`instance_of\` names to your icon library (Phosphor, Lucide, etc.) — check \`package.json\`.
 - **Placeholders**: If you cannot find a matching icon, SVG, image, or vector asset, use a placeholder (\`https://placehold.co/{width}x{height}\`) sized to the element's \`w\` and \`h\` from specs. Do NOT stop or ask — keep building.
 ${fwLine}

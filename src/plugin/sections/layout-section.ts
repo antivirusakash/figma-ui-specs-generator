@@ -1,7 +1,8 @@
 import { FONT_MEDIUM, FONT_REGULAR } from "../constants";
 import { log } from "../logger";
-import type { LayoutSpec, Settings, SpecTextRole, Theme } from "../types";
+import type { LayoutSpec, NodeSizing, Settings, SpecTextRole, Theme } from "../types";
 import { getLimit } from "../limits";
+import { formatAliasChain, readModeContext, resolveVariableById } from "../helpers/variable-resolver";
 type CreateTextFn = (
   text: string,
   size?: number,
@@ -27,6 +28,84 @@ type LayoutSectionDeps = {
   truncateText: (value: string, maxLength: number) => string;
 };
 
+
+/** Defensive readers: these auto-layout fields are absent on older API versions and node types. */
+function readString(node: SceneNode, key: string): string | undefined {
+  if (!(key in node)) return undefined;
+  const value = (node as any)[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function readNumber(node: SceneNode, key: string): number | undefined {
+  if (!(key in node)) return undefined;
+  const value = (node as any)[key];
+  return typeof value === "number" ? value : undefined;
+}
+
+function readBoolean(node: SceneNode, key: string): boolean | undefined {
+  if (!(key in node)) return undefined;
+  const value = (node as any)[key];
+  return typeof value === "boolean" ? value : undefined;
+}
+
+/** Bound-variable ids for spacing/padding, captured synchronously so collectLayoutData stays sync. */
+function collectLayoutVarIds(node: SceneNode): LayoutSpec["varIds"] {
+  const bound = (node as any).boundVariables as Record<string, unknown> | undefined;
+  if (!bound || typeof bound !== "object") return undefined;
+  const varIds: NonNullable<LayoutSpec["varIds"]> = {};
+  const keys: Array<keyof NonNullable<LayoutSpec["varIds"]>> = [
+    "itemSpacing",
+    "counterAxisSpacing",
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft"
+  ];
+  keys.forEach((key) => {
+    const entry = bound[key];
+    const alias = Array.isArray(entry) ? entry[0] : entry;
+    const id = (alias as VariableAlias | undefined)?.id;
+    if (typeof id === "string" && id) varIds[key] = id;
+  });
+  return Object.keys(varIds).length > 0 ? varIds : undefined;
+}
+
+/** Per-node sizing behaviour ("FIXED" | "HUG" | "FILL") for every node whose sizing is meaningful:
+ *  auto-layout frames themselves and every child (including leaves) of an auto-layout parent.
+ *  Read defensively — layoutSizingHorizontal/Vertical are absent on older/unsupported node types. */
+export function collectNodeSizing(root: SceneNode, skipNodeIds?: Set<string>): NodeSizing[] {
+  const sizing: NodeSizing[] = [];
+  const maxEntries = getLimit("MAX_ANATOMY_ELEMENTS");
+  const rootParent = root.parent;
+  const rootParentIsAutoLayout =
+    !!rootParent && "layoutMode" in rootParent && (rootParent as any).layoutMode !== "NONE";
+
+  const walk = (node: SceneNode, parentIsAutoLayout: boolean) => {
+    if (sizing.length >= maxEntries) return;
+    if (skipNodeIds?.has(node.id)) return;
+    const isAutoLayout = "layoutMode" in node && node.layoutMode !== "NONE";
+
+    if (parentIsAutoLayout || isAutoLayout) {
+      const w = readString(node, "layoutSizingHorizontal");
+      const h = readString(node, "layoutSizingVertical");
+      const grow = readNumber(node, "layoutGrow");
+      if (w || h || (grow !== undefined && grow > 0)) {
+        const entry: NodeSizing = { nodeId: node.id };
+        if (w) entry.w = w;
+        if (h) entry.h = h;
+        if (grow !== undefined && grow > 0) entry.grow = grow;
+        sizing.push(entry);
+      }
+    }
+
+    if ("children" in node && sizing.length < maxEntries) {
+      node.children.forEach((child) => walk(child, isAutoLayout));
+    }
+  };
+
+  walk(root, rootParentIsAutoLayout);
+  return sizing;
+}
 
 export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSpec[] {
   const data: LayoutSpec[] = [];
@@ -56,7 +135,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
       nameCounts.set(baseKey, count);
       const pathKey = count > 1 ? `${baseKey}[${count}]` : baseKey;
 
-      data.push({
+      const spec: LayoutSpec = {
         nodeId: node.id,
         name: node.name,
         type: node.type,
@@ -76,7 +155,36 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
         bounds: relativeBounds,
         gapLine,
         pathKey
-      });
+      };
+
+      const layoutWrap = readString(node, "layoutWrap");
+      if (layoutWrap) spec.layoutWrap = layoutWrap;
+      if (layoutWrap === "WRAP") {
+        const counterAxisSpacing = readNumber(node, "counterAxisSpacing");
+        if (counterAxisSpacing !== undefined) spec.counterAxisSpacing = counterAxisSpacing;
+        const alignContent = readString(node, "counterAxisAlignContent");
+        if (alignContent) spec.counterAxisAlignContent = alignContent;
+      }
+      const minWidth = readNumber(node, "minWidth");
+      if (minWidth !== undefined) spec.minWidth = minWidth;
+      const maxWidth = readNumber(node, "maxWidth");
+      if (maxWidth !== undefined) spec.maxWidth = maxWidth;
+      const minHeight = readNumber(node, "minHeight");
+      if (minHeight !== undefined) spec.minHeight = minHeight;
+      const maxHeight = readNumber(node, "maxHeight");
+      if (maxHeight !== undefined) spec.maxHeight = maxHeight;
+      const layoutPositioning = readString(node, "layoutPositioning");
+      if (layoutPositioning && layoutPositioning !== "AUTO") spec.layoutPositioning = layoutPositioning;
+      const strokesIncludedInLayout = readBoolean(node, "strokesIncludedInLayout");
+      if (strokesIncludedInLayout) spec.strokesIncludedInLayout = true;
+      const varIds = collectLayoutVarIds(node);
+      if (varIds) {
+        spec.varIds = varIds;
+        const varModes = readModeContext(node);
+        if (varModes) spec.varModes = varModes;
+      }
+
+      data.push(spec);
     } else if (
       "children" in node && node.type === "FRAME" &&
       (!("layoutMode" in node) || node.layoutMode === "NONE")
@@ -256,6 +364,14 @@ export async function createLayoutSection(
     artworkOverlays: specsForArtwork.length
   });
 
+  // Resolve the variables bound to gap/padding so the table shows the token, not just the final value.
+  const specTokens = new Map<string, string>();
+  for (const spec of displaySpecs) {
+    const lines = await resolveSpecTokenLines(spec, settings);
+    if (lines.length > 0) specTokens.set(spec.nodeId, lines.join("\n"));
+  }
+  const showTokens = specTokens.size > 0;
+
   const horizontalCount = specs.filter((spec) => spec.layoutMode === "HORIZONTAL").length;
   const verticalCount = specs.filter((spec) => spec.layoutMode === "VERTICAL").length;
   const averageGap = specs.reduce((sum, spec) => sum + Math.max(0, spec.itemSpacing), 0) / Math.max(1, specs.length);
@@ -327,7 +443,7 @@ export async function createLayoutSection(
   const layoutSectionContentWidth = settings.sectionWidth
     ? settings.sectionWidth - 40
     : (settings.multiColumn || compact) ? 500 : 800;
-  const rowWidths = layoutSectionContentWidth < 420
+  const baseWidths = layoutSectionContentWidth < 420
     ? [16, 80, 28, 38, 64, 44]
     : layoutSectionContentWidth < 700
     ? [18, 96, 32, 44, 76, 50]
@@ -336,9 +452,19 @@ export async function createLayoutSection(
     : [20, Math.round(layoutSectionContentWidth * 0.20), 36,
        Math.round(layoutSectionContentWidth * 0.12),
        Math.round(layoutSectionContentWidth * 0.14), 60];
-  cards.appendChild(createLayoutTableHeader(theme, rowWidths, deps));
+  // Tokens column: wide enough that a full variable path wraps instead of clipping.
+  const tokensWidth = layoutSectionContentWidth < 420
+    ? 96
+    : layoutSectionContentWidth < 700
+    ? 128
+    : layoutSectionContentWidth < 1100
+    ? 200
+    : Math.round(layoutSectionContentWidth * 0.22);
+  const rowWidths = showTokens ? [...baseWidths, tokensWidth] : baseWidths;
+  cards.appendChild(createLayoutTableHeader(theme, rowWidths, deps, showTokens));
   displaySpecs.forEach((spec, index) => {
-    cards.appendChild(createLayoutSpecRow(spec, index, settings, theme, rowWidths, deps));
+    const tokenText = showTokens ? specTokens.get(spec.nodeId) ?? "—" : null;
+    cards.appendChild(createLayoutSpecRow(spec, index, settings, theme, rowWidths, deps, tokenText));
   });
   metricsPanel.appendChild(cards);
   body.appendChild(metricsPanel);
@@ -383,8 +509,51 @@ function createLayoutMetricPill(label: string, value: string, theme: Theme, deps
   return pill;
 }
 
-function createLayoutTableHeader(theme: Theme, widths: number[], deps: LayoutSectionDeps) {
-  return createLayoutRowCells(["#", "Node", "Dir", "Gap", "Pad", "Size"], widths, theme, true, deps);
+function createLayoutTableHeader(
+  theme: Theme,
+  widths: number[],
+  deps: LayoutSectionDeps,
+  showTokens = false
+) {
+  const labels = ["#", "Node", "Dir", "Gap", "Pad", "Size"];
+  if (showTokens) labels.push("Tokens");
+  return createLayoutRowCells(labels, widths, theme, true, deps);
+}
+
+/** Label prefixes for the Tokens column, in render order. */
+const LAYOUT_TOKEN_LABELS: Array<[keyof NonNullable<LayoutSpec["varIds"]>, string]> = [
+  ["itemSpacing", "gap"],
+  ["counterAxisSpacing", "gap-y"],
+  ["paddingTop", "pt"],
+  ["paddingRight", "pr"],
+  ["paddingBottom", "pb"],
+  ["paddingLeft", "pl"]
+];
+
+/** Resolve each bound spacing/padding variable to "gap: Spacing/Semantic/md -> 16px".
+ *  Variable paths are never truncated below TRUNC_VARIABLE_PATH (contract section E). */
+async function resolveSpecTokenLines(spec: LayoutSpec, settings: Settings): Promise<string[]> {
+  const varIds = spec.varIds;
+  if (!varIds) return [];
+  const uniformPadding =
+    !!varIds.paddingTop &&
+    varIds.paddingTop === varIds.paddingRight &&
+    varIds.paddingTop === varIds.paddingBottom &&
+    varIds.paddingTop === varIds.paddingLeft;
+  const maxLength = getLimit("TRUNC_VARIABLE_PATH");
+  const lines: string[] = [];
+  for (const [key, label] of LAYOUT_TOKEN_LABELS) {
+    const id = varIds[key];
+    if (!id) continue;
+    const isPadding = key !== "itemSpacing" && key !== "counterAxisSpacing";
+    if (uniformPadding && isPadding && key !== "paddingTop") continue;
+    const resolved = await resolveVariableById(id, settings, spec.varModes);
+    if (!resolved) continue;
+    const prefix = uniformPadding && key === "paddingTop" ? "pad" : label;
+    const chain = formatAliasChain(resolved);
+    lines.push(`${prefix}: ${chain.length > maxLength ? chain.slice(0, maxLength) : chain}`);
+  }
+  return lines;
 }
 
 function createLayoutSpecRow(
@@ -393,7 +562,8 @@ function createLayoutSpecRow(
   settings: Settings,
   theme: Theme,
   widths: number[],
-  deps: LayoutSectionDeps
+  deps: LayoutSectionDeps,
+  tokenText: string | null = null
 ) {
   const direction = spec.layoutMode === "HORIZONTAL" ? "Row" : "Col";
   const dirLabel = spec.inferred ? `${direction}*` : direction;
@@ -406,15 +576,21 @@ function createLayoutSpecRow(
   const nameMax = cw < 420 ? 18 : cw < 700 ? 22 : cw < 1100 ? 28 : 45;
 
   const wrapCols = new Set([4]);
+  const values = [
+    String(index + 1),
+    deps.truncateText(spec.name, nameMax),
+    dirLabel,
+    gap,
+    deps.truncateText(padding, 60),
+    sizing
+  ];
+  if (tokenText !== null) {
+    // Variable paths must wrap, never clip (contract section E).
+    values.push(tokenText);
+    wrapCols.add(values.length - 1);
+  }
   return createLayoutRowCells(
-    [
-      String(index + 1),
-      deps.truncateText(spec.name, nameMax),
-      dirLabel,
-      gap,
-      deps.truncateText(padding, 60),
-      sizing
-    ],
+    values,
     widths,
     theme,
     false,

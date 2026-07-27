@@ -18,6 +18,7 @@ import {
 } from "./plugin/sections/data-section";
 import {
   collectLayoutData as collectLayoutDataModule,
+  collectNodeSizing as collectNodeSizingModule,
   createLayoutSection as createLayoutSectionModule
 } from "./plugin/sections/layout-section";
 import { createInventorySection as createInventorySectionModule } from "./plugin/sections/inventory-section";
@@ -42,6 +43,7 @@ import type {
   DataModel,
   Framework,
   LayoutSpec,
+  NodeSizing,
   Settings,
   SpecTextRole,
   Theme,
@@ -53,6 +55,7 @@ import { formatColor, formatSpacing, solidFill, truncateText } from "./plugin/he
 import { clearRuntimeLimitOverrides, getLimit, LIMITS, setRuntimeLimitOverrides } from "./plugin/limits";
 import { analyzeNodeComplexity, resolveRuntimeLimitOverrides } from "./plugin/helpers/complexity";
 import { collectAttributes } from "./plugin/helpers/attributes";
+import { clearVariableCache } from "./plugin/helpers/variable-resolver";
 import {
   collectAnatomyElements,
   getMainComponentSafe,
@@ -166,16 +169,32 @@ const deps = {
 function buildAnatomyTree(elements: AnatomyElement[]): string {
   const lines: string[] = [];
   for (const el of elements) {
-    const depth = el.pathKey ? el.pathKey.split(" / ").length - 1 : 0;
+    const depth = el.depth ?? 0;
     const indent = "  ".repeat(depth);
     let line = `${indent}- ${el.name} (${el.type})`;
     const details: string[] = [];
     if (el.instanceOf) details.push(`instance of ${el.instanceOf}`);
+    if (el.instanceVariant) details.push(`variant: ${el.instanceVariant}`);
     if (el.textContent) details.push(`"${truncateText(el.textContent, LIMITS.CANVAS_ANATOMY_TEXT_TRUNC)}"`);
     if (details.length > 0) line += ` — ${details.join(", ")}`;
     lines.push(line);
   }
   return lines.join("\n");
+}
+
+/** Overwrite the parent-derived hug/fixed guess with each node's own layoutSizing values.
+ *  Runs as a separate pass after the layout merge: leaves have no LayoutSpec and would
+ *  otherwise never receive sizing at all. */
+function applyNodeSizing(elements: AnatomyElement[], sizing: NodeSizing[]) {
+  if (sizing.length === 0) return;
+  const sizingMap = new Map(sizing.map((s) => [s.nodeId, s]));
+  elements.forEach((el) => {
+    const own = el.nodeId ? sizingMap.get(el.nodeId) : undefined;
+    if (!own) return;
+    if (own.w) el.layoutWSizing = own.w;
+    if (own.h) el.layoutHSizing = own.h;
+    if (own.grow) el.layoutGrow = own.grow;
+  });
 }
 
 function getFrameworkInstructions(framework: Framework): string {
@@ -267,7 +286,7 @@ ${figmaUrl}
 4. Check the project's working directory or \`package.json\` for the icon library in use (e.g. Phosphor, Lucide, Heroicons). Use matching icons from that library based on the \`instance_of\` names in the anatomy (e.g. \`instance_of: ForkKnife\` → use ForkKnife from the detected library).
 5. ${frameworkStep}
 6. Build the component exactly as specified. Match the structure, styles (fills, strokes, fonts), and layout (direction, gap, padding).
-7. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names).
+7. Use resolved_tokens to map token names to actual values (e.g. hex colors, font names); when token_aliases is present, use it to follow a semantic token to the primitive it aliases.
 8. Keep it minimal — only implement what the specs describe, nothing more.
 ${qaStep}
 
@@ -306,6 +325,7 @@ async function handleCopyAiSpecs(settings: Settings) {
 
   try {
     applyRuntimeLimitsForTarget(target);
+    clearVariableCache();
     await loadFonts();
 
     const inventory = new Inventory();
@@ -321,6 +341,7 @@ async function handleCopyAiSpecs(settings: Settings) {
     const copyIsV13 = copySettings.aiCompactMode && (copySettings.schemaVersion === "v13" || copySettings.schemaVersion === "v14");
     const copyComponentDef = copyIsV13 ? await collectComponentDefinition(target, inventory, copySettings) : null;
     const layoutData = collectLayoutData(target, dedupedNodeIds);
+    const nodeSizing = collectNodeSizing(target, dedupedNodeIds);
 
     // Merge layout data into anatomy elements
     if (layoutData.length > 0) {
@@ -333,6 +354,7 @@ async function handleCopyAiSpecs(settings: Settings) {
           el.layoutAlignItems = ls.counterAxisAlignItems;
           el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
           el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
+          if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
           if (ls.clipsContent) el.layoutClips = true;
           if (ls.inferred) el.layoutInferred = true;
         }
@@ -353,6 +375,8 @@ async function handleCopyAiSpecs(settings: Settings) {
         }
       });
     }
+    // Node-own sizing wins over the parent-derived values above.
+    applyNodeSizing(anatomyElements, nodeSizing);
 
     const dataModel: DataModel = {
       anatomy: anatomyElements,
@@ -431,6 +455,7 @@ async function generateSpecs(settings: Settings) {
   let specsFrame: FrameNode | null = null;
   try {
     applyRuntimeLimitsForTarget(target);
+    clearVariableCache();
     await loadFonts();
 
     const inventory = new Inventory();
@@ -563,6 +588,7 @@ async function generateSpecs(settings: Settings) {
     }
 
     const layoutData = settings.layout || settings.data ? collectLayoutData(target, dedupedNodeIds) : [];
+    const nodeSizing = settings.layout || settings.data ? collectNodeSizing(target, dedupedNodeIds) : [];
     if (layoutData.length > 0) {
       log("Layout specs collected", layoutData.length);
     }
@@ -576,6 +602,7 @@ async function generateSpecs(settings: Settings) {
           el.layoutAlignItems = ls.counterAxisAlignItems;
           el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
           el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
+          if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
           if (ls.clipsContent) el.layoutClips = true;
           if (ls.inferred) el.layoutInferred = true;
         }
@@ -596,6 +623,10 @@ async function generateSpecs(settings: Settings) {
           });
         }
       });
+    }
+    if (settings.data) {
+      // Node-own sizing wins over the parent-derived values above.
+      applyNodeSizing(dataModel.anatomy, nodeSizing);
     }
     let layoutSection: FrameNode | null = null;
     if (settings.layout) {
@@ -933,6 +964,10 @@ function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): LayoutSp
   return collectLayoutDataModule(root, skipNodeIds);
 }
 
+function collectNodeSizing(root: SceneNode, skipNodeIds?: Set<string>): NodeSizing[] {
+  return collectNodeSizingModule(root, skipNodeIds);
+}
+
 async function createLayoutSection(
   target: SceneNode,
   specs: LayoutSpec[],
@@ -982,12 +1017,17 @@ async function createCompleteVariantSections(
   if (!context) return [];
   const { componentSet, baseComponent } = context;
 
+  let baseElementKeys = new Set<string>();
+  let baseLayoutKeys = new Set<string>();
   const baseInstance = baseComponent.createInstance();
-  const { elements: baseElements } = await collectAnatomyElements(baseInstance, inventory, settings);
-  const baseElementKeys = new Set(baseElements.map(buildElementKey));
-  const baseLayouts = collectLayoutData(baseInstance);
-  const baseLayoutKeys = new Set(baseLayouts.map(buildLayoutKey));
-  baseInstance.remove();
+  try {
+    const { elements: baseElements } = await collectAnatomyElements(baseInstance, inventory, settings);
+    baseElementKeys = new Set(baseElements.map(buildElementKey));
+    const baseLayouts = collectLayoutData(baseInstance);
+    baseLayoutKeys = new Set(baseLayouts.map(buildLayoutKey));
+  } finally {
+    baseInstance.remove();
+  }
 
   const sections: FrameNode[] = [];
   const allVariants = componentSet.children.filter(
@@ -998,35 +1038,38 @@ async function createCompleteVariantSections(
   for (const variant of variants) {
     if (variant.id === baseComponent.id) continue;
     const instance = variant.createInstance();
-    const { elements } = await collectAnatomyElements(instance, inventory, settings);
-    const newElements = elements.filter((element) => !baseElementKeys.has(buildElementKey(element)));
-    if (newElements.length > 0) {
-      const anatomySection = await createAnatomySection(
-        instance,
-        newElements,
-        settings,
-        theme,
-        `Complete Anatomy · ${variant.name}`
-      );
-      sections.push(anatomySection);
-    }
-
-    if (settings.layout) {
-      const layoutSpecs = collectLayoutData(instance);
-      const newLayouts = layoutSpecs.filter((spec) => !baseLayoutKeys.has(buildLayoutKey(spec)));
-      if (newLayouts.length > 0) {
-        const layoutSection = await createLayoutSection(
+    try {
+      const { elements } = await collectAnatomyElements(instance, inventory, settings);
+      const newElements = elements.filter((element) => !baseElementKeys.has(buildElementKey(element)));
+      if (newElements.length > 0) {
+        const anatomySection = await createAnatomySection(
           instance,
-          newLayouts,
-          settings.showOuterLayout,
-          theme,
+          newElements,
           settings,
-          `Complete Layout · ${variant.name}`
+          theme,
+          `Complete Anatomy · ${variant.name}`
         );
-        sections.push(layoutSection);
+        sections.push(anatomySection);
       }
+
+      if (settings.layout) {
+        const layoutSpecs = collectLayoutData(instance);
+        const newLayouts = layoutSpecs.filter((spec) => !baseLayoutKeys.has(buildLayoutKey(spec)));
+        if (newLayouts.length > 0) {
+          const layoutSection = await createLayoutSection(
+            instance,
+            newLayouts,
+            settings.showOuterLayout,
+            theme,
+            settings,
+            `Complete Layout · ${variant.name}`
+          );
+          sections.push(layoutSection);
+        }
+      }
+    } finally {
+      instance.remove();
     }
-    instance.remove();
   }
 
   return sections;
@@ -1103,6 +1146,7 @@ async function createNestedComponentSections(
     }
 
     const layoutData = settings.layout || settings.data ? collectLayoutData(instance) : [];
+    const nodeSizing = settings.layout || settings.data ? collectNodeSizing(instance) : [];
 
     if (settings.layout) {
       const layout = await createLayoutSection(instance, layoutData, settings.showOuterLayout, theme, settings, `Layout · ${instance.name}`);
@@ -1121,11 +1165,14 @@ async function createNestedComponentSections(
             el.layoutAlignItems = ls.counterAxisAlignItems;
             el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
             el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
+            if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
             if (ls.clipsContent) el.layoutClips = true;
             if (ls.inferred) el.layoutInferred = true;
           }
         });
       }
+      // Node-own sizing wins over the parent-derived values above.
+      applyNodeSizing(anatomyElements, nodeSizing);
       const model: DataModel = {
         anatomy: anatomyElements,
         properties: propertySpecs

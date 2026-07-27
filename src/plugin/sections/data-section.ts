@@ -69,6 +69,16 @@ export function simplifyPadding(value: string): string | number {
   return value;
 }
 
+/** True when a formatted numeric value ("0", "0px", "0%") is zero. Non-numeric values are never zero. */
+function isZeroValue(value: unknown): boolean {
+  return parseFloat(String(value)) === 0;
+}
+
+/** Normalize an enum-ish attribute value for default comparison ("pass-through" → "PASS_THROUGH"). */
+function normalizeEnum(value: unknown): string {
+  return String(value).trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
 function chunkArray<T>(items: T[], size: number) {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -150,9 +160,19 @@ export function toAgentReadyDataPayload(
   const isV14 = compact && settings.schemaVersion === "v14";
   const isV13 = compact && (settings.schemaVersion === "v13" || isV14);
   const isV12 = compact && (settings.schemaVersion === "v12" || isV13);
+  // variant_diffs in a component_definition chunk are keyed by path_key. The chunk's own
+  // node_ids map (path_key → node id) already makes those keys resolvable against each
+  // record's node_id, so path_key is only restored when that map is absent — emitting both
+  // would ship the same string twice per element and undo the v12 size optimisation.
+  const componentDefNodeIds = dataModel.componentDefinition?.nodeIds;
+  const keepPathKeys =
+    isV13 &&
+    Boolean(dataModel.componentDefinition) &&
+    !(componentDefNodeIds && Object.keys(componentDefNodeIds).length > 0);
   const maxAnatomy = getLimit("MAX_ANATOMY_RECORDS");
   const maxProperties = getLimit("MAX_PROPERTY_RECORDS");
   const resolvedTokens = new Map<string, string>();
+  const tokenAliases = new Map<string, string[]>();
 
   // Build set of repeat node IDs early (anatomy chunk filtering — all versions)
   const repeatNodeIds = new Set<string>();
@@ -166,13 +186,16 @@ export function toAgentReadyDataPayload(
     const record: any = {};
     if (!opts?.skipIdentity) {
       record.node_id = element.nodeId ?? "";
-      if (!isV12) {
+      if (!isV12 || keepPathKeys) {
         record.path_key = element.pathKey ?? "";
       }
       record.name = deps.truncateText(element.name, LIMITS.TRUNC_ELEMENT_NAME);
       record.type = element.type;
       if (element.instanceOf) {
         record.instance_of = deps.truncateText(element.instanceOf, LIMITS.TRUNC_INSTANCE_OF);
+      }
+      if (element.instanceVariant) {
+        record.instance_variant = deps.truncateText(element.instanceVariant, LIMITS.TRUNC_INSTANCE_OF);
       }
     }
 
@@ -192,25 +215,47 @@ export function toAgentReadyDataPayload(
     const findAttr = (key: string) =>
       element.attributes.find(a => a.key === key);
 
+    // Alias chains are a non-breaking sibling map of resolved_tokens — never truncated.
+    element.attributes.forEach((attribute) => {
+      const chain = attribute.aliasChain;
+      if (!chain || chain.length < 2) return;
+      const root = chain[0];
+      if (!root || tokenAliases.has(root)) return;
+      tokenAliases.set(root, chain.slice(1));
+    });
+
+    // White fills on instances are reported. The old skipWhiteFill heuristic dropped
+    // them on any instance carrying text, which erased genuine white cards and buttons
+    // sitting on a dark surface — a guess that lost real design data more often than
+    // it suppressed a wrapper's artboard background.
     const fill = findAttr("Fill") ?? findAttr("Text fill");
-    const skipWhiteFill = fill
-      && element.type === "INSTANCE"
-      && String(fill.rawValue ?? fill.value) === "#FFFFFF"
-      && fill.format === "HARDCODED"
-      && (element.childrenText?.length ?? 0) > 0;
-    if (fill && !skipWhiteFill) {
+    if (fill) {
       record.fill = fill.rawValue ?? fill.value;
       if (fill.format !== "HARDCODED") {
-        record.fill_ref = deps.truncateText(fill.value, LIMITS.TRUNC_FILL_REF);
+        record.fill_ref = deps.truncateText(
+          fill.value,
+          fill.format === "VARIABLE" ? LIMITS.TRUNC_VARIABLE_PATH : LIMITS.TRUNC_FILL_REF
+        );
         record.fill_ref_type = fill.format === "STYLE" ? "color_style"
           : fill.format === "VARIABLE" ? "variable"
           : fill.format === "TOKEN" ? "token"
           : fill.format;
         if (fill.rawValue) resolvedTokens.set(fill.value, String(fill.rawValue));
       }
+      if (fill.fillType && fill.fillType !== "SOLID") {
+        record.fill_type = fill.fillType;
+      }
+      if (fill.gradient) {
+        if (!record.fill_type) record.fill_type = "GRADIENT_LINEAR";
+        record.gradient = {
+          angle: Math.round(fill.gradient.angle),
+          stops: fill.gradient.stops.map(stop => ({ pos: stop.pos, color: stop.color }))
+        };
+      }
       if (fill.imageHash) {
         record.fill_type = "IMAGE";
         record.image_hash = fill.imageHash;
+        if (fill.scaleMode) record.scale_mode = fill.scaleMode;
       }
       if (fill.fillSegments && fill.fillSegments.length > 0) {
         record.fill_segments = fill.fillSegments.map(seg => ({
@@ -233,6 +278,28 @@ export function toAgentReadyDataPayload(
     }
     const textAlign = findAttr("Text align");
     if (textAlign) record.text_align = textAlign.value;
+    const letterSpacing = findAttr("Letter spacing");
+    if (letterSpacing) {
+      const letterSpacingValue = letterSpacing.rawValue ?? letterSpacing.value;
+      if (!isZeroValue(letterSpacingValue)) record.letter_spacing = letterSpacingValue;
+    }
+    const textCase = findAttr("Text case");
+    if (textCase && normalizeEnum(textCase.rawValue ?? textCase.value) !== "ORIGINAL") {
+      record.text_case = textCase.value;
+    }
+    const textDecoration = findAttr("Text decoration");
+    if (textDecoration && normalizeEnum(textDecoration.rawValue ?? textDecoration.value) !== "NONE") {
+      record.text_decoration = textDecoration.value;
+    }
+    const paragraphSpacing = findAttr("Paragraph spacing");
+    if (paragraphSpacing) {
+      const paragraphSpacingValue = paragraphSpacing.rawValue ?? paragraphSpacing.value;
+      if (!isZeroValue(paragraphSpacingValue)) record.paragraph_spacing = paragraphSpacingValue;
+    }
+    const maxLines = findAttr("Max lines");
+    if (maxLines) record.max_lines = maxLines.rawValue ?? maxLines.value;
+    const textAutoResize = findAttr("Text auto resize");
+    if (textAutoResize) record.text_autoresize = textAutoResize.value;
     const radius = findAttr("Corner radius");
     if (radius && radius.rawValue !== 0) {
       record.radius = radius.rawValue ?? radius.value;
@@ -252,14 +319,41 @@ export function toAgentReadyDataPayload(
     if (stroke) {
       record.stroke = stroke.rawValue ?? stroke.value;
       if (stroke.format !== "HARDCODED") {
-        record.stroke_ref = deps.truncateText(stroke.value, LIMITS.TRUNC_STROKE_REF);
+        record.stroke_ref = deps.truncateText(
+          stroke.value,
+          stroke.format === "VARIABLE" ? LIMITS.TRUNC_VARIABLE_PATH : LIMITS.TRUNC_STROKE_REF
+        );
         if (stroke.rawValue) resolvedTokens.set(stroke.value, String(stroke.rawValue));
       }
+      // Mirror the fill branch: a gradient stroke must be machine-readable, not only a CSS string.
+      if (stroke.fillType && stroke.fillType !== "SOLID") {
+        record.stroke_type = stroke.fillType;
+      }
+      if (stroke.gradient) {
+        if (!record.stroke_type) record.stroke_type = "GRADIENT_LINEAR";
+        record.stroke_gradient = {
+          angle: Math.round(stroke.gradient.angle),
+          stops: stroke.gradient.stops.map(stop => ({ pos: stop.pos, color: stop.color }))
+        };
+      }
+    }
+    // Always emit the width alongside the colour — without it agents default every border to 1px.
+    const strokeWidth = findAttr("Stroke width");
+    if (strokeWidth && record.stroke) {
+      record.stroke_width = strokeWidth.rawValue ?? strokeWidth.value;
     }
     const strokeAlign = findAttr("Stroke align");
     if (strokeAlign && record.stroke) record.stroke_align = strokeAlign.value;
     const strokeSides = findAttr("Stroke sides");
     if (strokeSides) record.stroke_sides = strokeSides.value;
+    const dash = findAttr("Dash pattern");
+    if (dash) {
+      const dashValue = dash.rawValue ?? dash.value;
+      const dashKind = normalizeEnum(dashValue);
+      if (dashKind !== "SOLID" && dashKind !== "NONE" && dashKind !== "") {
+        record.dash = dashValue;
+      }
+    }
     const shadow = findAttr("Shadow");
     if (shadow) record.shadow = shadow.value;
     const innerShadow = findAttr("Inner shadow");
@@ -289,6 +383,30 @@ export function toAgentReadyDataPayload(
     if (opacity && opacity.rawValue !== 1 && opacity.rawValue !== "100%") {
       record.opacity = opacity.rawValue ?? opacity.value;
     }
+    const rotation = findAttr("Rotation");
+    if (rotation) {
+      const rotationValue = rotation.rawValue ?? rotation.value;
+      if (!isZeroValue(rotationValue)) record.rotation = rotationValue;
+    }
+    const blendMode = findAttr("Blend mode");
+    if (blendMode) {
+      const blendModeKind = normalizeEnum(blendMode.rawValue ?? blendMode.value);
+      if (blendModeKind !== "NORMAL" && blendModeKind !== "PASS_THROUGH") {
+        record.blend_mode = blendMode.value;
+      }
+    }
+    const mask = findAttr("Mask");
+    if (mask && normalizeEnum(mask.rawValue ?? mask.value) !== "FALSE") {
+      record.is_mask = true;
+    }
+    const minWidth = findAttr("Min width");
+    if (minWidth) record.min_w = minWidth.rawValue ?? minWidth.value;
+    const maxWidth = findAttr("Max width");
+    if (maxWidth) record.max_w = maxWidth.rawValue ?? maxWidth.value;
+    const minHeight = findAttr("Min height");
+    if (minHeight) record.min_h = minHeight.rawValue ?? minHeight.value;
+    const maxHeight = findAttr("Max height");
+    if (maxHeight) record.max_h = maxHeight.rawValue ?? maxHeight.value;
 
     if (element.layoutDirection) {
       record.direction = element.layoutDirection === "HORIZONTAL" ? "row" : "column";
@@ -297,6 +415,8 @@ export function toAgentReadyDataPayload(
     if (element.layoutAlignItems) record.align = mapFigmaAlign(element.layoutAlignItems);
     if (element.layoutWSizing) record.w_sizing = mapFigmaSizing(element.layoutWSizing);
     if (element.layoutHSizing) record.h_sizing = mapFigmaSizing(element.layoutHSizing);
+    if (element.layoutGrow) record.grow = element.layoutGrow;
+    if (element.layoutWrap === "WRAP") record.wrap = true;
     if (element.layoutClips) record.clips = true;
     if (element.layoutInferred) record.inferred = true;
 
@@ -323,7 +443,11 @@ export function toAgentReadyDataPayload(
       record.attributes = element.attributes.map((attribute) => {
         const attr: any = {
           key: attribute.key ?? attribute.propertyName,
-          value: deps.truncateText(attribute.value, LIMITS.TRUNC_ATTRIBUTE_VALUE),
+          // A VARIABLE attribute value IS a variable path — never cut it to TRUNC_ATTRIBUTE_VALUE.
+          value: deps.truncateText(
+            attribute.value,
+            attribute.format === "VARIABLE" ? LIMITS.TRUNC_VARIABLE_PATH : LIMITS.TRUNC_ATTRIBUTE_VALUE
+          ),
           format: attribute.format
         };
         if (attribute.systemId) attr.system_id = attribute.systemId;
@@ -405,8 +529,8 @@ export function toAgentReadyDataPayload(
       kind: "repeats",
       template_node_id: tpl.templateNodeId,
     };
-    // O2: omit template_path_key in v12
-    if (!isV12) {
+    // O2: omit template_path_key in v12 (kept when variant_diffs reference path keys)
+    if (!isV12 || keepPathKeys) {
       chunk.template_path_key = tpl.templatePathKey;
     }
     chunk.instance_of = tpl.instanceOf;
@@ -426,8 +550,8 @@ export function toAgentReadyDataPayload(
       const item: any = {
         node_id: row.nodeId,
       };
-      // O2: omit path_key in v12
-      if (!isV12) {
+      // O2: omit path_key in v12 (kept when variant_diffs reference path keys)
+      if (!isV12 || keepPathKeys) {
         item.path_key = row.pathKey;
       }
       // O3: width dedup for all versions, indexed encoding in v12+
@@ -477,6 +601,7 @@ export function toAgentReadyDataPayload(
       kind: "component_definition",
       component_set: def.componentSetName,
       base_node_id: def.baseNodeId,
+      ...(def.nodeIds && Object.keys(def.nodeIds).length > 0 ? { node_ids: def.nodeIds } : {}),
       properties: def.properties.map(p => {
         const prop: any = { name: p.name, type: p.type, default: p.default };
         if (p.options && p.options.length > 0) prop.options = p.options;
@@ -585,6 +710,9 @@ export function toAgentReadyDataPayload(
     resolved_tokens: resolvedTokens.size > 0
       ? (() => { const obj: Record<string, string> = {}; resolvedTokens.forEach((v, k) => { obj[k] = v; }); return obj; })()
       : undefined,
+    token_aliases: tokenAliases.size > 0
+      ? (() => { const obj: Record<string, string[]> = {}; tokenAliases.forEach((v, k) => { obj[k] = v; }); return obj; })()
+      : undefined,
     text_index: textIndex,
     chunks
   };
@@ -602,19 +730,55 @@ export function stripNulls(obj: any): any {
   return obj;
 }
 
+/** Every character that is illegal raw in a YAML scalar: C0 and C1 controls (so \n, \r, \t,
+ *  the U+000B Word "Shift+Enter" break and U+0085 NEL) plus U+2028/U+2029, which Figma and
+ *  InDesign use for in-paragraph line breaks. One of these unquoted breaks the whole document. */
+const YAML_UNPRINTABLE = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/;
+/** YAML 1.1 booleans and nulls. "No", "ON" and "~" are retyped by real parsers. */
+const YAML_BOOL_NULL = /^(?:y|n|yes|no|true|false|on|off|null|~)$/i;
+/** YAML core int/float grammar, plus the 0x/0o/0b and .inf/.nan forms. */
+const YAML_NUMBER_LIKE =
+  /^(?:[-+]?(?:\d+|\d*\.\d*)(?:[eE][-+]?\d+)?|[-+]?0[xX][\dA-Fa-f]+|[-+]?0[oO][0-7]+|[-+]?0[bB][01]+|[-+]?\.(?:inf|Inf|INF)|\.(?:nan|NaN|NAN))$/;
+
 export function yamlNeedsQuoting(value: string): boolean {
   if (value.length === 0) return true;
   if (value !== value.trim()) return true;
-  if (/^[\d.]+$/.test(value) || /^0x[\da-fA-F]+$/.test(value)) return true;
-  if (value === "true" || value === "false" || value === "null" || value === "yes" || value === "no") return true;
-  if (/[:#{\[]/.test(value)) return true;
+  if (YAML_UNPRINTABLE.test(value)) return true;
+  if (YAML_NUMBER_LIKE.test(value)) return true;
+  if (YAML_BOOL_NULL.test(value)) return true;
+  if (/[:#{}\[\],]/.test(value)) return true;
+  // YAML indicator characters are only special in first position.
+  if (/^[-?&*!|>%@`'"]/.test(value)) return true;
   return false;
+}
+
+/** Double-quoted YAML scalar. Escapes losslessly so multi-line strings stay on one line. */
+function yamlQuote(str: string): string {
+  const escaped = str
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t")
+    // Catch-all: anything else unprintable is illegal even inside a double-quoted scalar.
+    .replace(new RegExp(YAML_UNPRINTABLE.source, "g"), (char) => {
+      const code = char.charCodeAt(0);
+      return code <= 0xff
+        ? `\\x${code.toString(16).padStart(2, "0")}`
+        : `\\u${code.toString(16).padStart(4, "0")}`;
+    });
+  return `"${escaped}"`;
 }
 
 function yamlScalar(value: unknown): string {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   const str = String(value);
-  return yamlNeedsQuoting(str) ? `"${str.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : str;
+  return yamlNeedsQuoting(str) ? yamlQuote(str) : str;
+}
+
+/** Mapping keys need the same quoting as scalars — a layer named "Icon: left" breaks the document. */
+function yamlKey(key: string): string {
+  return yamlNeedsQuoting(key) ? yamlQuote(key) : key;
 }
 
 export function toYaml(data: unknown, indent = 0): string {
@@ -647,18 +811,22 @@ export function toYaml(data: unknown, indent = 0): string {
         const firstValStr = firstVal && typeof firstVal === "object"
           ? `\n${toYaml(firstVal, indent + 4)}`
           : ` ${yamlScalar(firstVal)}`;
-        lines.push(`${pad}- ${firstKey}:${firstValStr}`);
+        lines.push(`${pad}- ${yamlKey(firstKey)}:${firstValStr}`);
         for (let i = 1; i < entries.length; i++) {
           const [key, val] = entries[i]!;
           if (val && typeof val === "object") {
-            lines.push(`${pad}  ${key}:`);
+            lines.push(`${pad}  ${yamlKey(key)}:`);
             lines.push(toYaml(val, indent + 4));
           } else {
-            lines.push(`${pad}  ${key}: ${yamlScalar(val)}`);
+            lines.push(`${pad}  ${yamlKey(key)}: ${yamlScalar(val)}`);
           }
         }
       } else {
-        lines.push(`${pad}- ${toYaml(item, 0).trim()}`);
+        // Render at the item's own indent, then splice "- " over the first line's padding.
+        // Rendering at indent 0 would leave every continuation line of a nested sequence at
+        // column 0, which breaks the document.
+        const rendered = toYaml(item, indent + 2);
+        lines.push(`${pad}- ${rendered.slice(indent + 2)}`);
       }
     }
     return lines.join("\n");
@@ -670,10 +838,10 @@ export function toYaml(data: unknown, indent = 0): string {
     const lines: string[] = [];
     for (const [key, val] of entries) {
       if (val && typeof val === "object") {
-        lines.push(`${pad}${key}:`);
+        lines.push(`${pad}${yamlKey(key)}:`);
         lines.push(toYaml(val, indent + 2));
       } else {
-        lines.push(`${pad}${key}: ${yamlScalar(val)}`);
+        lines.push(`${pad}${yamlKey(key)}: ${yamlScalar(val)}`);
       }
     }
     return lines.join("\n");
@@ -698,6 +866,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
     summary: payload.summary,
     mcp_playbook: payload.mcp_playbook,
     resolved_tokens: payload.resolved_tokens,
+    token_aliases: payload.token_aliases,
     text_index: payload.text_index,
     chunks: chunks.map((chunk: any) => {
       const items = Array.isArray(chunk.items) ? chunk.items : [];
@@ -710,6 +879,7 @@ function toDataSectionPreview(payload: any, agentReadyData: boolean) {
       if (chunk.kind === "component_definition") {
         base.component_set = chunk.component_set;
         base.base_node_id = chunk.base_node_id;
+        if (chunk.node_ids) base.node_ids = chunk.node_ids;
         base.properties = chunk.properties;
         base.variant_diffs = Array.isArray(chunk.variant_diffs)
           ? chunk.variant_diffs.slice(0, sampleSize)
