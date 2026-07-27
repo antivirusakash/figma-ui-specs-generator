@@ -113,7 +113,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
   const rootBounds = root.absoluteBoundingBox;
   const nameCounts = new Map<string, number>();
 
-  const walk = (node: SceneNode, path: string) => {
+  const walk = (node: SceneNode, path: string, depth: number) => {
     if (data.length >= maxLayoutSpecs) return;
     if (skipNodeIds?.has(node.id)) return;
     if ("layoutMode" in node && node.layoutMode !== "NONE") {
@@ -139,6 +139,7 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
         nodeId: node.id,
         name: node.name,
         type: node.type,
+        depth,
         clipsContent: "clipsContent" in node ? node.clipsContent : undefined,
         layoutMode: node.layoutMode,
         primaryAxisAlignItems: node.primaryAxisAlignItems,
@@ -238,6 +239,8 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
           nodeId: node.id,
           name: node.name,
           type: node.type,
+          depth,
+          inferredChildIds: kids.map((c: any) => c.id as string),
           clipsContent: "clipsContent" in node ? node.clipsContent : undefined,
           layoutMode: inferredMode,
           primaryAxisAlignItems: inferredAlign.primary,
@@ -255,11 +258,11 @@ export function collectLayoutData(root: SceneNode, skipNodeIds?: Set<string>): L
     }
 
     if ("children" in node && data.length < maxLayoutSpecs) {
-      node.children.forEach((child) => walk(child, `${path}/${node.name}`));
+      node.children.forEach((child) => walk(child, `${path}/${node.name}`, depth + 1));
     }
   };
 
-  walk(root, "root");
+  walk(root, "root", 0);
   return data;
 }
 

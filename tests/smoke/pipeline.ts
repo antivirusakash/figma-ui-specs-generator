@@ -11,6 +11,7 @@ import { collectAnatomyElements } from "../../src/plugin/helpers/anatomy-collect
 import { collectLayoutData, collectNodeSizing } from "../../src/plugin/sections/layout-section";
 import { stripNulls, toAgentReadyDataPayload, toYaml } from "../../src/plugin/sections/data-section";
 import { truncateText } from "../../src/plugin/helpers/format";
+import { mergeLayoutIntoAnatomy } from "../../src/plugin/helpers/layout-merge";
 import { Inventory } from "../../src/plugin/inventory";
 import type { AnatomyElement, DataModel, NodeSizing, Settings } from "../../src/plugin/types";
 
@@ -74,36 +75,7 @@ export async function runPipeline(
   const nodeSizing = collectNodeSizing(root, dedupedNodeIds);
 
   // — identical to src/code.ts: layout merge, then node-own sizing wins —
-  const layoutMap = new Map(layoutData.map((s) => [s.nodeId, s]));
-  dataModel.anatomy.forEach((el) => {
-    const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
-    if (!ls) return;
-    el.layoutDirection = ls.layoutMode;
-    el.layoutJustify = ls.primaryAxisAlignItems;
-    el.layoutAlignItems = ls.counterAxisAlignItems;
-    el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
-    el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
-    if (ls.clipsContent) el.layoutClips = true;
-    if (ls.inferred) el.layoutInferred = true;
-  });
-  layoutData.forEach((ls) => {
-    if (dataModel.anatomy.some((el) => el.nodeId === ls.nodeId)) return;
-    dataModel.anatomy.push({
-      name: ls.name,
-      type: ls.type,
-      attributes: [],
-      bounds: ls.bounds,
-      nodeId: ls.nodeId,
-      pathKey: ls.pathKey,
-      layoutDirection: ls.layoutMode,
-      layoutJustify: ls.primaryAxisAlignItems,
-      layoutAlignItems: ls.counterAxisAlignItems,
-      layoutWSizing: ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode,
-      layoutHSizing: ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode,
-      layoutClips: ls.clipsContent || undefined,
-      layoutInferred: ls.inferred || undefined
-    });
-  });
+  mergeLayoutIntoAnatomy(dataModel.anatomy, layoutData);
   applyNodeSizing(dataModel.anatomy, nodeSizing);
 
   const payload = stripNulls(

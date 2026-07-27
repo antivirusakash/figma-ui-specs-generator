@@ -105,6 +105,10 @@ export type AnatomyElement = {
   layoutInferred?: boolean;
   /** Real tree depth (root = 0). Not derived from pathKey — pathKeys join with "/" and carry no spaces. */
   depth?: number;
+  /** Offset from the parent's top-left, set only when the parent's layout was inferred rather
+   *  than read from auto-layout. The guessed direction/justify cannot reproduce the real
+   *  positions on its own, so the coordinates travel with the child. */
+  parentOffset?: { x: number; y: number };
   /** Variant selection of the instance, e.g. "Size=Large, Type=Primary" — split out of instanceOf. */
   instanceVariant?: string;
   layoutGrow?: number;
@@ -161,6 +165,12 @@ export type LayoutSpec = {
     y2: number;
   };
   inferred?: boolean;
+  /** Tree depth of the node, so a spec-only element can be placed when it is merged back into
+   *  the anatomy list rather than appended at the end. */
+  depth?: number;
+  /** Ids of the visible children whose positions were used to infer the layout. Only set when
+   *  `inferred` is true. */
+  inferredChildIds?: string[];
   layoutWrap?: string;
   counterAxisSpacing?: number;
   counterAxisAlignContent?: string;

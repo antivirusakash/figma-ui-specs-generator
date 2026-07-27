@@ -56,6 +56,7 @@ import { clearRuntimeLimitOverrides, getLimit, LIMITS, setRuntimeLimitOverrides 
 import { analyzeNodeComplexity, resolveRuntimeLimitOverrides } from "./plugin/helpers/complexity";
 import { collectAttributes } from "./plugin/helpers/attributes";
 import { clearVariableCache } from "./plugin/helpers/variable-resolver";
+import { mergeLayoutIntoAnatomy } from "./plugin/helpers/layout-merge";
 import {
   collectAnatomyElements,
   getMainComponentSafe,
@@ -344,37 +345,7 @@ async function handleCopyAiSpecs(settings: Settings) {
     const nodeSizing = collectNodeSizing(target, dedupedNodeIds);
 
     // Merge layout data into anatomy elements
-    if (layoutData.length > 0) {
-      const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
-      anatomyElements.forEach(el => {
-        const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
-        if (ls) {
-          el.layoutDirection = ls.layoutMode;
-          el.layoutJustify = ls.primaryAxisAlignItems;
-          el.layoutAlignItems = ls.counterAxisAlignItems;
-          el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
-          el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
-          if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
-          if (ls.clipsContent) el.layoutClips = true;
-          if (ls.inferred) el.layoutInferred = true;
-        }
-      });
-      layoutData.forEach(ls => {
-        if (!anatomyElements.some(el => el.nodeId === ls.nodeId)) {
-          anatomyElements.push({
-            name: ls.name, type: ls.type, attributes: [],
-            bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
-            layoutDirection: ls.layoutMode,
-            layoutJustify: ls.primaryAxisAlignItems,
-            layoutAlignItems: ls.counterAxisAlignItems,
-            layoutWSizing: ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode,
-            layoutHSizing: ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode,
-            layoutClips: ls.clipsContent || undefined,
-            layoutInferred: ls.inferred || undefined
-          });
-        }
-      });
-    }
+    mergeLayoutIntoAnatomy(anatomyElements, layoutData);
     // Node-own sizing wins over the parent-derived values above.
     applyNodeSizing(anatomyElements, nodeSizing);
 
@@ -592,37 +563,8 @@ async function generateSpecs(settings: Settings) {
     if (layoutData.length > 0) {
       log("Layout specs collected", layoutData.length);
     }
-    if (settings.data && layoutData.length > 0) {
-      const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
-      dataModel.anatomy.forEach(el => {
-        const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
-        if (ls) {
-          el.layoutDirection = ls.layoutMode;
-          el.layoutJustify = ls.primaryAxisAlignItems;
-          el.layoutAlignItems = ls.counterAxisAlignItems;
-          el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
-          el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
-          if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
-          if (ls.clipsContent) el.layoutClips = true;
-          if (ls.inferred) el.layoutInferred = true;
-        }
-      });
-      // Safety net: add layout-only nodes missing from anatomy
-      layoutData.forEach(ls => {
-        if (!dataModel.anatomy.some(el => el.nodeId === ls.nodeId)) {
-          dataModel.anatomy.push({
-            name: ls.name, type: ls.type, attributes: [],
-            bounds: ls.bounds, nodeId: ls.nodeId, pathKey: ls.pathKey,
-            layoutDirection: ls.layoutMode,
-            layoutJustify: ls.primaryAxisAlignItems,
-            layoutAlignItems: ls.counterAxisAlignItems,
-            layoutWSizing: ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode,
-            layoutHSizing: ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode,
-            layoutClips: ls.clipsContent || undefined,
-            layoutInferred: ls.inferred || undefined
-          });
-        }
-      });
+    if (settings.data) {
+      mergeLayoutIntoAnatomy(dataModel.anatomy, layoutData);
     }
     if (settings.data) {
       // Node-own sizing wins over the parent-derived values above.
@@ -1155,22 +1097,7 @@ async function createNestedComponentSections(
 
     if (settings.data) {
       // Merge layout into anatomy for nested components too
-      if (layoutData.length > 0) {
-        const layoutMap = new Map(layoutData.map(s => [s.nodeId, s]));
-        anatomyElements.forEach(el => {
-          const ls = el.nodeId ? layoutMap.get(el.nodeId) : undefined;
-          if (ls) {
-            el.layoutDirection = ls.layoutMode;
-            el.layoutJustify = ls.primaryAxisAlignItems;
-            el.layoutAlignItems = ls.counterAxisAlignItems;
-            el.layoutWSizing = ls.layoutMode === "HORIZONTAL" ? ls.primaryAxisSizingMode : ls.counterAxisSizingMode;
-            el.layoutHSizing = ls.layoutMode === "HORIZONTAL" ? ls.counterAxisSizingMode : ls.primaryAxisSizingMode;
-            if (ls.layoutWrap) el.layoutWrap = ls.layoutWrap;
-            if (ls.clipsContent) el.layoutClips = true;
-            if (ls.inferred) el.layoutInferred = true;
-          }
-        });
-      }
+      mergeLayoutIntoAnatomy(anatomyElements, layoutData);
       // Node-own sizing wins over the parent-derived values above.
       applyNodeSizing(anatomyElements, nodeSizing);
       const model: DataModel = {
