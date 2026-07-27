@@ -1,0 +1,249 @@
+{
+  "schema": "specs-plugin.agent_pack.v11.yaml.compact",
+  "selection": {
+    "node_id": "1:0",
+    "name": "Product Card",
+    "type": "FRAME",
+    "clips_content": true
+  },
+  "summary": {
+    "anatomy_nodes_total": 15,
+    "property_groups_total": 0,
+    "property_variants_total": 0,
+    "variable_refs_total": 3,
+    "instance_templates": 1,
+    "deduplicated_instances": 2,
+    "chunks_total": 2,
+    "runtime_budget": {
+      "max_anatomy_elements": 4000,
+      "max_anatomy_records": 4000,
+      "max_property_records": 200,
+      "max_layout_specs": 120,
+      "max_variant_options": 8,
+      "max_anatomy_variants": 20,
+      "max_canvas_text_chunks": 3
+    },
+    "truncated": {
+      "anatomy": false,
+      "anatomy_included": 15,
+      "anatomy_dropped": 0,
+      "properties": false,
+      "properties_included": 0,
+      "properties_dropped": 0
+    }
+  },
+  "mcp_playbook": {
+    "tools": [
+      "get_metadata",
+      "get_design_context",
+      "get_screenshot",
+      "get_variable_defs"
+    ],
+    "parse_root": "chunks",
+    "preferred_keys": [
+      "node_id",
+      "path_key",
+      "kind",
+      "items"
+    ]
+  },
+  "resolved_tokens": {
+    "Theme/Semantic/Surface": "#0A66FF",
+    "Primitive/overlay/scrim": "#000000",
+    "Theme/Semantic/Border/Strong": "#0A66FF"
+  },
+  "chunks": [
+    {
+      "chunk_id": "anatomy_1",
+      "kind": "anatomy",
+      "item_count": 12,
+      "path_range": [
+        "root/FRAME:Product Card",
+        "root/Product Card/List/Row/TEXT:Label"
+      ],
+      "items": [
+        {
+          "node_id": "1:0",
+          "path_key": "root/FRAME:Product Card",
+          "name": "Product Card",
+          "type": "FRAME",
+          "w": 360,
+          "h": 520,
+          "fill": "#FFFFFF",
+          "radius": 16,
+          "padding": "16",
+          "gap": 16,
+          "direction": "column",
+          "justify": "flex-start",
+          "align": "flex-start",
+          "w_sizing": "fixed",
+          "h_sizing": "auto",
+          "clips": true
+        },
+        {
+          "node_id": "1:1",
+          "path_key": "root/Product Card/FRAME:Header",
+          "name": "Header",
+          "type": "FRAME",
+          "w": 328,
+          "h": 24,
+          "gap": 8,
+          "direction": "row",
+          "justify": "flex-start",
+          "align": "center",
+          "w_sizing": "fixed",
+          "h_sizing": "auto"
+        },
+        {
+          "node_id": "1:2",
+          "path_key": "root/Product Card/Header/INSTANCE:Icon: left",
+          "name": "Icon: left",
+          "type": "INSTANCE",
+          "instance_of": "Size=Large, Type=Primary",
+          "w": 24,
+          "h": 24,
+          "fill": "#0A66FF"
+        },
+        {
+          "node_id": "1:3",
+          "path_key": "root/Product Card/Header/TEXT:Title",
+          "name": "Title",
+          "type": "TEXT",
+          "text": "Multibrand card",
+          "w": 200,
+          "h": 24,
+          "fill": "#0A66FF",
+          "fill_ref": "Theme/Semantic/Surface",
+          "fill_ref_type": "variable",
+          "font_size": 18,
+          "font": "Inter Semi Bold",
+          "line_height": "24px"
+        },
+        {
+          "node_id": "1:4",
+          "path_key": "root/Product Card/Header/FRAME:Spacer",
+          "name": "Spacer",
+          "type": "FRAME",
+          "w": 96,
+          "h": 24
+        },
+        {
+          "node_id": "1:5",
+          "path_key": "root/Product Card/FRAME:Banner",
+          "name": "Banner",
+          "type": "FRAME",
+          "w": 328,
+          "h": 120,
+          "radius": 8
+        },
+        {
+          "node_id": "1:6",
+          "path_key": "root/Product Card/FRAME:Divider",
+          "name": "Divider",
+          "type": "FRAME",
+          "w": 328,
+          "h": 24,
+          "stroke": "#E5E7EB",
+          "stroke_sides": "border-top: 2px, border-bottom: 1px"
+        },
+        {
+          "node_id": "1:7",
+          "path_key": "root/Product Card/FRAME:Thumb",
+          "name": "Thumb",
+          "type": "FRAME",
+          "w": 328,
+          "h": 80,
+          "fill": "#000000",
+          "fill_ref": "Primitive/overlay/scrim",
+          "fill_ref_type": "variable"
+        },
+        {
+          "node_id": "1:8",
+          "path_key": "root/Product Card/FRAME:Chip",
+          "name": "Chip",
+          "type": "FRAME",
+          "w": 120,
+          "h": 32,
+          "fill": "#FFFFFF",
+          "radius": 8,
+          "stroke": "#0A66FF",
+          "stroke_ref": "Theme/Semantic/Border/Strong",
+          "stroke_align": "inside",
+          "stroke_sides": "all"
+        },
+        {
+          "node_id": "1:9",
+          "path_key": "root/Product Card/TEXT:Notes",
+          "name": "Notes",
+          "type": "TEXT",
+          "text": "- Note: multibrand tokens\nsecond line",
+          "w": 328,
+          "h": 36,
+          "fill": "#111827",
+          "font_size": 14,
+          "font": "Inter Regular"
+        },
+        {
+          "node_id": "1:10",
+          "path_key": "root/Product Card/FRAME:List",
+          "name": "List",
+          "type": "FRAME",
+          "w": 328,
+          "h": 136,
+          "gap": 8,
+          "direction": "column",
+          "justify": "flex-start",
+          "align": "flex-start",
+          "w_sizing": "fixed",
+          "h_sizing": "auto"
+        },
+        {
+          "node_id": "1:11:1",
+          "path_key": "root/Product Card/List/Row/TEXT:Label",
+          "name": "Label",
+          "type": "TEXT",
+          "text": "Alpha",
+          "w": 200,
+          "h": 20,
+          "fill": "#111827",
+          "font_size": 14,
+          "font": "Inter Regular"
+        }
+      ]
+    },
+    {
+      "chunk_id": "repeats_1",
+      "kind": "repeats",
+      "template_node_id": "1:11",
+      "template_path_key": "root/Product Card/List/INSTANCE:Row",
+      "instance_of": "List Row",
+      "repeat_count": 2,
+      "template_attributes": {
+        "children_text": [
+          "Alpha"
+        ],
+        "w": 328,
+        "h": 40
+      },
+      "varying_keys": [
+        "Row/Label/text"
+      ],
+      "items": [
+        {
+          "node_id": "1:12",
+          "path_key": "root/Product Card/List/INSTANCE:Row[2]",
+          "diffs": {
+            "Row/Label/text": "Beta"
+          }
+        },
+        {
+          "node_id": "1:13",
+          "path_key": "root/Product Card/List/INSTANCE:Row[3]",
+          "diffs": {
+            "Row/Label/text": "Gamma"
+          }
+        }
+      ]
+    }
+  ]
+}

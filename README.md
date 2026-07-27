@@ -31,7 +31,7 @@ Common team outcome: moving from large raw payloads (often `80k+` tokens) toward
 | Properties & Variants | Variant dimensions and behavior deltas |
 | Inventory | Colors, typography, effects used across selection |
 | Variables / Tokens | Resolved Figma variables and token values |
-| Agent Payload | Chunked YAML (`resolved_tokens`, repeats, compact schema) |
+| Agent Payload | Chunked YAML (`resolved_tokens`, `token_aliases`, repeats, compact schema) |
 | Agent Rules Snippet | Ready instructions for `CLAUDE.md` / `AGENTS.md` |
 
 ![AI Ready Data](assets/ai-ready.png)

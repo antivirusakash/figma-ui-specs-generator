@@ -117,7 +117,8 @@ src/plugin/
     anatomy-collector.ts — collectAnatomyElements, instance fingerprint dedup, repeat diffs
     attributes.ts        — collectAttributes, mergeAdjacentSameFill, token/variable resolution
     complexity.ts        — complexity snapshot + runtime tier resolution (standard/large/enterprise)
-    format.ts            — solidFill, hexToRgb, formatColor, truncateText, etc.
+    format.ts            — solidFill, hexToRgb, formatColor/formatGradient, resolveTopPaint, truncateText
+    variable-resolver.ts — resolveVariableById (alias chain, consumer mode context), formatAliasChain
     tokens.ts            — Tokens Studio integration (extractTokensStudioMap, findTokenValue)
     text-helpers.ts      — createTextNode, fitTextToWidth, text wrapping
     frame-builders.ts    — createSectionFrame, createTableRow, createContentCard
@@ -130,7 +131,10 @@ src/plugin/
     inventory-section.ts — Design inventory
     variables-section.ts — Figma variables/tokens
 scripts/build.js         — esbuild bundler
-tests/unit/              — 15 test files, 289 tests (vitest)
+tests/unit/              — 17 test files, unit coverage per module (vitest)
+tests/smoke/             — end-to-end pipeline run over a mocked multibrand document
+                           (fixture.ts → pipeline.ts → multibrand-component.test.ts,
+                            with baseline-head.json guarding against field loss)
 ```
 
 ### Key Patterns
@@ -141,13 +145,24 @@ tests/unit/              — 15 test files, 289 tests (vitest)
   - complexity tier runtime override profiles
   - artwork export scale plans/thresholds
 - Instance dedup: fingerprint (componentSet + childSignature) → template + repeat diffs
-- Layout fields inline on AnatomyElement (no separate layout chunks)
-- YAML output: `v11.yaml.compact` (default) or `v12.yaml.compact` (opt-in, ~30% smaller); `resolved_tokens` map; chunked anatomy/properties
+- Layout fields inline on AnatomyElement (no separate layout chunks). `collectLayoutData` also
+  captures `varIds` (bound gap/padding variables) and `varModes`; `createLayoutSection` renders
+  them in a Tokens column resolved in the node's own variable modes
+- YAML output: `v14.yaml.compact` (default), down through `v13`/`v12`/`v11`; `resolved_tokens`
+  map plus a `token_aliases` sibling map (semantic token → the chain it aliases); chunked
+  anatomy/properties/repeats/component_definition
 - v12 changes: indexed repeat diffs, path field removal, anatomy/repeat node dedup, width cascade dedup
+- v13 adds the `component_definition` chunk (`node_ids` maps path_key → live node id, so
+  `path_key` stays omitted on records); v14 additionally omits CSS flexbox defaults
+- Value conventions in the payload: colours fold paint opacity into alpha, gradients carry a
+  structured `{angle, stops[]}` (angle scaled by node size), and `rotation` is emitted in CSS
+  clockwise-positive degrees — the negation of Figma's counter-clockwise `node.rotation`
+- `toYaml` quotes anything a parser would retype (YAML 1.1 booleans/nulls, numeric forms) and
+  escapes every unprintable character, so the document always parses
 
 ### Build & Test
 - `npm run build` — esbuild bundle
-- `npm run test:unit` — vitest (289 tests)
+- `npm run test:unit` — vitest (unit + smoke suites)
 - `npm run test:ui` — playwright
 - `npm run typecheck` — tsc --noEmit
 - `benchmark/stress-sanity-todo.md` — current stress/sanity checklist with pass criteria
