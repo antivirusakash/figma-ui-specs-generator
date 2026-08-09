@@ -1,3 +1,5 @@
+
+
 # Figma Specs
 
 Generate compact, agent-ready Figma specs for **Claude Code** and **OpenAI Codex** without burning too many tokens.
@@ -119,6 +121,7 @@ npm run build
 src/
   code.ts
   ui-app.tsx
+  ui.css
   plugin/
     helpers/
     sections/
