@@ -1,0 +1,17 @@
+# figmaspecs.dev landing page. Deploy: npm run build && npx wrangler deploy
+name = "figma-specs-site"
+main = "cf/worker.js"
+compatibility_date = "2026-11-01"
+account_id = "e1e5b9ff7117526abf63c066c04fb6a5"
+workers_dev = true
+routes = [
+  { pattern = "figmaspecs.dev", custom_domain = true },
+  { pattern = "www.figmaspecs.dev", custom_domain = true },
+]
+
+[assets]
+directory = "out"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+run_worker_first = true

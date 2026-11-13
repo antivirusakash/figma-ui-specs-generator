@@ -1,0 +1,6 @@
+/opengraph-image
+  Content-Type: image/png
+/twitter-image
+  Content-Type: image/png
+https://:worker.:account.workers.dev/*
+  X-Robots-Tag: noindex
